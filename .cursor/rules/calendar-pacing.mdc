@@ -1,0 +1,70 @@
+---
+description: Calendar, curriculum-pacing, and syllabus-coverage conventions
+globs: ["packages/db/**/calendar*", "apps/api/**/calendar/**", "apps/api/**/pacing/**", "apps/web/**/pacing/**"]
+alwaysApply: false
+---
+
+Reference: Calendar_Curriculum_Pacing_Spec_v1.docx (all sections).
+
+- **Two layers, one join point.** Calendar owns dates, curriculum owns
+  sequence. They never mix inside the same table or the same function — they
+  meet only at `yearly_map`/`map_slices`, which places curriculum sequence
+  onto a specific school's teaching days. If you find calendar logic reading
+  curriculum content, or curriculum logic reading dates, that's a boundary
+  violation — route it through the map instead.
+- **`teaching_days` is a derived view, never a stored column.** Computed as
+  calendar span minus `weekly_offs` minus `calendar_closures`, recomputed on
+  read. Never cache this as a persisted integer — the entire point is that
+  one calendar edit (a new local festival, an extended Dashain break)
+  reflows every terminal's denominator and every teacher's plan
+  automatically. A stored count would silently drift from the closures that
+  define it.
+- **The firewall: a terminal is a coverage/reporting boundary, never an
+  exam.** `terminals` stores `start_date`/`end_date`/`reporting_type` only —
+  there is no test-date field in this schema, by design, at any band. Do not
+  add one, even behind a flag.
+- **The planning cascade derives, it doesn't originate.** Yearly (admin
+  approves at year start) → Monthly (auto-derived slice) → Weekly (teacher
+  reviews/adjusts Sunday) → Daily (pre-filled from the weekly cell, teacher
+  edits/teaches/marks done). A teacher should never be shown a blank
+  planning surface at any horizon — if a UI path can produce one, that's a
+  bug, not a valid empty state. From Grade 1, this cascade is per
+  `(subject, section)` — each subject teacher inherits her slice, the class
+  teacher sees the woven whole; at pre-primary the one class teacher holds
+  the entire plan (same underlying model, not a special case).
+- **The yearly-map generator is deterministic placement, not generation.**
+  It distributes the curriculum sequence across a terminal's teaching days
+  given a chapter/theme's teaching-day weighting — this is a scheduling
+  algorithm over rows, not an LLM call. (Contrast with the *daily lesson
+  plan*, which reads a `map_slice` and the book position and generates
+  content via Haiku — see `/prompts/ai-prompt-templates.md` template #6.
+  Don't confuse the two: placing content in time is deterministic; drafting
+  the lesson itself is generative.)
+- **Pacing gap = actual position minus planned position, in teaching days,**
+  never a vague "behind." `lesson_progress` (marked-done lessons) is the
+  actual-position source; `map_slices` is the planned-position source. Three
+  states only: on track, behind (with teaching-days-and-content-remaining
+  shown, early enough to act), self-correcting (auto-recomputes after a
+  closure/absence reflows the remaining map — don't require a manual
+  re-plan).
+- **Coverage and learning are different questions, tracked separately.**
+  `lesson_progress.status = done` means "taught," not "learned." Never join
+  a pacing query to `student_outcomes` to produce a single "class health"
+  number — a class can be fully on-pace for coverage with children still at
+  "developing" on outcomes, and that's expected, not a bug to reconcile.
+- **Admin pacing view is gravity-rule-scoped like everything else.**
+  Sections-behind visibility across a grade is legitimate (practice-level);
+  a cross-teacher pacing league table is not — same rule as rank-order
+  queries on outcomes (`.cursor/rules/00-invariants.mdc`).
+- **Downstream consumers read this spine, don't reimplement it:** the
+  assessment pack's "active this month" milestones/outcomes are a slice of
+  `map_slices` read through the calendar; the catch-up pack ("what did an
+  absent child miss") is a query over `lesson_progress` against attendance;
+  the weekly view's festival rehearsals and the diary's closure explanations
+  both read `calendar_closures` directly. Don't hand-roll a parallel "what's
+  due" calculation anywhere else in the codebase.
+- **Sequencing dependency:** per the spec's own open items, the calendar
+  model must be specified and built *before* the pacing tracker, the
+  assessment pack's monthly slice, and mandated reporting — not alongside
+  them. If you're implementing one of those three and the calendar schema
+  isn't stable yet, stop and flag it rather than stubbing calendar data.

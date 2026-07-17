@@ -1,0 +1,49 @@
+---
+description: AI orchestration, prompt, model-routing, and caching conventions
+globs: ["packages/ai/**", "apps/api/**/ai/**", "prompts/**"]
+alwaysApply: false
+---
+
+Reference: Technical Architecture 7 (AI integration), 4.4 (mapper guards).
+
+- Prompt templates are DB rows in the first-class `prompts` table, keyed by
+  `(feature_id, band_id)` — not source strings with band conditionals inside
+  them (see the Data Model & Identity Addendum, config layer). A curriculum
+  wording change or CDC revision should be a content edit (row update), not
+  a deploy.
+- Model routing table (don't deviate without a documented reason):
+  - Haiku, cacheable: phonics (N–Grade 2), remedial activity generation,
+    CDC methods-toolkit activity generation.
+  - Haiku, partially cacheable: lesson/period plan generation, classroom
+    coach answers (target ~20s response).
+  - Haiku, not cacheable: outcome/milestone mapping from a voice/text
+    observation (per-child, per-observation, not repeatable content).
+  - Sonnet, not cacheable: monthly parent report, Annex 4 addendum,
+    year-end/trimester narrative — parents read these closely, quality
+    justifies the premium tier.
+  - No model at all: aggregation, Annex 2/3/4, portfolio index, inspection
+    pack — these are deterministic renders. Do not add an LLM call here.
+- Cache key = content hash of the normalized request (e.g. outcome code +
+  misconception tag; letter/outcome + curriculum position) — never tied to a
+  specific teacher, child, or tier. Store in Upstash Redis, 30-day TTL,
+  content only.
+- Output constraints to enforce on every generation path (validate, don't
+  just prompt for):
+  1. Milestone/outcome-mapping output is a proposal only — a separate
+     human-gated write path performs confirmation.
+  2. Remedial-activity output must target the specific triggering
+     misconception and must never be a scored/timed artifact.
+  3. Report-generation output is constrained to evidence recorded for the
+     period; thin/no data → route to the neutral fallback template instead
+     of calling the model.
+  4. No prompt may request or produce a personality label, risk category,
+     diagnostic term, or any rank/comparison — enforce this in the output
+     validator, redundantly with the query-layer block, not as the only
+     defense.
+- `report_language` config (with subject-level overrides) is read identically
+  by AI orchestration's prompt assembly and the deterministic renderer's
+  template selection, so the two paths can't drift. Audio-report generation
+  always renders Nepali regardless of this setting.
+- See `/prompts/ai-prompt-templates.md` for starter system-prompt skeletons
+  for the coach, outcome mapper, remedial generator, and parent-report
+  drafter — extend these, don't fork a new ungoverned prompt path.

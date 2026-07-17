@@ -1,0 +1,30 @@
+---
+description: Deterministic document/report rendering conventions
+globs: ["apps/docgen/**"]
+alwaysApply: false
+---
+
+Reference: Technical Architecture 6.
+
+- Every document (Annex 2/3/4, portfolio index, pre-primary assessment log,
+  transition file, inspection pack) is a render of live rows at request
+  time. Never persist a "generated document" as the source of truth — the
+  DB rows are the source of truth; `document_render.source_row_hash` exists
+  specifically to detect staleness of a cached render.
+- Assessment log and transition file (pre-primary) are deterministic.
+  Monthly/year-end narrative reports and the Annex 4 addendum are AI-drafted
+  (Sonnet) then teacher-approved before release — same governance for both.
+- Two hard environment requirements for this service specifically:
+  1. `fonts-noto-core` must be in the base image — Devanagari text will not
+     render correctly without it. Bake into the image, don't install ad hoc.
+  2. The docx library swaps page width/height on landscape orientation. Any
+     landscape template (e.g. a wide Annex 3 with many subject columns) must
+     apply the corrective transform via the shared utility — don't re-solve
+     this per template.
+- Add a CI smoke test for both of the above (font rendering, landscape
+  regression) — they're known failure modes, not hypothetical ones.
+- The inspection pack is a batch invocation of the same per-document render
+  functions, parameterized over a class/date range — do not build a separate
+  compliance-export code path.
+- Document access control mirrors the source data's RLS grain: a subject
+  teacher cannot download another subject's Annex 3 sheet.

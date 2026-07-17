@@ -1,0 +1,65 @@
+---
+description: Data model, RLS, and RBAC conventions for schema/migration/API files
+globs: ["packages/db/**", "apps/api/**"]
+alwaysApply: false
+---
+
+Reference: Technical Architecture 2.3 (band config schema), 3 (full data
+model), 5 (RBAC), and `/docs/specs/Data_Model_Identity_Addendum_v1.md`
+(supersedes Architecture 3.1's entity list — identity model + previously
+missing entities).
+
+- Identity layer: `identities` (global login: username + password_hash for
+  web primary, verified phone + OTP as secondary web login / recovery /
+  WhatsApp-channel identity) → `school_memberships` (identity × school ×
+  member_type: teacher / admin / guardian / trainer_viewer) → actor profile
+  tables. Both credential paths resolve to the same identity row.
+  Authorization is always membership (tenant check first) + scoped role —
+  never a flat role column. The child never has an identity row.
+- Guardians link to children via `guardian_child_links` (join table, up to
+  three per child, created by the WhatsApp handshake) — never an array
+  column on `child`.
+- Core config tables: `bands`, `subjects`, `band_subjects`, `outcomes`,
+  `grade_scales`, plus `curriculum_areas` (11 Curriculum 2077 skill areas —
+  system of record for tagging), `rollup_domains` + `area_domain_crosswalk`
+  (the 6 parent-facing domains), `prompts` keyed `(feature_id, band_id)`,
+  and the feature × band × school flag table. A band row carries
+  `assessment_mode` and `aggregation_rule` as columns — read them, don't
+  branch on grade number.
+- `student_outcomes.attempt` is an ENUM('regular','after_support') — the
+  two-pass record is one table with a flag, not two tables. The regular-pass
+  value is immutable; a re-assessment inserts a new row, it never overwrites.
+- `remedial_plans` is a first-class object with its own lifecycle (Opened →
+  Activity delivered → Re-assessed → Escalated → Closed), not a status flag
+  bolted onto `student_outcomes`. See Architecture 4.2 for the full state
+  table and triggers.
+- `teacher_sections(section_id, subject_id, is_class_teacher)` is the RBAC
+  backbone. A teacher may hold multiple rows — an oversight row
+  (`is_class_teacher = true`, subject-independent read) plus one or more
+  subject rows (write-scoped). Pre-primary: one row, `subject_id = NULL`,
+  `is_class_teacher` implicitly true.
+- RLS enforcement, every table referencing `child_id`/`section_id`/
+  `teacher_id`: write scope is `(section_id, subject_id)`; read scope is
+  section-wide for any `is_class_teacher = true` row, and also section-wide
+  (but write-locked to her subject) for a subject teacher.
+- Substitute-teacher role: a `substitute_access` row (section, grantor,
+  `expires_at`) — expiry is data, not application folklore. Rating/outcome
+  confirmation is disabled at the RLS/application layer, not just hidden in
+  UI. Anything she notices routes unconfirmed to the class teacher's queue.
+- Consent and safety are rows, not conventions: `consents` (per
+  guardian-child link, per consent type, grant/revoke timestamps — platform
+  per-child access requires an audited session referencing a live consent)
+  and `safeguarding_escalations` (append-only fast-path audit trail:
+  routed-to, reviewed-by, resolution).
+- `attendance_record` carries `recorded_by` (class teacher's duty; the
+  substitute's only write). `child` carries `status`
+  (active/promoted/transferred/exited), `dob`, and
+  `report_language_override` — and, per the invariants, nothing about
+  personality, traits, or risk.
+- `handover_pack` is a materialized snapshot row, assembled at transition
+  time — not a live join granted to the incoming teacher. It explicitly
+  excludes coach-chat history (the join doesn't exist) and, from Grade 1,
+  includes `portfolio_items` refs and open `remedial_plans` refs.
+- When adding any new table that references a child or teacher: add both an
+  RLS policy and a CI test asserting the policy covers both grains (tenant
+  isolation + section/subject write scope), per Architecture 11.3.

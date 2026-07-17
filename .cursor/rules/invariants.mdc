@@ -1,0 +1,43 @@
+---
+description: Core non-negotiable invariants for EduAI Nepal — always active
+alwaysApply: true
+---
+
+You are working in the EduAI Nepal codebase (WhatsApp-first pre-primary +
+Grades 1–5 education platform for Nepal). Before generating or editing any
+code that touches schema, RBAC, assessment/outcomes, AI prompts, or document
+generation, treat the following as hard constraints, not suggestions:
+
+- **The level is human**: never write code that lets an AI/mapper output
+  directly become a confirmed `student_outcomes` or milestone row. Every
+  write path ends in an explicit teacher confirmation step.
+- **No rank-order queries**: never write a query, view, or endpoint that
+  orders/sorts a rating, percentage, or letter-grade column across more than
+  one child or teacher. If a feature seems to need this, stop and flag it —
+  it likely means the feature is out of scope by design.
+- **Gravity rule**: admin-facing queries return counts/shapes only, never
+  band or rating distributions, never child names, never cross-teacher
+  comparisons.
+- **Band-as-data**: never write `if (grade === 4)` style branches for
+  pedagogy/assessment/report logic. Read `assessment_mode` /
+  `aggregation_rule` off the `bands` row. If a new grade band needs a code
+  change beyond new rows, that's a design smell — raise it.
+- **Two-grain RLS**: write scope is `(section_id, subject_id)`; class-teacher
+  read scope is section-wide. Pre-primary is `subject_id = NULL` — same
+  policy, not a special case.
+- **No schema fields for personality/trait/risk-category** on `child`, ever.
+- **No fiction**: report/document generation must be constrained to evidence
+  actually present for the period; thin data uses the neutral fallback
+  template, not a generated placeholder.
+- **Deterministic docs stay deterministic**: Annex 2/3/4, portfolio index,
+  inspection pack, and aggregation are pure arithmetic/template rendering —
+  never route these through an LLM call.
+- **Mapper guards** (all four capture paths): no jump to top band from one
+  sighting; ambiguous names resolve via roll number, never a guess; a
+  non-observation routes to attendance, never becomes an outcome candidate;
+  only explicit teacher confirmation finalizes a write.
+
+When unsure whether something violates one of these, ask rather than assume —
+these are the properties the whole product's trust model depends on.
+
+Full detail lives in `/docs/specs/` and `/skills/eduai-architecture/SKILL.md`.
