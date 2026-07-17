@@ -20,14 +20,15 @@ pnpm db:status     # copy URL/keys into .env
 
 Or from this directory: `pnpm db:start`, `pnpm db:reset`.
 
-After `supabase status`, set in the repo-root `.env`:
+After `supabase status`, set in the repo-root `.env` (see `.env.example` for the full list):
 
 ```env
 SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_ANON_KEY=<anon key from status>
-SUPABASE_SERVICE_ROLE_KEY=<service_role key from status>
+SUPABASE_ANON_KEY=<Publishable key from status>
+SUPABASE_SERVICE_ROLE_KEY=<Secret key from status>
+DATABASE_URL=<Database URL from status>
 PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-PUBLIC_SUPABASE_ANON_KEY=<same anon key>
+PUBLIC_SUPABASE_ANON_KEY=<same Publishable key>
 ```
 
 ## Migrations

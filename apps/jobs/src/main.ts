@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 
-const port = Number(process.env.PORT ?? 3003);
+const port = Number(process.env.JOBS_PORT ?? process.env.PORT ?? 3003);
 
 const server = createServer((_request, response) => {
   if (_request.url !== '/health') {

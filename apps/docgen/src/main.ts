@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { DB_PACKAGE_VERSION } from '@eduai/db';
 
-const port = Number(process.env.PORT ?? 3002);
+const port = Number(process.env.DOCGEN_PORT ?? process.env.PORT ?? 3002);
 
 const server = createServer((_request, response) => {
   if (_request.url !== '/health') {
