@@ -14,9 +14,18 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:status": "supabase status",
+    "db:types": "supabase gen types typescript --local > src/types/database.generated.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.50.2"
   },
   "devDependencies": {
+    "supabase": "^2.30.4",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

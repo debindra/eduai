@@ -38,6 +38,11 @@ pnpm install
 pnpm build          # build all packages
 pnpm dev            # run all apps in parallel (watch mode)
 
+# Supabase local (requires Docker)
+pnpm db:start       # start local stack
+pnpm db:reset       # apply migrations + seed
+pnpm db:status      # print URL and keys → copy into .env
+
 # Individual apps
 pnpm --filter @eduai/api dev      # http://localhost:3000/health
 pnpm --filter @eduai/web dev      # http://localhost:5173, /health
@@ -45,7 +50,7 @@ pnpm --filter @eduai/docgen dev   # http://localhost:3002/health
 pnpm --filter @eduai/jobs dev     # http://localhost:3003/health
 ```
 
-Copy `.env.example` to `.env` before local configuration (Step 2: Supabase).
+Copy `.env.example` to `.env` and fill keys from `pnpm db:status`. See `packages/db/README.md` for schema details.
 
 ## Auth (school-side actors)
 
