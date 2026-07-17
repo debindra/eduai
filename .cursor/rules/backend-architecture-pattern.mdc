@@ -1,0 +1,66 @@
+---
+description: Backend architecture pattern — modular layered monolith, bounded-context NestJS modules
+globs: ["apps/api/**", "apps/docgen/**"]
+alwaysApply: false
+---
+
+Reference: `ARCHITECTURE.md` Part 1. This is a plain
+three-layer architecture per NestJS module (Controller → Service →
+Repository) — not full DDD, not CQRS/event sourcing, not microservices.
+Four specific patterns are adopted; apply them, don't improvise variations.
+
+- **Controllers stay thin.** Parse the request (DTO + `ValidationPipe`),
+  call exactly one service method, return the result. No business logic,
+  no direct repository access, no query construction in a controller.
+
+- **Propose/Confirm split for any AI-originated write.** If a service
+  method both calls `AiOrchestrationModule` and writes to a table like
+  `student_outcomes` or `remedial_plans`, that's wrong — split it into
+  `proposeX()` (calls AI, returns a candidate, never writes) and
+  `confirmX()` (guarded, writes, never calls AI). This is how "the level
+  is human" gets enforced structurally instead of by convention.
+
+- **Explicit state machines for lifecycle objects.** `remedial_plans`,
+  `handover_pack` assembly, certification progress: all status changes go
+  through a dedicated state-transition service (e.g.
+  `RemedialStateMachineService.transition()`). Never write
+  `.status = 'closed'` (or any status field) directly from a controller or
+  an unrelated service — route it through the transition method, which
+  should throw on an invalid transition rather than silently no-op.
+
+- **Config-driven strategy selection, never grade/band `if` branches.**
+  Document rendering, prompt-template selection, and anything else that
+  varies by band or document type resolves through a small registry/
+  strategy interface keyed by a config row — same discipline as
+  `.cursor/rules/00-invariants.mdc`'s band-as-data rule, extended to code
+  structure. If you're writing `if (band === 'basic_upper')` outside a
+  registry lookup, stop.
+
+- **Ports & Adapters for external systems only** — WhatsApp Cloud API,
+  Anthropic API, Redis, R2, Twilio/MSG91. Define the interface
+  (`MessagingProviderPort`, `AiProviderPort`, `CachePort`, `StoragePort`,
+  `OtpFallbackPort`) in `shared/ports/`, implement it in an
+  `adapters/` folder inside the owning module, inject via NestJS DI. Do not
+  apply this pattern to communication between your own internal modules —
+  that's plain service injection, not ports/adapters.
+
+- **Cross-module rule, the one to actually check in review:** a module may
+  inject and call another module's **service**, never another module's
+  **repository**. If `OutcomesModule` needs calendar data, it depends on
+  `CalendarService`, not `CalendarRepository`. This is what keeps the
+  gravity rule and "no business logic in a channel" real at the code
+  level, and it's what makes a future extraction (if the team ever needs
+  one) a deployment change rather than a redesign.
+
+- **Folder structure** — follow the layout in ADR 0003 exactly:
+  `modules/<bounded-context>/<context>.module.ts|.controller.ts|.service.ts|.repository.ts`,
+  plus `dto/`, `adapters/` (if the module owns an external integration),
+  and `.spec.ts` files colocated. `rbac/` holds guards/interceptors/
+  decorators used across modules; `shared/ports/` holds cross-module
+  external-system interfaces.
+
+- **`DocGenModule` is the one exception to "modular monolith"** — it's a
+  separately deployed Nest app for rendering-environment reasons (Devanagari
+  fonts, the docx landscape-orientation quirk), not because of scale. Don't
+  generalize this into "we're doing microservices" for any other module
+  without a similarly concrete technical reason.

@@ -7,14 +7,9 @@ documents kept in `/docs/specs/`:
 - `EduAI_Full_System_Report.docx` — product/system spec, pre-primary
 - `EduAI_Technical_System_Architecture_v3_1.docx` — engineering architecture, Nursery–Grade 5
 - `Calendar_Curriculum_Pacing_Spec_v1.docx` — calendar/pacing data model
-- `Data_Model_Identity_Addendum_v1.md` — **supersedes Architecture 3.1's
-  entity list**: identity/auth model (`identities` + `school_memberships`),
-  restored `curriculum_areas`/`rollup_domains`/`prompts` tables, and the
-  entities 3.1 left as a "Missing entities" placeholder (consents,
-  safeguarding escalations, substitute access, guardian_child_links)
 
 **Rule: when a task touches schema, RBAC, assessment, AI prompts, or document
-generation, read the relevant section of those docs (or
+generation, read the relevant section of those three docs (or
 `skills/eduai-architecture/SKILL.md`, which indexes them) before writing code.
 Do not guess at the data model from memory of this file alone — this file is
 a summary, not the spec.**
@@ -34,7 +29,7 @@ grade-conditional code branches. Underneath all of it sits one calendar per
 school — every planning horizon (yearly → monthly → weekly → daily), every
 pacing view, and every reporting trigger is calendar-derived; the calendar
 is the coordinate system the curriculum is plotted onto, not a peripheral
-feature (Calendar spec 1). Child is never a user. The child never touches a
+feature (Calendar spec §1). Child is never a user. The child never touches a
 screen.
 
 ## 2. Non-negotiable invariants
@@ -111,7 +106,7 @@ violates any of these should be rejected regardless of what else it does well.
     not "improve" these with an LLM call — that is a regression, not a
     feature. (The yearly-map generator that distributes curriculum sequence
     across a terminal's teaching days is likewise a deterministic placement
-    algorithm, not a generative one — see Calendar spec 3.)
+    algorithm, not a generative one — see Calendar spec §3.)
 14. **Safeguarding fast-path bypasses everything.** Any detected signal of
     possible harm routes immediately to class teacher + principal with
     mandatory human review, at every band, with no volume cap and no waiting
@@ -135,7 +130,7 @@ violates any of these should be rejected regardless of what else it does well.
 | File storage | Cloudflare R2 (photos, generated PDFs/docx) |
 | Cache | Upstash Redis, 30-day TTL, content-keyed |
 | Jobs | Inngest or Trigger.dev (durable, step-based) |
-| Web companion | Svelte SPA (Vite) + Tailwind CSS |
+| Web companion | Svelte SPA + Tailwind CSS |
 | Messaging/identity | Meta WhatsApp Cloud API (primary), Twilio Verify/MSG91 (SMS OTP fallback) |
 | AI — live/interactive | Claude Haiku (phonics, lesson gen, coach, remedial/methods-toolkit activities, outcome mapping) |
 | AI — narrative | Claude Sonnet (monthly/year-end parent reports, Annex 4 addendum) |
@@ -148,55 +143,69 @@ document-rendering service's base image; the docx library in use swaps
 page width/height on landscape orientation — apply the corrective transform
 as one shared utility, not per-template.
 
-## 4. Where things live (target repo layout)
+## 4. Code architecture — backend and frontend
+
+Full detail (folder structures, patterns, rules, code sketches) lives in
+`ARCHITECTURE.md` — a single, current-state document. It is not a decision
+history; if it and anything else disagree, it wins, and it gets updated in
+the same PR that changes the architecture.
+
+**Backend (NestJS):** modular layered monolith — one module per bounded
+context, Controller → Service → Repository. Four patterns apply
+everywhere they're relevant: Propose/Confirm split for AI-originated
+writes, explicit state machines for lifecycle objects (`remedial_plans`,
+`handover_pack`), config-driven strategy/registry lookups instead of band
+`if` branches, and Ports & Adapters scoped to external systems only
+(WhatsApp, Anthropic, Redis, R2, Twilio/MSG91). **The rule that matters
+most:** inject another module's service, never its repository.
+`DocGenModule` is the one exception to "monolith," isolated for
+rendering-environment reasons, not scale.
+
+**Frontend (Svelte SPA + Tailwind):** one app, role-based route groups
+(admin/teacher/parent), feature folders mirroring the backend's bounded
+contexts 1:1. Each feature owns its own API client (the only place that
+calls its backend module's endpoints), components, and local state.
+`shared/` holds genuine design-system primitives only. Route-group role
+checks are enforced server-side in `load`, never just hidden nav — same
+discipline as the backend's guards. The frontend is never the authority
+for access control; it reflects backend-enforced scope, it doesn't
+implement it.
+
+## 5. Where things live (target repo layout)
 
 ```
-/apps/api            core API service (NestJS)
-/apps/web             Svelte SPA web companion + parent portal (Vite, Tailwind)
+/apps/api            core API service (NestJS) — modules/ per bounded
+                       context. See ARCHITECTURE.md Part 1.
+/apps/web             Svelte SPA + Tailwind web companion — one app, role-based route
+                       groups (admin/teacher/parent), feature folders
+                       mirroring backend modules. See ARCHITECTURE.md Part 2.
 /apps/docgen           deterministic document-rendering service (isolated —
                        needs fonts-noto-core + landscape fix, Section 6.2)
 /apps/jobs             Inngest/Trigger.dev workflow functions
 /packages/db          Supabase schema, migrations, RLS policies — includes
                        the calendar tables (school_calendars, terminals,
                        calendar_closures, yearly_map, map_slices,
-                       lesson_progress; Calendar spec 6) alongside the band
+                       lesson_progress; Calendar spec §6) alongside the band
                        config tables. Same package, same migration history —
                        the calendar is foundational schema, not a bolt-on.
 /packages/ai          prompt templates keyed by (feature, band), orchestration
-/docs/specs           the source docs (docx read-only reference) + the
-                       data-model/identity addendum (markdown, maintained)
+/docs/specs           the three source docs (read-only reference)
 /skills/eduai-architecture/SKILL.md   deep reference index for Claude Code
 ```
 
-## 5. Working conventions for Claude Code in this repo
+## 6. Working conventions for Claude Code in this repo
 
-- Identity & authorization: web login is username + password (primary),
-  with phone + OTP (WhatsApp primary, SMS fallback) as the secondary web
-  option, the recovery path, and the WhatsApp channel's inherent identity.
-  Both credential paths resolve to the same `identities` row; tenancy lives
-  in `school_memberships` (identity × school × member_type), and
-  authorization always resolves membership (tenant check first) → scoped
-  role (`teacher_sections` for teachers, `guardian_child_links` for
-  guardians, member_type for admins). Never authorize from a flat role
-  column, and never give the child a login. See the Data Model & Identity
-  Addendum 2.
-- Pre-primary taxonomy is two-layer: milestones/outcomes tag against the 11
-  Curriculum 2077 skill areas (`curriculum_areas`, system of record), which
-  roll up via a crosswalk to the 6 parent-facing domains (`rollup_domains`).
-  Teachers/admins may see all 11 areas; parents and principals see the 6
-  domains. Don't overload `subjects` to fake this, and don't compute the
-  rollup in report code — it's a data crosswalk.
 - When touching `student_outcomes`, `remedial_plans`, or any aggregate query:
-  read Architecture 4 and 5.3 first, and confirm the CI lint / RLS test
+  read Architecture §4 and §5.3 first, and confirm the CI lint / RLS test
   exists for the new query before considering the task done.
 - When adding a new band or grade config: follow the worked example in
-  Architecture 2.4 — new rows only, no new code path. If you find yourself
+  Architecture §2.4 — new rows only, no new code path. If you find yourself
   writing a grade-number conditional, stop and push the distinction into a
   `bands` row instead.
 - When writing an AI prompt for a new feature: look up (or add) a
   `(feature_id, band_id)` prompt template row rather than inlining band logic
   into a JS/TS string. See `/prompts/ai-prompt-templates.md` for the current
-  starter set and the output-constraint checklist (Architecture 7.4).
+  starter set and the output-constraint checklist (Architecture §7.4).
 - When generating a document: confirm it's implemented as a deterministic
   render over live rows (Section 6.1's table says which documents are
   deterministic vs AI-drafted-then-approved) — don't reach for an LLM call by
@@ -208,9 +217,9 @@ as one shared utility, not per-template.
   generated artifacts — do not let it leak into anything parent- or
   school-facing without flagging it.
 
-## 6. Known open items (don't silently resolve these — surface them)
+## 7. Known open items (don't silently resolve these — surface them)
 
-From System Report Part X and Architecture 13.2:
+From System Report Part X and Architecture §13.2:
 - The 138-milestone pre-primary bank needs trainer/ECE-specialist review.
 - Grades 4–5 outcomes bank is unresolved (Grades 1–3 is resolved).
 - Nepali/code-switched voice transcription is a pilot go/no-go, not a given.

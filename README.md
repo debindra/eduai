@@ -10,7 +10,7 @@ and compliance documents rendered from live data.
 |---|---|
 | [`CLAUDE.md`](./CLAUDE.md) | Compressed invariants, stack, repo layout, working conventions |
 | [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) | Phased build plan (Phase 0 → launch) |
-| [`docs/specs/Data_Model_Identity_Addendum_v1.md`](./docs/specs/Data_Model_Identity_Addendum_v1.md) | Authoritative entity list + identity/auth model (supersedes Architecture §3.1) |
+| [`docs/specs/Data_Model_Identity_Addendum_v1.md`](./docs/specs/Data_Model_Identity_Addendum_v1.md) | Authoritative entity list + identity/auth model (supersedes Architecture 3.1) |
 
 ## Source specs (`docs/specs/`)
 
