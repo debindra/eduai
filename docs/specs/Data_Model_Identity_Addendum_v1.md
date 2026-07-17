@@ -1,11 +1,11 @@
 # Data Model & Identity Addendum v1
 
-**Status:** supersedes and completes §3.1 ("Entity relationship summary") of
+**Status:** supersedes and completes 3.1 ("Entity relationship summary") of
 `EduAI_Technical_System_Architecture_v3_1.docx`. That section ends with a
 dangling "Missing entities" placeholder — this document fills it. The docx
 itself is kept as read-only reference; where the two disagree, this addendum
 wins for the entity list, and the docx remains authoritative for everything
-else (§3.2 exclusions, §4 workflows, §5 RBAC narrative, etc.).
+else (3.2 exclusions, 4 workflows, 5 RBAC narrative, etc.).
 
 **Why it exists:** two architecture generations drifted apart. The older
 `System_Architecture_v1.0` / System Report v3.2 lineage had `users`,
@@ -19,14 +19,14 @@ This addendum reconciles both into one list.
 
 | v1.0 table | Current resolution |
 |---|---|
-| `users` (phone, role, school_id) | **Replaced** by `identities` + `school_memberships` (§2 below). No flat role enum; authorization comes from membership + scoped role. |
+| `users` (phone, role, school_id) | **Replaced** by `identities` + `school_memberships` (2 below). No flat role enum; authorization comes from membership + scoped role. |
 | `students` | `child` (never a login identity) |
 | `levels` | Absorbed into `section.grade` + `bands`; a level is still data, not code |
-| `curriculum_areas` | **Restored** — kept as a first-class table (§3) |
-| `rollup_domains` | **Restored** — kept, with an area→domain crosswalk (§3) |
+| `curriculum_areas` | **Restored** — kept as a first-class table (3) |
+| `rollup_domains` | **Restored** — kept, with an area→domain crosswalk (3) |
 | `milestones / outcomes` | `outcomes` (framework enum generalises the milestone bank) |
 | `student_milestones` | `student_outcomes` (attempt ENUM two-pass model) |
-| `prompts` | **Kept** — first-class table, keyed `(feature_id, band_id)` (§3) |
+| `prompts` | **Kept** — first-class table, keyed `(feature_id, band_id)` (3) |
 | `logs` | Split: `audit_log`, `out_of_segment_query_log`, per-ID delivery logs on `message_log` |
 
 ## 2. Identity & authentication model
@@ -72,13 +72,13 @@ user — no account, no login, no screen.
 ## 3. Revised entity relationship summary
 
 Grouped by layer, in RLS evaluation order. Fields are illustrative, as in
-the original §3.1.
+the original 3.1.
 
 ### 3a. Identity & tenant
 
 | Entity | Key fields | Relationships / notes |
 |---|---|---|
-| `identities` | id, phone (unique), auth state, status | 1—N `school_memberships`. Auth only. |
+| `identities` | id, username (unique), password_hash, phone (unique, verified), auth state, status | 1—N `school_memberships`. Auth only. Web login = username + password primary; phone + OTP secondary. |
 | `schools` | id, name, region, tier, licensed_band_range, exit_status | Tenant boundary for all RLS. 1—N sections, memberships. |
 | `school_memberships` | id, identity_id, school_id, member_type, status | The tenant join. 1—1 actor profile by type. |
 | `teacher` | id, membership_id, profile, certification_status, adaptation_signal (internal only) | 1—N `teacher_sections`; 1—N `certification_progress`. |
@@ -91,14 +91,14 @@ the original §3.1.
 
 | Entity | Key fields | Relationships / notes |
 |---|---|---|
-| `bands` / `subjects` / `band_subjects` / `outcomes` / `grade_scales` | see Architecture §2.3 | Unchanged. |
+| `bands` / `subjects` / `band_subjects` / `outcomes` / `grade_scales` | see Architecture 2.3 | Unchanged. |
 | `curriculum_areas` | id, band_id, code, name_np, name_en | The 11 Curriculum 2077 skill areas at pre-primary; CDC subject/areas from Grade 1. System of record for outcome tagging and the cross-domain guard. |
 | `rollup_domains` | id, code, name_np, name_en | The 6 parent-facing domains. Teachers/admins may see all 11 areas; parents and principals see the 6 domains. |
 | `area_domain_crosswalk` | area_id, domain_id | The 11→6 rollup used by the year-end developmental report and every parent surface. Content is trainer/ECE-owned — seed structure only, never synthesize rows in code. |
 | `prompts` | id, feature_id, band_id, template, constraints_ref, version | Runtime source of truth for every AI prompt; `/prompts/ai-prompt-templates.md` is the human-readable seed. A new band's prompt is a new row, not a deploy. |
-| `feature_flags` | feature_id, band_id, school_id, enabled | The feature × band × school join from §2.2. |
+| `feature_flags` | feature_id, band_id, school_id, enabled | The feature × band × school join from 2.2. |
 | `section` | id, school_id, band_id, grade, name | Unchanged. |
-| Calendar block: `school_calendars`, `terminals`, `calendar_closures`, `yearly_map`, `map_slices` | see Calendar spec §6 | Same migration history as everything above; `teaching_days` is a derived view, never stored. Terminal = coverage/reporting boundary, never an exam. |
+| Calendar block: `school_calendars`, `terminals`, `calendar_closures`, `yearly_map`, `map_slices` | see Calendar spec 6 | Same migration history as everything above; `teaching_days` is a derived view, never stored. Terminal = coverage/reporting boundary, never an exam. |
 
 ### 3c. Pedagogy spine
 
@@ -109,8 +109,8 @@ the original §3.1.
 | `remedial_plans` | id, student_outcome_id, stage, status, activity_ref, reminder_job_id, re_assessment_outcome_id, escalation_reason | Unchanged. |
 | `portfolio_items` | id, child_id, band_span, item_type, storage_ref, added_by, added_at | Unchanged. |
 | `attendance_record` | id, child_id, date, status, recorded_by | **Changed:** `recorded_by` added — attendance is the class teacher's duty and the substitute's only write; provenance matters. |
-| `lesson_progress` | section_id, subject_id, map_slice_id, status, marked_at | From Calendar spec §6 — replaces the vague `lesson_plan / weekly_map / period_plan` row; the derived planning cascade reads `map_slices`, and "done" means "I taught this," never "they learned this." |
-| `certification_progress` | id, teacher_id, week, status | Was referenced in v3.1 §3.1 but never defined; now first-class. |
+| `lesson_progress` | section_id, subject_id, map_slice_id, status, marked_at | From Calendar spec 6 — replaces the vague `lesson_plan / weekly_map / period_plan` row; the derived planning cascade reads `map_slices`, and "done" means "I taught this," never "they learned this." |
+| `certification_progress` | id, teacher_id, week, status | Was referenced in v3.1 3.1 but never defined; now first-class. |
 
 ### 3d. Communication & documents
 
@@ -125,15 +125,15 @@ the original §3.1.
 | Entity | Key fields | Relationships / notes |
 |---|---|---|
 | `consents` | id, guardian_child_link_id, consent_type, granted_at, revoked_at | Guardians "give or withhold every consent" — now a row. Platform per-child access requires an audited session referencing a live consent. |
-| `safeguarding_escalations` | id, source_ref, detected_at, routed_to (class teacher + principal), reviewed_by, reviewed_at, resolution | Append-only. The fast-path (Architecture §10.3) bypasses every queue; this is its audit trail, separate from the trainer-review log. No volume cap. |
+| `safeguarding_escalations` | id, source_ref, detected_at, routed_to (class teacher + principal), reviewed_by, reviewed_at, resolution | Append-only. The fast-path (Architecture 10.3) bypasses every queue; this is its audit trail, separate from the trainer-review log. No volume cap. |
 | `handover_pack` | id, section_id, departing_teacher_id, incoming_teacher_id, snapshot | Unchanged; materialized snapshot, coach-chat structurally excluded. |
 | `inclusive_assistant_log` | id, outcome_id (anonymised child ref), stall_window or remedial_stage, action_taken, escalation_flag | Unchanged. |
 | `audit_log` | id, actor_identity_id, action, scope, timestamp, justification_ref | **Changed:** actor now references `identities`, so admin/trainer/platform actions have a real referent. Append-only. |
-| `out_of_segment_query_log` | id, school_id, requested_feature, requested_band, at | From §2.2 — the Phase-2 demand signal; wired from first deployment. |
+| `out_of_segment_query_log` | id, school_id, requested_feature, requested_band, at | From 2.2 — the Phase-2 demand signal; wired from first deployment. |
 
 ## 4. What this addendum deliberately does NOT change
 
-Every §3.2 exclusion stands: no personality/trait/risk-category fields on
+Every 3.2 exclusion stands: no personality/trait/risk-category fields on
 `child`; no numeric score at pre-primary; no rank-order query path; no
 teacher competence score. No exam/test-date entity anywhere. The new
 entities above (consents, safeguarding_escalations, substitute_access) exist

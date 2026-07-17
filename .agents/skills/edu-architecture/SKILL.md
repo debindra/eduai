@@ -9,7 +9,7 @@ Source of truth: four docs in `/docs/specs/` —
 `EduAI_Full_System_Report.docx` (product/pedagogy/legal grounding),
 `EduAI_Technical_System_Architecture_v3_1.docx` (engineering),
 `Calendar_Curriculum_Pacing_Spec_v1.docx` (calendar/pacing), and
-`Data_Model_Identity_Addendum_v1.md` (supersedes Architecture §3.1's entity
+`Data_Model_Identity_Addendum_v1.md` (supersedes Architecture 3.1's entity
 list: identity/auth model, `curriculum_areas`/`rollup_domains`/`prompts`
 tables, consents, safeguarding escalations, substitute access). This skill
 is an index into them, not a replacement — for anything load-bearing, open
@@ -35,7 +35,7 @@ personality, trait, risk-category, rank, teacher competence score), 3.3
 (RLS grains).
 
 **Who is a user / login / role question** → Data Model & Identity Addendum
-§2: `identities` (web login = username + password primary; phone + OTP as
+2: `identities` (web login = username + password primary; phone + OTP as
 secondary web option, recovery, and WhatsApp-channel identity) →
 `school_memberships` (tenant join, member_type) → scoped role
 (`teacher_sections`, `guardian_child_links`, member_type for admins).

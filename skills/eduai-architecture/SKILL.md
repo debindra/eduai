@@ -9,7 +9,7 @@ Source of truth: four docs in `/docs/specs/` —
 `EduAI_Full_System_Report.docx` (product/pedagogy/legal grounding),
 `EduAI_Technical_System_Architecture_v3_1.docx` (engineering),
 `Calendar_Curriculum_Pacing_Spec_v1.docx` (calendar/pacing), and
-`Data_Model_Identity_Addendum_v1.md` (supersedes Architecture §3.1's entity
+`Data_Model_Identity_Addendum_v1.md` (supersedes Architecture 3.1's entity
 list: identity/auth model, `curriculum_areas`/`rollup_domains`/`prompts`
 tables, consents, safeguarding escalations, substitute access). This skill
 is an index into them, not a replacement — for anything load-bearing, open
@@ -47,14 +47,14 @@ schema *must not* have — personality, trait, risk-category, rank, teacher
 competence score), 3.3 (RLS grains).
 
 **Who is a user / login / role question** → Data Model & Identity Addendum
-§2: `identities` (web login = username + password primary; phone + OTP is
+2: `identities` (web login = username + password primary; phone + OTP is
 the secondary web option, recovery path, and WhatsApp-channel identity —
 both resolve to the same row) → `school_memberships` (tenant join,
 member_type: teacher / admin / guardian / trainer_viewer) → scoped role
 (`teacher_sections` for teachers, `guardian_child_links` for guardians,
 member_type for admins). Never authorize from a flat role column; the child
 is never a user. Substitute access, consents, and safeguarding escalations
-are rows (addendum §3a/§3e), not conventions.
+are rows (addendum 3a/3e), not conventions.
 
 **Which area/domain does a milestone belong to** → the two-layer taxonomy:
 `curriculum_areas` (11 Curriculum 2077 skill areas, system of record; CDC

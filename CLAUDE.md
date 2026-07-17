@@ -7,10 +7,10 @@ documents kept in `/docs/specs/`:
 - `EduAI_Full_System_Report.docx` — product/system spec, pre-primary
 - `EduAI_Technical_System_Architecture_v3_1.docx` — engineering architecture, Nursery–Grade 5
 - `Calendar_Curriculum_Pacing_Spec_v1.docx` — calendar/pacing data model
-- `Data_Model_Identity_Addendum_v1.md` — **supersedes Architecture §3.1's
+- `Data_Model_Identity_Addendum_v1.md` — **supersedes Architecture 3.1's
   entity list**: identity/auth model (`identities` + `school_memberships`),
   restored `curriculum_areas`/`rollup_domains`/`prompts` tables, and the
-  entities §3.1 left as a "Missing entities" placeholder (consents,
+  entities 3.1 left as a "Missing entities" placeholder (consents,
   safeguarding escalations, substitute access, guardian_child_links)
 
 **Rule: when a task touches schema, RBAC, assessment, AI prompts, or document
@@ -179,7 +179,7 @@ as one shared utility, not per-template.
   role (`teacher_sections` for teachers, `guardian_child_links` for
   guardians, member_type for admins). Never authorize from a flat role
   column, and never give the child a login. See the Data Model & Identity
-  Addendum §2.
+  Addendum 2.
 - Pre-primary taxonomy is two-layer: milestones/outcomes tag against the 11
   Curriculum 2077 skill areas (`curriculum_areas`, system of record), which
   roll up via a crosswalk to the 6 parent-facing domains (`rollup_domains`).
