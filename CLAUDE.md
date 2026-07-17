@@ -135,7 +135,7 @@ violates any of these should be rejected regardless of what else it does well.
 | File storage | Cloudflare R2 (photos, generated PDFs/docx) |
 | Cache | Upstash Redis, 30-day TTL, content-keyed |
 | Jobs | Inngest or Trigger.dev (durable, step-based) |
-| Web companion | SvelteKit + Tailwind CSS |
+| Web companion | Svelte SPA (Vite) + Tailwind CSS |
 | Messaging/identity | Meta WhatsApp Cloud API (primary), Twilio Verify/MSG91 (SMS OTP fallback) |
 | AI — live/interactive | Claude Haiku (phonics, lesson gen, coach, remedial/methods-toolkit activities, outcome mapping) |
 | AI — narrative | Claude Sonnet (monthly/year-end parent reports, Annex 4 addendum) |
@@ -152,7 +152,7 @@ as one shared utility, not per-template.
 
 ```
 /apps/api            core API service (NestJS)
-/apps/web             SvelteKit web companion + parent portal
+/apps/web             Svelte SPA web companion + parent portal (Vite, Tailwind)
 /apps/docgen           deterministic document-rendering service (isolated —
                        needs fonts-noto-core + landscape fix, Section 6.2)
 /apps/jobs             Inngest/Trigger.dev workflow functions

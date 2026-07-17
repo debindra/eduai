@@ -16,6 +16,7 @@ dist/
 build/
 .output/
 .svelte-kit/
+apps/web/.svelte-kit/
 .vercel/
 coverage/
 

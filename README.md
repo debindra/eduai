@@ -22,7 +22,7 @@ and compliance documents rendered from live data.
 
 ```
 apps/api      NestJS core API
-apps/web      SvelteKit web companion + parent portal
+apps/web      Svelte SPA web companion + parent portal (Vite, Tailwind)
 apps/docgen   Deterministic document rendering
 apps/jobs     Inngest / Trigger.dev workflows
 packages/db   Supabase schema, migrations, RLS
@@ -45,7 +45,7 @@ pnpm db:status      # print URL and keys → copy into .env
 
 # Individual apps
 pnpm --filter @eduai/api dev      # http://localhost:3000/health
-pnpm --filter @eduai/web dev      # http://localhost:5173, /health
+pnpm --filter @eduai/web dev      # http://localhost:5173 (SPA, client-side routing)
 pnpm --filter @eduai/docgen dev   # http://localhost:3002/health
 pnpm --filter @eduai/jobs dev     # http://localhost:3003/health
 ```
