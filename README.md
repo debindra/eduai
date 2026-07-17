@@ -31,6 +31,22 @@ packages/ai   Prompt lookup and output validators
 
 Monorepo: `pnpm-workspace.yaml`. Agent rules: `.cursor/rules/` and `skills/eduai-architecture/SKILL.md`.
 
+## Development
+
+```bash
+pnpm install
+pnpm build          # build all packages
+pnpm dev            # run all apps in parallel (watch mode)
+
+# Individual apps
+pnpm --filter @eduai/api dev      # http://localhost:3000/health
+pnpm --filter @eduai/web dev      # http://localhost:5173, /health
+pnpm --filter @eduai/docgen dev   # http://localhost:3002/health
+pnpm --filter @eduai/jobs dev     # http://localhost:3003/health
+```
+
+Copy `.env.example` to `.env` before local configuration (Step 2: Supabase).
+
 ## Auth (school-side actors)
 
 - **Web (primary):** username + password → `identities`
