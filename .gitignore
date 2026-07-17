@@ -30,6 +30,8 @@ pnpm-debug.log*
 # Supabase local
 supabase/.branches/
 supabase/.temp/
+packages/db/supabase/.branches/
+packages/db/supabase/.temp/
 
 # IDE (optional local overrides)
 .idea/
