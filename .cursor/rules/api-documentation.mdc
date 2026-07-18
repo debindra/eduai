@@ -1,0 +1,45 @@
+---
+description: API documentation — Swagger/OpenAPI decoration conventions for every NestJS endpoint
+globs: ["apps/api/**"]
+alwaysApply: false
+---
+
+Reference: `ARCHITECTURE.md` Part 1, "API documentation: Swagger/OpenAPI."
+The exported OpenAPI JSON (`/api/docs-json`) is the actual contract — it's
+what frontend types are generated from (`openapi-typescript` →
+`apps/web/src/lib/shared/api/generated-types.ts`). Undecorated or
+partially decorated endpoints silently break that pipeline, so this isn't
+optional polish.
+
+- **Every controller gets `@ApiTags(<boundedContext>)`** — one tag per
+  module, matching its folder name.
+
+- **Every controller method gets `@ApiOperation({ summary, description })`
+  and `@ApiResponse()` for each real response shape**, success and error.
+  Don't ship an endpoint with no `@ApiOperation`.
+
+- **Every request/response DTO is a decorated class** —
+  `@ApiProperty()`/`@ApiPropertyOptional()` on every field. Never a plain
+  `interface` or an inferred return type at a controller boundary; Swagger
+  can't generate a schema from either, and a missing schema silently
+  produces a wrong/empty type on the frontend side of the generated-types
+  pipeline.
+
+- **State the Propose/Confirm split in the operation description, not just
+  the method name.** E.g. `proposeOutcome`'s description: "Returns a
+  candidate only — never writes. Call confirmOutcome to persist." Anyone
+  (human or agent) integrating against this endpoint should be able to
+  tell from the docs alone that it doesn't write.
+
+- **State guard/scope requirements in the operation description.**
+  `@UseGuards(SectionSubjectWriteGuard)` doesn't surface in the generated
+  schema — write it in words: which `teacher_sections` grain is required
+  to call this endpoint successfully.
+
+- **A module isn't done until its controller + DTOs are fully decorated.**
+  Treat this the same as a missing mapper-guard test or missing RLS
+  policy — a PR gap to flag, not a follow-up ticket.
+
+- **Frontend code must import types from `generated-types.ts`, never
+  redeclare a backend response shape by hand** — that's the other half of
+  this contract; see `.cursor/rules/60-frontend-architecture.mdc` rule 7.

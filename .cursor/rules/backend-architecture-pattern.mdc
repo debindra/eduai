@@ -59,6 +59,12 @@ Four specific patterns are adopted; apply them, don't improvise variations.
   decorators used across modules; `shared/ports/` holds cross-module
   external-system interfaces.
 
+- **A module/feature isn't done without tests.** Colocated Vitest
+  `*.spec.ts` for changed services, guards, and interceptors is part of
+  definition of done — same standing as Swagger decoration. Run
+  `pnpm --filter @eduai/api test` before claiming done. See
+  `.cursor/rules/testing.mdc` and `ARCHITECTURE.md` Part 3.
+
 - **`DocGenModule` is the one exception to "modular monolith"** — it's a
   separately deployed Nest app for rendering-environment reasons (Devanagari
   fonts, the docx landscape-orientation quirk), not because of scale. Don't

@@ -54,8 +54,8 @@ Copy `.env.example` to `.env` and fill keys from `pnpm db:status`. See `packages
 
 ## Auth (school-side actors)
 
-- **Web (primary):** username + password → `identities`
-- **Web (secondary):** phone + OTP (WhatsApp primary, SMS fallback)
+- **Web (primary):** username (email or mobile) + password via Supabase Auth → `identities.auth_user_id`
+- **Phone OTP:** recovery + 2FA only (WhatsApp primary, SMS fallback) — never web login
 - **WhatsApp channel:** inbound messages identified by verified phone (same identity row)
 
-Authorization: `school_memberships` (tenant) → scoped role (`teacher_sections`, guardian links, admin membership). The child is never a login user.
+Authorization: `school_memberships` (tenant) → scoped role (`teacher_sections`, guardian links, `member_type = admin`). Guardians are WhatsApp-only (no web password). The child is never a login user.

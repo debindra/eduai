@@ -6,11 +6,19 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "generate:api-types": "pnpm --filter @eduai/web generate:api-types",
+    "check:rank-order": "node scripts/ci/check-rank-order.mjs",
+    "test:rank-order-check": "node scripts/ci/test-rank-order-check.mjs",
+    "check:rls-coverage": "node scripts/ci/check-rls-coverage.mjs",
     "db:start": "pnpm --filter @eduai/db db:start",
     "db:stop": "pnpm --filter @eduai/db db:stop",
     "db:reset": "pnpm --filter @eduai/db db:reset",
     "db:status": "pnpm --filter @eduai/db db:status",
-    "db:types": "pnpm --filter @eduai/db db:types"
+    "db:types": "pnpm --filter @eduai/db db:types",
+    "seed:dev-auth": "node scripts/seed-dev-auth.mjs",
+    "verify:seed": "node scripts/verify-seed.mjs",
+    "test:e2e:web": "pnpm --filter @eduai/web test:e2e"
   },
   "engines": {
     "node": ">=18"
