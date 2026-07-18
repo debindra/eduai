@@ -37,7 +37,14 @@
     {#each children as child}
       <li class="flex items-center justify-between text-sm">
         <span>{child.name}</span>
-        <select class="rounded border px-2 py-1" bind:value={statusByChild[child.id]} aria-label={`Status ${child.name}`}>
+        <select
+          class="rounded border px-2 py-1"
+          value={statusByChild[child.id]}
+          onchange={(event) => {
+            statusByChild[child.id] = (event.currentTarget as HTMLSelectElement).value;
+          }}
+          aria-label={`Status ${child.name}`}
+        >
           <option value="present">present</option>
           <option value="absent">absent</option>
           <option value="late">late</option>
