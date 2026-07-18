@@ -45,7 +45,7 @@ column. Full invite/recovery flows: `ARCHITECTURE.md` Part 1,
   has a handled re-binding flow).
 - **Guardians:** WhatsApp handshake only in this phase — no web password /
   invite path. Parent portal access remains an open product item
-  (`CLAUDE.md` §7); do not invent a guardian login here.
+  (`CLAUDE.md` 7); do not invent a guardian login here.
 
 A teacher who uses WhatsApp and the web resolves to the same `identities`
 row, so a milestone set on WhatsApp still shows as already-filled on the
