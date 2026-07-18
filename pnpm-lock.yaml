@@ -20,6 +20,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@eduai/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@eduai/db':
         specifier: workspace:*
         version: link:../../packages/db

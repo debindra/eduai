@@ -67,4 +67,31 @@ describe('LoginPage', () => {
       expect(mockPush).toHaveBeenCalledWith('/admin/calendar');
     });
   });
+
+  it('redirects teacher to sweep after successful login', async () => {
+    mockLogin.mockResolvedValue({
+      accessToken: 'token-1',
+      refreshToken: 'refresh-1',
+      expiresIn: 3600,
+      identity: {
+        id: 'identity-2',
+        email: 'teacher@schoolx.dev',
+        phone: null,
+        displayName: 'Teacher',
+      },
+      memberType: 'teacher',
+      schoolId: 'school-1',
+    });
+    const user = userEvent.setup();
+
+    render(LoginPage);
+
+    await user.type(screen.getByLabelText('Username'), 'teacher@schoolx.dev');
+    await user.type(screen.getByLabelText('Password'), 'DevPassword123!');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/teacher/sweep');
+    });
+  });
 });

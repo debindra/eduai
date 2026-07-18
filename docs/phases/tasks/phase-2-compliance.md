@@ -1,6 +1,6 @@
 # Phase 2 — Pre-primary compliance + school/parent layers (tasks)
 
-Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md) § Phase 2.
+Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md)  Phase 2.
 Status: [`../status/phase-2.md`](../status/phase-2.md).
 
 **Exit criteria:** full compliance cycle on demand for a pilot section;

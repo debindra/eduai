@@ -1,6 +1,6 @@
 # Phase 5 — Cost, caching, career layer (tasks)
 
-Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md) § Phase 5.
+Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md)  Phase 5.
 Status: [`../status/phase-5.md`](../status/phase-5.md).
 
 **Exit criteria:** infrastructure cost validated against real pilot usage

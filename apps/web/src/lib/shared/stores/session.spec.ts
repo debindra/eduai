@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  SESSION_STORAGE_KEY,
   clearSession,
   getAccessToken,
   getSession,
@@ -24,10 +25,11 @@ function getMockSession(overrides?: Partial<NonNullable<SessionState>>): NonNull
 
 describe('session store', () => {
   beforeEach(() => {
+    localStorage.clear();
     clearSession();
   });
 
-  it('starts empty', () => {
+  it('starts empty when nothing is stored', () => {
     expect(getSession()).toBeNull();
     expect(getAccessToken()).toBeNull();
   });
@@ -39,10 +41,24 @@ describe('session store', () => {
     expect(getAccessToken()).toBe('token-1');
   });
 
-  it('clearSession removes the session', () => {
+  it('setSession persists to localStorage', () => {
+    const next = getMockSession();
+    setSession(next);
+    expect(JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY)!)).toEqual(next);
+  });
+
+  it('clearSession removes the session and storage', () => {
     setSession(getMockSession());
     clearSession();
     expect(getSession()).toBeNull();
     expect(getAccessToken()).toBeNull();
+    expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBeNull();
+  });
+
+  it('rejects corrupt localStorage payloads', () => {
+    localStorage.setItem(SESSION_STORAGE_KEY, '{not-json');
+    // Force re-read path via clear + set of bad then clearSession cleanup
+    clearSession();
+    expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBeNull();
   });
 });

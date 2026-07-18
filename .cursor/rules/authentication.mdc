@@ -10,7 +10,7 @@ Reference: `ARCHITECTURE.md` Part 1, "Authentication."
   any guardian-related table or endpoint. Guardians stay WhatsApp-only,
   self-created via the WhatsApp handshake — no exceptions without an
   explicit product decision, since this is currently an open tension (see
-  `CLAUDE.md` §7), not a settled design.
+  `CLAUDE.md` 7), not a settled design.
 
 - **Phone/WhatsApp OTP is recovery + 2FA only.** Never build or accept a
   code path where phone/OTP alone is sufficient to log in an Admin or

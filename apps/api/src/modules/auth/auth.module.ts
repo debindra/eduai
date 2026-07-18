@@ -28,6 +28,7 @@ import { SupabaseAuthGuard } from './guards/supabase-auth.guard';
     RequireRoleGuard,
     RequireSchoolAdminGuard,
     AUTH_PROVIDER_PORT,
+    MESSAGING_PROVIDER_PORT,
   ],
 })
 export class AuthModule {}

@@ -1,6 +1,6 @@
 # Phase 6 — Pilot hardening, security review, launch prep (tasks)
 
-Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md) § Phase 6.
+Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md)  Phase 6.
 Status: [`../status/phase-6.md`](../status/phase-6.md).
 
 **Exit criteria:** real pilot school runs a full term with no manual

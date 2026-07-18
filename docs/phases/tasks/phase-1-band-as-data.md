@@ -1,6 +1,6 @@
 # Phase 1 — Band-as-data core + pre-primary happy path (tasks)
 
-Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md) § Phase 1.
+Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md) Phase 1.
 Status: [`../status/phase-1.md`](../status/phase-1.md).
 
 **Exit criteria:** pilot class runs attendance → daily lesson → milestone

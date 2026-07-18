@@ -2,7 +2,7 @@
 -- Web login: username (email or mobile) + password via auth.users.
 -- Phone/WhatsApp OTP: recovery + 2FA + WhatsApp-channel identity only — never web login.
 -- Guardians: profile + guardian_child_links only; no invite/auth_user_id path in this phase.
--- See ARCHITECTURE.md Part 1 "Authentication" and Data_Model_Identity_Addendum_v1.md §2.
+-- See ARCHITECTURE.md Part 1 "Authentication" and Data_Model_Identity_Addendum_v1.md 2.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
