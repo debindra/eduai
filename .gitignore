@@ -27,6 +27,9 @@ pnpm-debug.log*
 .turbo/
 .cache/
 *.tsbuildinfo
+apps/web/playwright-report/
+apps/web/test-results/
+apps/web/e2e/.api-e2e.log
 
 # Supabase local
 supabase/.branches/

@@ -1,15 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { link } from 'svelte-spa-router';
-  import { fetchApiHealth, getApiBaseUrl, type ApiHealthResponse } from '../lib/api';
+  import { link } from '@keenmate/svelte-spa-router';
+  import { getApiBaseUrl } from '../lib/shared/api/client';
+  import { getHealth, type HealthResponse } from '../features/health/api';
 
   let loading = $state(true);
   let error = $state<string | null>(null);
-  let health = $state<ApiHealthResponse | null>(null);
+  let health = $state<HealthResponse | null>(null);
 
   onMount(async () => {
     try {
-      health = await fetchApiHealth();
+      health = await getHealth();
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unknown error';
     } finally {

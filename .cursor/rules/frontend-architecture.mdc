@@ -1,0 +1,70 @@
+---
+description: Frontend architecture pattern — Svelte 5 SPA, feature folders mirroring backend modules, role-gated routes
+globs: ["apps/web/**"]
+alwaysApply: false
+---
+
+Reference: `ARCHITECTURE.md` Part 2. One Svelte 5 SPA (Vite, no
+SvelteKit — no SSR, no file-based routing, no `load` functions) serves
+admin, teacher, and parent — never separate apps. Router:
+`@keenmate/svelte-spa-router`. Feature folders mirror backend bounded
+contexts 1:1, the same vertical-slice philosophy as the backend, not a
+type-based split (`components/`, `stores/`, `utils/` as flat catch-alls).
+
+- **A feature's `api.ts` is the only place that calls its corresponding
+  backend module's endpoints.** If `outcomes` needs calendar data, import
+  a function from `features/calendar/api.ts` — don't issue a raw fetch to
+  `/calendar/...` from inside `outcomes/`. This is the frontend equivalent
+  of "inject a service, never a repository."
+
+- **Route access is gated through the router's permission system**
+  (`router/permissions.ts` — `configurePermissions`/`checkPermissions`/
+  `onUnauthorized`, driven by `lib/shared/stores/session.ts`), with
+  required-role metadata declared per route in `router/routes.ts`. Don't
+  hand-roll `if (role === ...)` checks inside individual page components —
+  one place decides who can reach a route.
+
+- **This is client-side enforcement only, and code/comments should say so
+  plainly.** There's no server render step — nothing gates a route except
+  JavaScript already in the browser. The router's permission check is UX,
+  not a security boundary. Every actual enforcement (two-grain scope,
+  gravity rule, mapper guards) is backend-authoritative; the API must
+  reject an unauthorized request regardless of what the browser rendered.
+  Don't write frontend permission logic that implies it's doing security
+  work — it isn't.
+
+- **`lib/shared/` is for genuine design-system primitives only** (Button,
+  Card, Modal, Badge, layout shell). A domain-specific component
+  (`MilestoneSweepGrid`, `PacingBadge`) stays in its owning feature's
+  `components/` folder even if it looks reusable — it doesn't move to
+  `shared/` on that basis alone.
+
+- **All data fetching is client-side — no `load` functions exist in this
+  stack.** Call a feature's `api.ts` from `onMount` or a reactive
+  `$effect`; hold results in that feature's rune-based store
+  (`$state`). No global state library, no query library pre-adopted at
+  this scale.
+
+- **The frontend is never the authority for access control.** It may
+  disable/hide UI for a role that shouldn't use it, for UX — but every
+  actual enforcement is backend-authoritative. Don't write client-side
+  permission logic that duplicates (and could drift from) a backend guard.
+
+- **`routes/parent/` is view-only plus explicit confirm actions** (reply to
+  a message, toggle photo consent) — don't add authoring/editing flows
+  there beyond what the spec explicitly grants parents.
+
+- **Type drift:** import from `lib/shared/api/generated-types.ts` —
+  generated from the backend's OpenAPI spec via `openapi-typescript`, see
+  `.cursor/rules/70-api-documentation.mdc` — rather than hand-declaring a
+  backend response shape in a feature's `types.ts`. A feature's
+  `types.ts` holds only types genuinely local to it (view-model shapes,
+  form state), not redeclared API response shapes.
+
+- **Testing is part of definition of done.** Behavior changes in a feature
+  need Vitest coverage: unit tests for pure helpers/stores, component tests
+  for interactive UI with branching. Mock the feature's `api.ts` — never
+  hit the real Nest API from unit/component tests. Run
+  `pnpm --filter @eduai/web test` before claiming done. See
+  `.cursor/rules/testing.mdc`, `ARCHITECTURE.md` Part 3, and
+  `skills/testing-patterns/SKILL.md`.

@@ -1,0 +1,124 @@
+---
+description: Git workflow rules
+alwaysApply: true
+---
+
+# Git Standards
+
+Every logical task should produce ONE logical commit.
+
+Never mix unrelated work.
+
+---
+
+# Conventional Commits
+
+Use:
+
+feat(scope):
+fix(scope):
+refactor(scope):
+docs(scope):
+test(scope):
+perf(scope):
+style(scope):
+ci(scope):
+build(scope):
+chore(scope):
+revert(scope):
+
+---
+
+# Commit Message
+
+Format
+
+type(scope): short summary
+
+Example
+
+feat(authentication): implement refresh tokens
+
+---
+
+# Commit Checklist
+
+Before suggesting a commit verify:
+
+✓ Code complete
+
+✓ No TODOs
+
+✓ No debug code
+
+✓ No commented code
+
+✓ Formatting complete
+
+✓ Lint passes
+
+✓ Tests present for touched behavioral layers (see `.cursor/rules/testing.mdc`)
+
+✓ Relevant `pnpm --filter … test` run and green (do not claim pass without running)
+
+---
+
+# Output
+
+Always finish with:
+
+## Git Commit
+
+Commit:
+
+feat(auth): implement JWT login
+
+Files Modified:
+
+-
+
+Summary:
+
+-
+
+Testing:
+
+-
+
+Breaking Changes:
+
+Yes/No
+
+Migration Required:
+
+Yes/No
+
+---
+
+# Pull Requests
+
+Summarize:
+
+Purpose
+
+Changes
+
+Testing
+
+Risks
+
+Rollback considerations
+
+---
+
+# Atomic Changes
+
+One feature
+
+One bug
+
+One refactor
+
+One commit
+
+Never bundle unrelated work.

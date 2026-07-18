@@ -1,12 +1,9 @@
 <script lang="ts">
-  import Router from 'svelte-spa-router';
-  import Home from './pages/Home.svelte';
-  import Health from './pages/Health.svelte';
+  import Router from '@keenmate/svelte-spa-router';
+  import { routes } from './router/routes';
+  import { initRouterPermissions } from './router/permissions';
 
-  const routes = {
-    '/': Home,
-    '/health': Health,
-  };
+  initRouterPermissions();
 </script>
 
 <Router {routes} />

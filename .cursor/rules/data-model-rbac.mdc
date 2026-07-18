@@ -9,13 +9,17 @@ model), 5 (RBAC), and `/docs/specs/Data_Model_Identity_Addendum_v1.md`
 (supersedes Architecture 3.1's entity list — identity model + previously
 missing entities).
 
-- Identity layer: `identities` (global login: username + password_hash for
-  web primary, verified phone + OTP as secondary web login / recovery /
-  WhatsApp-channel identity) → `school_memberships` (identity × school ×
-  member_type: teacher / admin / guardian / trainer_viewer) → actor profile
-  tables. Both credential paths resolve to the same identity row.
-  Authorization is always membership (tenant check first) + scoped role —
-  never a flat role column. The child never has an identity row.
+- Identity layer: `identities` (Supabase Auth link via `auth_user_id`;
+  real email/phone; invite/`account_status` — passwords live in
+  `auth.users`, never in Postgres) → `school_memberships` (identity ×
+  school × member_type: teacher / admin / guardian / trainer_viewer) →
+  actor profile tables. Web login is username (email or mobile) + password
+  via Supabase Auth; phone OTP is recovery/2FA and WhatsApp-channel
+  identity only — never web login. Authorization is always membership
+  (tenant check first) + scoped role — admin gate is
+  `member_type = 'admin'`, not a flat role on `teachers`. The child never
+  has an identity row; guardians have no web invite/password path in this
+  phase.
 - Guardians link to children via `guardian_child_links` (join table, up to
   three per child, created by the WhatsApp handshake) — never an array
   column on `child`.

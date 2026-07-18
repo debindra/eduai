@@ -29,7 +29,7 @@ grade-conditional code branches. Underneath all of it sits one calendar per
 school — every planning horizon (yearly → monthly → weekly → daily), every
 pacing view, and every reporting trigger is calendar-derived; the calendar
 is the coordinate system the curriculum is plotted onto, not a peripheral
-feature (Calendar spec §1). Child is never a user. The child never touches a
+feature (Calendar spec 1). Child is never a user. The child never touches a
 screen.
 
 ## 2. Non-negotiable invariants
@@ -106,7 +106,7 @@ violates any of these should be rejected regardless of what else it does well.
     not "improve" these with an LLM call — that is a regression, not a
     feature. (The yearly-map generator that distributes curriculum sequence
     across a terminal's teaching days is likewise a deterministic placement
-    algorithm, not a generative one — see Calendar spec §3.)
+    algorithm, not a generative one — see Calendar spec 3.)
 14. **Safeguarding fast-path bypasses everything.** Any detected signal of
     possible harm routes immediately to class teacher + principal with
     mandatory human review, at every band, with no volume cap and no waiting
@@ -130,7 +130,7 @@ violates any of these should be rejected regardless of what else it does well.
 | File storage | Cloudflare R2 (photos, generated PDFs/docx) |
 | Cache | Upstash Redis, 30-day TTL, content-keyed |
 | Jobs | Inngest or Trigger.dev (durable, step-based) |
-| Web companion | Svelte SPA + Tailwind CSS |
+| Web companion | Svelte 5 SPA (Vite) + Tailwind CSS |
 | Messaging/identity | Meta WhatsApp Cloud API (primary), Twilio Verify/MSG91 (SMS OTP fallback) |
 | AI — live/interactive | Claude Haiku (phonics, lesson gen, coach, remedial/methods-toolkit activities, outcome mapping) |
 | AI — narrative | Claude Sonnet (monthly/year-end parent reports, Annex 4 addendum) |
@@ -161,23 +161,48 @@ most:** inject another module's service, never its repository.
 `DocGenModule` is the one exception to "monolith," isolated for
 rendering-environment reasons, not scale.
 
-**Frontend (Svelte SPA + Tailwind):** one app, role-based route groups
-(admin/teacher/parent), feature folders mirroring the backend's bounded
-contexts 1:1. Each feature owns its own API client (the only place that
-calls its backend module's endpoints), components, and local state.
-`shared/` holds genuine design-system primitives only. Route-group role
-checks are enforced server-side in `load`, never just hidden nav — same
-discipline as the backend's guards. The frontend is never the authority
-for access control; it reflects backend-enforced scope, it doesn't
-implement it.
+**API documentation:** `@nestjs/swagger`, wired at bootstrap, spec exported
+as JSON at `/api/docs-json`. Every controller/DTO fully decorated
+(`@ApiTags`, `@ApiOperation`, `@ApiResponse`, `@ApiProperty`) — this is a
+module's definition of done, not optional polish, because the exported
+spec is what frontend types are generated from
+(`apps/web/src/lib/shared/api/generated-types.ts` via
+`openapi-typescript`), closing the type-drift gap between backend and
+frontend. Full conventions: `ARCHITECTURE.md` Part 1, enforced via
+`.cursor/rules/70-api-documentation.mdc`.
+
+**Authentication:** Admin and Teacher log into the web app with username
+(email or mobile) + password via Supabase Auth — mobile-only accounts get
+a synthetic email mapping internally, never shown to the user. App rows:
+`identities` (`auth_user_id` → `auth.users`) → `school_memberships` →
+teacher/admin profiles; passwords never stored in Postgres. Phone/
+WhatsApp OTP is recovery + 2FA only, never the sign-in mechanism. No
+self-registration — an admin provisions an identity + membership first
+(`account_status: invited`), the person accepts an invite (email link, or
+a WhatsApp/SMS-delivered token for mobile-only accounts) to set a
+password. Guardians (parents) are entirely unaffected — WhatsApp-only, no
+web account, no password, per the confirmed scope. Full design:
+`ARCHITECTURE.md` Part 1, "Authentication."
+
+**Frontend (Svelte 5 SPA, Vite + Tailwind):** one app, role-gated routes
+(admin/teacher/parent) via `@keenmate/svelte-spa-router`, feature folders
+mirroring the backend's bounded contexts 1:1. Each feature owns its own API
+client (the only place that calls its backend module's endpoints),
+components, and local state. `shared/` holds genuine design-system
+primitives only. No SSR, no file-based routing, no `load` functions —
+everything is client-side, including data fetching (a feature's `api.ts`
+called from `onMount`/`$effect`). Route permission checks are therefore
+**UX only, never a security boundary** — there's no server render step to
+gate anything on. The frontend is never the authority for access control;
+it reflects backend-enforced scope, it doesn't implement it.
 
 ## 5. Where things live (target repo layout)
 
 ```
 /apps/api            core API service (NestJS) — modules/ per bounded
                        context. See ARCHITECTURE.md Part 1.
-/apps/web             Svelte SPA + Tailwind web companion — one app, role-based route
-                       groups (admin/teacher/parent), feature folders
+/apps/web             Svelte 5 SPA (Vite) — one app, role-gated routes via
+                       @keenmate/svelte-spa-router, feature folders
                        mirroring backend modules. See ARCHITECTURE.md Part 2.
 /apps/docgen           deterministic document-rendering service (isolated —
                        needs fonts-noto-core + landscape fix, Section 6.2)
@@ -185,27 +210,35 @@ implement it.
 /packages/db          Supabase schema, migrations, RLS policies — includes
                        the calendar tables (school_calendars, terminals,
                        calendar_closures, yearly_map, map_slices,
-                       lesson_progress; Calendar spec §6) alongside the band
+                       lesson_progress; Calendar spec 6) alongside the band
                        config tables. Same package, same migration history —
                        the calendar is foundational schema, not a bolt-on.
 /packages/ai          prompt templates keyed by (feature, band), orchestration
 /docs/specs           the three source docs (read-only reference)
 /skills/eduai-architecture/SKILL.md   deep reference index for Claude Code
+/skills/testing-patterns/SKILL.md     Vitest patterns (api + web) + DoD workflow
 ```
 
 ## 6. Working conventions for Claude Code in this repo
 
+- **Testing is part of definition of done.** Every feature, bug fix, or
+  behavior-changing refactor must include proportionate Vitest coverage for
+  the layers touched (backend and/or frontend) and those tests must be run
+  before claiming done — see `ARCHITECTURE.md` Part 3,
+  `.cursor/rules/testing.mdc`, and `skills/testing-patterns/SKILL.md`. Do
+  not claim tests passed unless executed; waive only if the user explicitly
+  says to skip tests for the change.
 - When touching `student_outcomes`, `remedial_plans`, or any aggregate query:
-  read Architecture §4 and §5.3 first, and confirm the CI lint / RLS test
+  read Architecture 4 and 5.3 first, and confirm the CI lint / RLS test
   exists for the new query before considering the task done.
 - When adding a new band or grade config: follow the worked example in
-  Architecture §2.4 — new rows only, no new code path. If you find yourself
+  Architecture 2.4 — new rows only, no new code path. If you find yourself
   writing a grade-number conditional, stop and push the distinction into a
   `bands` row instead.
 - When writing an AI prompt for a new feature: look up (or add) a
   `(feature_id, band_id)` prompt template row rather than inlining band logic
   into a JS/TS string. See `/prompts/ai-prompt-templates.md` for the current
-  starter set and the output-constraint checklist (Architecture §7.4).
+  starter set and the output-constraint checklist (Architecture 7.4).
 - When generating a document: confirm it's implemented as a deterministic
   render over live rows (Section 6.1's table says which documents are
   deterministic vs AI-drafted-then-approved) — don't reach for an LLM call by
@@ -219,7 +252,20 @@ implement it.
 
 ## 7. Known open items (don't silently resolve these — surface them)
 
-From System Report Part X and Architecture §13.2:
+- **Parent web portal vs. "no web login for parents":** the confirmed auth
+  scope is Admin + Teacher only — guardians have no username/password
+  account. But the System Report (Part VI, 6.3) states parents can view
+  the six-domain picture/portfolio "anytime on the web portal," which
+  implies some form of web access exists. These aren't necessarily
+  contradictory — a plausible reconciliation is a WhatsApp-issued signed
+  magic-link (short-lived token, no password, no separate account) into
+  the `routes/parent/` section of the SPA — but that reconciliation is
+  **not confirmed**, only proposed here. Don't build parent web access
+  under an assumed mechanism without checking first; the frontend's
+  `(parent)` route group exists in `ARCHITECTURE.md` Part 2, but how a
+  parent actually reaches it is unresolved.
+
+From System Report Part X and Architecture 13.2:
 - The 138-milestone pre-primary bank needs trainer/ECE-specialist review.
 - Grades 4–5 outcomes bank is unresolved (Grades 1–3 is resolved).
 - Nepali/code-switched voice transcription is a pilot go/no-go, not a given.

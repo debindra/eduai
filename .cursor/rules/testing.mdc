@@ -1,0 +1,76 @@
+---
+description: Testing definition of done — every feature/bugfix ships with proportionate backend and frontend tests, written and executed
+alwaysApply: true
+---
+
+# Testing — definition of done
+
+Feature work, bug fixes, and refactors that change behavior are **not done**
+until proportionate tests exist for every layer touched, and those tests have
+been **executed** (not merely asserted from memory). Waive only when the user
+explicitly says to skip tests for this change.
+
+Reference patterns: `skills/testing-patterns/SKILL.md`. Stack: **Vitest**
+everywhere (`apps/api`, `apps/web`, packages) — not Jest, not React Native
+examples from community skills.
+
+## Hard gates
+
+1. **Touched backend (`apps/api`, `apps/docgen`, relevant packages)** → add or
+   update colocated `*.spec.ts` for the changed service, guard, interceptor,
+   or pure helper. Run:
+   `pnpm --filter @eduai/api test` (and the matching package filter if needed).
+2. **Touched frontend (`apps/web`)** → add or update tests for changed pure
+   logic (`*.ts` helpers/stores) and for interactive components that encode
+   behavior. Run: `pnpm --filter @eduai/web test`.
+3. **Touched both** → both suites must be green before claiming done.
+4. **Do not claim tests passed unless you actually ran them** in this session.
+5. **No "tests later" ticket** as a substitute for DoD, unless the user
+   explicitly waives testing for the change.
+
+## What "proportionate" means
+
+| Change | Minimum tests |
+|---|---|
+| New/changed service method | Unit tests: happy path + important failure/validation |
+| New/changed guard / interceptor / RBAC | Spec covering allow + deny cases |
+| Mapper / outcome / remedial / propose path | Automated tests for the four mapper guards (see invariants) |
+| Query touching `student_outcomes` or aggregates | Confirm CI lint / no-rank-order + RLS coverage exists |
+| New/changed FE feature logic or store | Unit tests for the behavior |
+| New/changed interactive UI with branching | Component test for the user-visible behavior |
+| Pure docs / rules / comments only | No code tests required |
+| Trivial typo / copy-only UI string | Skip unless behavior changes |
+
+Do **not** require full e2e on every small change. Prefer fast unit/component
+tests colocated with the code. Add broader integration/e2e only when the
+risk is cross-module or hard to cover with units.
+
+## Domain tests that are never optional
+
+When the change touches these areas, the matching tests are part of DoD
+(same standing as shipping the feature):
+
+- Mapper guards (no top-band jump; no name guess; non-observation → attendance;
+  only teacher confirm writes)
+- Propose/Confirm split (propose never writes; confirm never calls AI)
+- Gravity rule / admin aggregate shape (counts only, no distributions/names)
+- Two-grain RLS / section-subject write scope
+- Deterministic docgen / aggregation (no LLM on those paths)
+- No rank-order over ratings across children/teachers
+
+## Anti-patterns
+
+- Shipping production code with zero new/updated tests for a behavior change
+- Relying on `--passWithNoTests` as permission to skip writing tests
+- Testing mock call counts instead of observable behavior
+- Hand-rolling Jest/`@testing-library/react-native` patterns — wrong stack
+- Claiming "tests pass" without running the filter for the touched app(s)
+
+## Commit / PR checklist (agents)
+
+Before suggesting commit or PR readiness:
+
+- [ ] Tests added/updated for every touched behavioral layer
+- [ ] Relevant `pnpm --filter … test` command(s) run and green
+- [ ] Domain-invariant coverage present when applicable
+- [ ] Testing section of commit/PR summary lists what was run

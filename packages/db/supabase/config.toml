@@ -38,5 +38,7 @@ jwt_expiry = 3600
 enable_signup = false
 
 [auth.email]
-enable_signup = false
+# Must stay enabled for password sign-in. Public self-signup is gated by
+# [auth].enable_signup = false; identities are admin-provisioned only.
+enable_signup = true
 enable_confirmations = false

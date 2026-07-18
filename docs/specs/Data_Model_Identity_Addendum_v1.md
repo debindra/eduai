@@ -19,7 +19,7 @@ This addendum reconciles both into one list.
 
 | v1.0 table | Current resolution |
 |---|---|
-| `users` (phone, role, school_id) | **Replaced** by `identities` + `school_memberships` (2 below). No flat role enum; authorization comes from membership + scoped role. |
+| `users` (phone, role, school_id) | **Replaced** by `identities` (Supabase Auth link) + `school_memberships`. No flat role enum on teachers; authorization comes from membership + scoped role. |
 | `students` | `child` (never a login identity) |
 | `levels` | Absorbed into `section.grade` + `bands`; a level is still data, not code |
 | `curriculum_areas` | **Restored** — kept as a first-class table (3) |
@@ -31,39 +31,47 @@ This addendum reconciles both into one list.
 
 ## 2. Identity & authentication model
 
-Two credential paths, one identity row:
+**Credentials live in Supabase Auth (`auth.users`).** App Postgres holds a
+thin `identities` row that links via `auth_user_id` — no `password_hash`
+column. Full invite/recovery flows: `ARCHITECTURE.md` Part 1,
+"Authentication."
 
-- **Web app (primary):** username + password. Every school-side actor
-  (teacher, admin, guardian with portal access) gets a username and sets a
-  password; standard hashing (argon2/bcrypt via the auth provider), reset
-  flow delivered over the verified phone channel.
-- **Phone + OTP (secondary):** WhatsApp OTP primary, SMS OTP fallback —
-  the alternative web login and the recovery path, and inherently how the
-  WhatsApp channel itself authenticates (an inbound message is identified
-  by its phone number; SIM-change has a handled re-binding flow).
+- **Web app (primary):** username (email or mobile) + password via
+  Supabase Auth. Admin and Teacher only. Mobile-only accounts use an
+  internal synthetic email mapping (never stored in `identities.email`).
+- **Phone + OTP:** WhatsApp OTP primary, SMS OTP fallback — **recovery and
+  2FA only for web**, never a web sign-in path. WhatsApp channel identity
+  still uses the verified phone on the same `identities` row (SIM-change
+  has a handled re-binding flow).
+- **Guardians:** WhatsApp handshake only in this phase — no web password /
+  invite path. Parent portal access remains an open product item
+  (`CLAUDE.md` §7); do not invent a guardian login here.
 
-Both paths resolve to the same `identities` row, so a milestone set on
-WhatsApp still shows as already-filled on the web. The child is never a
-user — no account, no login, no screen.
+A teacher who uses WhatsApp and the web resolves to the same `identities`
+row, so a milestone set on WhatsApp still shows as already-filled on the
+web. The child is never a user — no account, no login, no screen.
 
-- **`identities`** — global login identity: `id`, `username` (unique),
-  `password_hash`, `phone` (unique, verified), OTP/auth state, `status`,
-  timestamps. Auth only; carries zero pedagogy fields.
+- **`identities`** — global login identity: `id`, `auth_user_id` (→
+  `auth.users`, NULL until invite accepted), `email` (real only, nullable),
+  `phone` (unique, verified for OTP/WhatsApp), `account_status`
+  (`invited` | `active` | `disabled`), invite token fields for mobile-only
+  invites, timestamps. Auth link only; carries zero pedagogy fields.
 - **`schools`** — the tenant boundary (unchanged from v3.1 `school`).
 - **`school_memberships`** — `identity_id`, `school_id`, `member_type`
   (`teacher | admin | guardian | trainer_viewer`), `status`, timestamps.
   Unique per `(identity_id, school_id, member_type)`. One person may hold
   multiple memberships (e.g. admin who also teaches; a teacher who moves
-  schools gets a new membership, history stays with the old one).
+  schools gets a new membership, history stays with the old one). Admin
+  gate for admin-only endpoints is `member_type = 'admin'`.
 - **Profile tables per actor type** — `teacher` (profile,
   `certification_status`, `adaptation_signal` internal-only), `guardian`
-  (relationship, `language_pref`), admin profile. Each 1—1 with its
-  membership.
-- **Authorization rule:** never authorize from a role column alone. The
-  chain is identity → membership (tenant check first) → scoped role:
-  `teacher_sections` for teachers, `guardian_child_links` for guardians,
-  membership type for admins. RLS policies evaluate tenant isolation before
-  section/subject grain, always.
+  (relationship, `language_pref`), admin profile (`school_admins`). Each
+  1—1 with its membership.
+- **Authorization rule:** never authorize from a role column on `teachers`
+  alone. The chain is identity → membership (tenant check first) → scoped
+  role: `teacher_sections` for teachers, `guardian_child_links` for
+  guardians, `member_type` for admins. RLS policies evaluate tenant
+  isolation before section/subject grain, always.
 - **Who creates whom** (unchanged product rule): platform team creates
   schools (one admin each); the admin creates teachers and child profiles;
   guardians self-create via the WhatsApp handshake, always anchored to a
@@ -78,7 +86,7 @@ the original 3.1.
 
 | Entity | Key fields | Relationships / notes |
 |---|---|---|
-| `identities` | id, username (unique), password_hash, phone (unique, verified), auth state, status | 1—N `school_memberships`. Auth only. Web login = username + password primary; phone + OTP secondary. |
+| `identities` | id, auth_user_id (→ auth.users), email (real, nullable), phone (unique, verified), account_status, invite fields | 1—N `school_memberships`. Passwords in Supabase Auth only. Web login = email/mobile + password; phone OTP = recovery/2FA/WhatsApp channel only. |
 | `schools` | id, name, region, tier, licensed_band_range, exit_status | Tenant boundary for all RLS. 1—N sections, memberships. |
 | `school_memberships` | id, identity_id, school_id, member_type, status | The tenant join. 1—1 actor profile by type. |
 | `teacher` | id, membership_id, profile, certification_status, adaptation_signal (internal only) | 1—N `teacher_sections`; 1—N `certification_progress`. |

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { link } from 'svelte-spa-router';
+  import { link } from '@keenmate/svelte-spa-router';
 
   const appName =
     import.meta.env.VITE_APP_NAME ??
@@ -20,8 +20,15 @@
     <div class="mt-6 flex flex-wrap gap-3">
       <a
         use:link
-        href="/health"
+        href="/login"
         class="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+      >
+        Sign in
+      </a>
+      <a
+        use:link
+        href="/health"
+        class="inline-flex items-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
       >
         API health check
       </a>

@@ -7,7 +7,13 @@ docs themselves describe: calendar → band-as-data schema → pre-primary loop
 → compliance/reporting → Grades 1–3 extension → Grades 4–5 extension →
 polish/scale.
 
+Per-phase tickets & status live under [`docs/phases/`](docs/phases/)
+(companion to [`PHASE_TASKS.md`](PHASE_TASKS.md)).
+
 ## Phase 0 — Reconcile and lock foundations (1–2 weeks)
+
+Detailed tickets & status: [`docs/phases/tasks/phase-0-foundations.md`](docs/phases/tasks/phase-0-foundations.md),
+[`docs/phases/status/phase-0.md`](docs/phases/status/phase-0.md).
 
 Goal: know exactly what exists before building more on top of it.
 
@@ -62,15 +68,18 @@ written, prioritized backlog, not an open question.
 Goal: one real class, one real teacher, one real terminal, working end to
 end on the pre-primary band, on the corrected v3.1 schema.
 
-- Identity layer first (addendum 2): `identities` (web login = username +
-  password primary; phone + OTP — WhatsApp primary, SMS fallback — as
-  secondary web login, recovery, and WhatsApp-channel identity; SIM-change
-  flow), `school_memberships` (identity × school × member_type),
-  actor profile tables, `guardian_child_links` (join table — no
-  `guardian_ids[]` array), and the "who creates whom" provisioning chain
-  (platform → school admin → teachers/children; guardians self-create via
-  the child-anchored WhatsApp handshake). Authorization = membership
-  (tenant check first) + scoped role, never a flat role column.
+- Identity layer first (addendum 2): `identities` (Supabase Auth link via
+  `auth_user_id`; web login = username/email or mobile + password; phone +
+  OTP — WhatsApp primary, SMS fallback — for recovery/2FA and WhatsApp-
+  channel identity only, never web login; SIM-change flow),
+  `school_memberships` (identity × school × member_type), actor profile
+  tables, `guardian_child_links` (join table — no `guardian_ids[]` array),
+  and the "who creates whom" provisioning chain (platform → school admin →
+  teachers/children; guardians self-create via the child-anchored WhatsApp
+  handshake — no web password in this phase). Authorization = membership
+  (tenant check first) + scoped role (`member_type = admin` for admin
+  endpoints; `teacher_sections` for teachers), never a flat role on
+  `teachers`.
 - `bands`, `subjects`, `band_subjects`, `outcomes`, `grade_scales`,
   `teacher_sections` — plus `curriculum_areas` (11 Curriculum 2077 skill
   areas, the tagging system of record), `rollup_domains` +

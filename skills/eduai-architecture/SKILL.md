@@ -1,6 +1,6 @@
 ---
 name: eduai-architecture
-description: Use this skill whenever working on the EduAI Nepal codebase and the task touches the data model, RBAC/RLS, the assessment or remedial workflow, AI prompt orchestration, document generation (Annex 2/3/4, portfolio, inspection pack), the academic calendar/pacing tracker, or any product rule about what may or may not appear in a child's record. Also use it before answering questions about "why is the system built this way" for this project, or before adding a new grade band/feature, since the answer is almost always "it's already a documented pattern — extend it, don't invent a new one." Do not use this skill for generic Node/Fastify/Supabase/SvelteKit questions unrelated to this project's specific domain rules.
+description: Use this skill whenever working on the EduAI Nepal codebase and the task touches the data model, RBAC/RLS, the assessment or remedial workflow, AI prompt orchestration, document generation (Annex 2/3/4, portfolio, inspection pack), the academic calendar/pacing tracker, or any product rule about what may or may not appear in a child's record. Also use it before answering questions about "why is the system built this way" for this project, or before adding a new grade band/feature, since the answer is almost always "it's already a documented pattern — extend it, don't invent a new one." Do not use this skill for generic Node/Fastify/Supabase/Svelte questions unrelated to this project's specific domain rules.
 ---
 
 # EduAI Nepal — Architecture Reference
@@ -21,7 +21,7 @@ the same scale) run on one engine because `assessment_mode`,
 are all configuration rows keyed by `band_id`, never grade-number branches in
 application code. Before writing any grade-conditional logic, ask: "is this
 actually a new row in `bands`/`grade_scales`/`outcomes`/a feature-flag
-table?" It almost always is (Architecture §2, worked example in §2.4).
+table?" It almost always is (Architecture 2, worked example in 2.4).
 
 **2. A calendar is rows too — time-as-data, the same discipline applied to
 dates.** The calendar (dates: session, terminals, closures) and the
@@ -31,11 +31,30 @@ downstream — a teacher's plan at every horizon, the pacing tracker, "this
 month's active milestones," when a mandated report fires — is calendar-
 derived, not independently computed. `teaching_days` is always a computed
 view, never a stored count, precisely so one calendar edit reflows
-everything at once (Calendar spec §1, §6). Treat this with the same rigor as
+everything at once (Calendar spec 1, 6). Treat this with the same rigor as
 band-as-data: if you're hardcoding a date into pedagogy logic, or content
 into calendar logic, stop.
 
 ## Quick index by task
+
+**Anything about login, passwords, invites, or account recovery** →
+`ARCHITECTURE.md` Part 1, "Authentication." Admin + Teacher only, username
+(email or mobile) + password via Supabase Auth; phone/WhatsApp OTP is
+recovery/2FA only, never sign-in. No self-registration — invite-based
+provisioning. Guardians have no web account at all (and there's an open,
+unresolved tension with the System Report's stated parent web portal — see
+`CLAUDE.md` 7, don't build parent web access under an assumed mechanism).
+Enforced via `.cursor/rules/80-authentication.mdc`.
+
+**Adding or documenting a new API endpoint** → `ARCHITECTURE.md` Part 1,
+"API documentation: Swagger/OpenAPI" — every controller/DTO fully
+decorated (`@ApiTags`/`@ApiOperation`/`@ApiResponse`/`@ApiProperty`),
+Propose/Confirm semantics and guard/scope requirements stated in the
+operation description. This is a module's definition of done, not
+optional — the exported spec is what frontend types are generated from
+(`generated-types.ts` via `openapi-typescript`), closing the type-drift
+gap named in Part 2, rule 7. Enforced via
+`.cursor/rules/70-api-documentation.mdc`.
 
 **Adding a new backend feature / deciding where code goes** →
 `ARCHITECTURE.md` Part 1 — modular layered
@@ -48,45 +67,52 @@ systems only. The one cross-module rule that matters most: inject another
 module's *service*, never its *repository*.
 
 **Adding a new frontend feature / deciding where UI code goes** →
-`ARCHITECTURE.md` Part 2 — one SvelteKit app, role-based route groups
-(admin/teacher/parent), feature folders mirroring backend modules 1:1. A
-feature's `api.ts` is the only place that calls its backend module's
-endpoints. Route-group role checks are server-side in `load`, never just a
-hidden nav item. The frontend reflects backend-enforced access control, it
-never implements it.
+`ARCHITECTURE.md` Part 2 — one Svelte 5 SPA (no SSR, no `load`
+functions), role-gated routes (admin/teacher/parent) via
+`@keenmate/svelte-spa-router`, feature folders mirroring backend modules
+1:1. A feature's `api.ts` is the only place that calls its backend
+module's endpoints. Route permission checks are client-side UX only, never
+a security boundary — the frontend reflects backend-enforced access
+control, it never implements it.
+
+**Finishing any feature / bug fix (testing DoD)** → `ARCHITECTURE.md`
+Part 3, `.cursor/rules/testing.mdc`, and `skills/testing-patterns/SKILL.md`.
+Proportionate Vitest coverage for every touched layer (api and/or web),
+tests actually run before claiming done. Domain-critical paths (mapper
+guards, propose/confirm, gravity, RLS) keep their required automated tests.
 
 **Adding/editing a table that touches a child or teacher** → Architecture
-§3.1 (entity list), §3.2 (fields the schema *must not* have — personality,
-trait, risk-category, rank, teacher competence score), §3.3 (RLS grains).
+3.1 (entity list), 3.2 (fields the schema *must not* have — personality,
+trait, risk-category, rank, teacher competence score), 3.3 (RLS grains).
 
-**Anything about who confirms an assessment, and how** → System Report §4.2
-(four capture paths, conservative mapper rules), Architecture §4.4 (the same
-four guards as CI-testable rules) and §4.1 (two-pass record via `attempt`
+**Anything about who confirms an assessment, and how** → System Report 4.2
+(four capture paths, conservative mapper rules), Architecture 4.4 (the same
+four guards as CI-testable rules) and 4.1 (two-pass record via `attempt`
 ENUM, not two tables).
 
-**A child isn't improving on a skill** → System Report §4.4 (pre-primary:
+**A child isn't improving on a skill** → System Report 4.4 (pre-primary:
 velocity-based stall detection, point-to confound check first, private to
 class teacher, never aggregated into a "behind" score, harm signals skip the
-ladder). Architecture §4.2 (Grades 1–5: the remedial-ladder state machine —
-Opened → Activity delivered → Re-assessed → Escalated → Closed) and §9
+ladder). Architecture 4.2 (Grades 1–5: the remedial-ladder state machine —
+Opened → Activity delivered → Re-assessed → Escalated → Closed) and 9
 (job-engine workflows that drive the reminders/escalation).
 
 **Who can see what** → System Report Part VIII "the gravity rule" and
-Architecture §5 (role → scope mapping table) and §5.3 (rank-order queries
+Architecture 5 (role → scope mapping table) and 5.3 (rank-order queries
 are blocked in code + CI lint, not just RLS).
 
-**A new document or report** → Architecture §6.1 (table of every document,
+**A new document or report** → Architecture 6.1 (table of every document,
 its source, and whether it's deterministic or AI-drafted-then-approved) and
-§6.2 (two locked rendering-environment facts: fonts-noto-core, docx
+6.2 (two locked rendering-environment facts: fonts-noto-core, docx
 landscape swap).
 
-**An AI prompt or model choice** → Architecture §7 (orchestration
-responsibilities, model-tier routing table, caching strategy) and §7.4
+**An AI prompt or model choice** → Architecture 7 (orchestration
+responsibilities, model-tier routing table, caching strategy) and 7.4
 (output constraints every generation path must enforce).
 
-**"When is X due" / "is a class behind"** → Calendar spec §5 (planned vs.
+**"When is X due" / "is a class behind"** → Calendar spec 5 (planned vs.
 actual position, pacing gap in teaching days, three states: on track /
-behind / self-correcting) and §6 (calendar data model — `teaching_days` is
+behind / self-correcting) and 6 (calendar data model — `teaching_days` is
 always a derived view, never a stored count, so an edit reflows everything).
 Critical firewall: a terminal boundary is a coverage/reporting event, never
 an exam date — there is no test-date field anywhere in this schema, by
@@ -95,17 +121,17 @@ the assessment pack's "active this month" milestones/outcomes, the catch-up
 pack (what an absent child missed — a query over `lesson_progress` against
 attendance), the weekly view's festival rehearsals, and the diary's closure
 explanations all read `map_slices`/`calendar_closures` directly (Calendar
-spec §7). Don't hand-roll a second "what's due" calculation anywhere.
+spec 7). Don't hand-roll a second "what's due" calculation anywhere.
 
-**A teacher's daily/weekly lesson plan** → System Report §3.1 (the teacher's
+**A teacher's daily/weekly lesson plan** → System Report 3.1 (the teacher's
 day walkthrough — nothing is planned from a blank page at any horizon) and
-Calendar spec §4 (the derived-plan cascade: yearly → monthly → weekly →
+Calendar spec 4 (the derived-plan cascade: yearly → monthly → weekly →
 daily, each horizon a single tap from the one above). The *placement* of
 content in time (yearly-map generation) is deterministic; the *drafting* of
 a specific day's lesson content is generative (Haiku) — see prompt template
 #6 in `/prompts/ai-prompt-templates.md`. Don't conflate the two.
 
-**Cost/caching questions** → Architecture §12. The two structural cost
+**Cost/caching questions** → Architecture 12. The two structural cost
 advantages of the Grades 1–5 extension: compliance documents are zero-AI-cost
 by architecture, and the remedial-activity cache is expected to have an
 unusually high hit rate because misconceptions repeat across thousands of
