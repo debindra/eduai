@@ -44,6 +44,8 @@ describe('LoginPage', () => {
   it('redirects admin to calendar wizard after successful login', async () => {
     mockLogin.mockResolvedValue({
       accessToken: 'token-1',
+      refreshToken: 'refresh-1',
+      expiresIn: 3600,
       identity: {
         id: 'identity-1',
         email: 'admin@schoolx.dev',

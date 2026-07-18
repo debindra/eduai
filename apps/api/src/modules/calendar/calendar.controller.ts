@@ -10,7 +10,9 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
+import { RequireSchoolAdmin } from '../auth/decorators/require-school-admin.decorator';
 import { RequireRoleGuard } from '../auth/guards/require-role.guard';
+import { RequireSchoolAdminGuard } from '../auth/guards/require-school-admin.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import type { RequestUser } from '../auth/types/request-user.types';
 import { CalendarService } from './calendar.service';
@@ -27,8 +29,9 @@ import {
 @ApiTags('calendar')
 @ApiBearerAuth()
 @Controller('calendar')
-@UseGuards(SupabaseAuthGuard, RequireRoleGuard)
+@UseGuards(SupabaseAuthGuard, RequireRoleGuard, RequireSchoolAdminGuard)
 @RequireRole('admin')
+@RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 

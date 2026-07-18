@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiOkResponse,
@@ -7,6 +7,11 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { RequireRole } from './decorators/require-role.decorator';
+import { RequireSchoolAdmin } from './decorators/require-school-admin.decorator';
+import { RequireRoleGuard } from './guards/require-role.guard';
+import { RequireSchoolAdminGuard } from './guards/require-school-admin.guard';
+import { SupabaseAuthGuard } from './guards/supabase-auth.guard';
 import { AcceptInviteDto } from './dto/accept-invite.dto';
 import {
   AuthSessionResponseDto,
@@ -36,6 +41,9 @@ export class AuthController {
   }
 
   @Post('invite')
+  @UseGuards(SupabaseAuthGuard, RequireRoleGuard, RequireSchoolAdminGuard)
+  @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdBody: 'schoolId' })
   @ApiOperation({
     summary: 'Provision an invited Admin or Teacher identity',
     description:

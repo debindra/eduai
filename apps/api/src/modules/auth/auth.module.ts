@@ -8,6 +8,7 @@ import { SupabaseAuthAdapter } from './adapters/supabase-auth.adapter';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RequireRoleGuard } from './guards/require-role.guard';
+import { RequireSchoolAdminGuard } from './guards/require-school-admin.guard';
 import { SupabaseAuthGuard } from './guards/supabase-auth.guard';
 
 @Module({
@@ -16,6 +17,7 @@ import { SupabaseAuthGuard } from './guards/supabase-auth.guard';
     AuthService,
     SupabaseAuthGuard,
     RequireRoleGuard,
+    RequireSchoolAdminGuard,
     { provide: AUTH_PROVIDER_PORT, useClass: SupabaseAuthAdapter },
     { provide: MESSAGING_PROVIDER_PORT, useClass: ConsoleMessagingAdapter },
     { provide: OTP_FALLBACK_PORT, useClass: ConsoleOtpAdapter },
@@ -24,6 +26,7 @@ import { SupabaseAuthGuard } from './guards/supabase-auth.guard';
     AuthService,
     SupabaseAuthGuard,
     RequireRoleGuard,
+    RequireSchoolAdminGuard,
     AUTH_PROVIDER_PORT,
   ],
 })
