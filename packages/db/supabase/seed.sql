@@ -574,10 +574,9 @@ VALUES
     'catch_up_reteach',
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     'haiku',
-    $prompt$You write short re-teach moments for a child who missed classroom days. Ground every suggestion in the missed themes listed below. Screen-free home activities only. Never invent milestones or ratings.
+    $prompt$You write short re-teach moments for a child who missed classroom days. Ground every suggestion in the missed themes listed below. Screen-free home activities only. Never invent milestones or ratings. Write child-agnostically (no names) — the teacher adapts it for the specific child at delivery.
 
-Missed themes: {{missed_themes}}
-Child first name (for address only): {{child_name}}$prompt$,
+Missed themes: {{missed_themes}}$prompt$,
     ARRAY['no_label_no_rank', 'no_test_language']
   ),
   (
@@ -718,11 +717,10 @@ VALUES
     'methods_toolkit',
     'be000000-0000-0000-0000-000000000001',
     'haiku',
-    $prompt$Generate a short remedial activity for Grades 1–3. Keep it classroom-practical, low-resource, and screen-free. Never invent outcome ratings. Never diagnose. Generation parity: same quality regardless of school tier.
+    $prompt$Generate a short remedial activity for Grades 1–3. Keep it classroom-practical, low-resource, and screen-free. Never invent outcome ratings. Never diagnose. Generation parity: same quality regardless of school tier. Write the activity child-agnostically (no names) — the teacher adapts it for the specific child at delivery.
 
 Activity type: {{activity_type}}
-Outcome: {{outcome_statement}}
-Child first name (address only): {{child_name}}$prompt$,
+Outcome: {{outcome_statement}}$prompt$,
     ARRAY['no_label_no_rank', 'no_test_language']
   ),
   (
@@ -743,3 +741,15 @@ Active outcomes: {{outcomes_json}}
 Observation: {{observation_text}}$prompt$,
     ARRAY['mapper_guards', 'no_label_no_rank']
   );
+
+-- ---------------------------------------------------------------------------
+-- Phase 5: certification progress for the UKG class teacher (weeks 1–3 passed)
+-- out_of_segment_query_log intentionally empty (demand signal accrues in prod).
+-- ---------------------------------------------------------------------------
+INSERT INTO certification_progress (teacher_id, week, status, quiz_score) VALUES
+  ('55555555-5555-5555-5555-555555555551', 1, 'quiz_passed', 0.9),
+  ('55555555-5555-5555-5555-555555555551', 2, 'quiz_passed', 0.8),
+  ('55555555-5555-5555-5555-555555555551', 3, 'quiz_passed', 0.75);
+
+INSERT INTO certification_observations (teacher_id, status) VALUES
+  ('55555555-5555-5555-5555-555555555551', 'pending');

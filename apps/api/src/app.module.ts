@@ -9,7 +9,9 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BandConfigModule } from './modules/band-config/band-config.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
+import { CertificationModule } from './modules/certification/certification.module';
 import { CoachModule } from './modules/coach/coach.module';
+import { CommunityModule } from './modules/community/community.module';
 import { ExitModule } from './modules/exit/exit.module';
 import { HandoverModule } from './modules/handover/handover.module';
 import { LessonModule } from './modules/lessons/lesson.module';
@@ -54,6 +56,8 @@ import { YearlyMapModule } from './modules/yearly-map/yearly-map.module';
     RemedialModule,
     MethodsToolkitModule,
     SubjectModule,
+    CertificationModule,
+    CommunityModule,
   ],
   controllers: [HealthController],
 })

@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
+import { CacheMetricsService } from '../ai-orchestration/cache-metrics.service';
+import { OutOfSegmentService } from '../out-of-segment/out-of-segment.service';
 import { OutcomesService } from '../outcomes/outcomes.service';
 import { PacingService } from '../pacing/pacing.service';
 
@@ -93,7 +95,19 @@ export class AdminService {
     private readonly repository: AdminRepository,
     private readonly pacing: PacingService,
     private readonly outcomes: OutcomesService,
+    private readonly cacheMetrics: CacheMetricsService,
+    private readonly outOfSegment: OutOfSegmentService,
   ) {}
+
+  /** Cache hit/miss counts (remedial-activity cache reported separately). */
+  getCacheMetrics() {
+    return this.cacheMetrics.snapshot();
+  }
+
+  /** Out-of-segment demand-signal counts (gravity: counts/shapes only). */
+  getOutOfSegment(schoolId: string) {
+    return this.outOfSegment.adminCounts(schoolId);
+  }
 
   async getDashboard(schoolId: string, periodStart: string, periodEnd: string): Promise<AdminDashboardResponse> {
     const sections = await this.repository.listSections(schoolId);

@@ -105,6 +105,9 @@ const EXPECTED = {
   student_outcomes: { min: 1 },
   substitute_access: { min: 2 },
   audit_log: { min: 0, max: 0, note: 'intentional empty — append-only' },
+  certification_progress: { min: 3, note: 'Phase 5 — UKG teacher weeks 1–3' },
+  certification_observations: { min: 1, note: 'Phase 5 — one observation per teacher' },
+  out_of_segment_query_log: { min: 0, max: 0, note: 'intentional empty — demand signal' },
 };
 
 async function count(table) {

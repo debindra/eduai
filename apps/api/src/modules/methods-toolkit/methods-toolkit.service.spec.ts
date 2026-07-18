@@ -38,7 +38,11 @@ describe('MethodsToolkitService', () => {
       statement_en: 'Counts to 20',
       band_id: 'band-be',
     });
-    repository.findChild.mockResolvedValue({ id: 'c1', name: 'Nisha Rai' });
+    repository.findChild.mockResolvedValue({
+      id: 'c1',
+      section_id: 'sec-1',
+      sections: { school_id: 'school-1' },
+    });
     ai.orchestrate.mockResolvedValue({
       text: 'Use counters for 10 minutes.',
       modelTier: 'haiku',
@@ -68,5 +72,35 @@ describe('MethodsToolkitService', () => {
     expect(calls[0][0].featureId).toBe(calls[1][0].featureId);
     expect(calls[0][0].bandId).toBe(calls[1][0].bandId);
     expect(calls[0][0].variables.activity_type).toBe(calls[1][0].variables.activity_type);
+  });
+
+  it('never sends child identity into the cacheable generation (no cross-tenant leak)', async () => {
+    repository.findOutcome.mockResolvedValue({
+      id: 'out-1',
+      statement_en: 'Counts to 20',
+      band_id: 'band-be',
+    });
+    repository.findChild.mockResolvedValue({
+      id: 'c1',
+      section_id: 'sec-1',
+      sections: { school_id: 'school-1' },
+    });
+    ai.orchestrate.mockResolvedValue({
+      text: 'Use counters for 10 minutes.',
+      modelTier: 'haiku',
+      validatorKeys: [],
+    });
+
+    await service.generate({
+      bandId: 'band-be',
+      outcomeId: 'out-1',
+      childId: 'c1',
+      activityType: 'peer_practice',
+      schoolTier: 'free',
+    });
+
+    const [orchestrateInput] = ai.orchestrate.mock.calls[0];
+    expect(orchestrateInput.variables).not.toHaveProperty('child_name');
+    expect(orchestrateInput.context.schoolId).toBe('school-1');
   });
 });

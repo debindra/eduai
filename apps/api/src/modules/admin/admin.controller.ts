@@ -46,4 +46,26 @@ export class AdminController {
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     return this.service.getDashboard(query.schoolId, start, end);
   }
+
+  @Get('cache-metrics')
+  @ApiOperation({
+    summary: 'Cache hit-rate monitoring (P5-API-01)',
+    description:
+      'Hit/miss counts and rates per feature. The remedial-activity cache ' +
+      '(methods_toolkit) is reported separately. Counts/shapes only.',
+  })
+  cacheMetrics() {
+    return this.service.getCacheMetrics();
+  }
+
+  @Get('out-of-segment')
+  @ApiOperation({
+    summary: 'Out-of-segment demand signal (P5-API-02)',
+    description:
+      'Counts of requests for functionality outside the school licensed band ' +
+      'range, grouped by band and feature. Counts/shapes only (gravity rule).',
+  })
+  outOfSegment(@Query() query: DashboardQueryDto) {
+    return this.service.getOutOfSegment(query.schoolId);
+  }
 }

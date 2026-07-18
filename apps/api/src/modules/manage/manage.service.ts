@@ -206,12 +206,14 @@ export class ManageService {
 
     let reteachText = '';
     if (missedThemes.length > 0) {
+      // Child-agnostic so the reteach pack is safely content-cached and shared
+      // across children (cache key excludes identity — see cache-key.ts). The
+      // teacher applies it to the specific absent child at delivery.
       const aiResult = await this.ai.orchestrate({
         featureId: 'catch_up_reteach',
         bandId,
         variables: {
           missed_themes: missedThemes.join(', '),
-          child_name: child.name as string,
         },
       });
       reteachText = aiResult.text;

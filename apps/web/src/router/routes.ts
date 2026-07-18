@@ -19,6 +19,8 @@ import SubjectPage from '../features/subject/SubjectPage.svelte';
 import OversightPage from '../features/subject/OversightPage.svelte';
 import RemedialPage from '../features/remedial/RemedialPage.svelte';
 import AdminRemedialPage from '../features/remedial/AdminRemedialPage.svelte';
+import CertificationPage from '../features/certification/CertificationPage.svelte';
+import CommunityPage from '../features/community/CommunityPage.svelte';
 import { routePermissions } from './permissions';
 
 export const routes = {
@@ -88,6 +90,14 @@ export const routes = {
   }),
   '/teacher/remedial': createProtectedRoute({
     component: async () => RemedialPage,
+    permissions: routePermissions.teacher,
+  }),
+  '/teacher/certification': createProtectedRoute({
+    component: async () => CertificationPage,
+    permissions: routePermissions.teacher,
+  }),
+  '/teacher/community': createProtectedRoute({
+    component: async () => CommunityPage,
     permissions: routePermissions.teacher,
   }),
 };

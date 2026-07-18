@@ -68,6 +68,9 @@ describe('ManageService', () => {
     expect(ai.orchestrate).toHaveBeenCalledWith(
       expect.objectContaining({ featureId: 'catch_up_reteach' }),
     );
+    // Cacheable feature must stay child-agnostic (no cross-tenant first-name leak).
+    const [orchestrateInput] = ai.orchestrate.mock.calls[0];
+    expect(orchestrateInput.variables).not.toHaveProperty('child_name');
   });
 
   it('joins festival closures with pacing state', async () => {
