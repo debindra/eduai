@@ -530,3 +530,60 @@ INSERT INTO substitute_access (
     '2026-12-01T00:00:00Z',
     '2026-12-15T00:00:00Z'
   );
+
+-- ---------------------------------------------------------------------------
+-- Phase 2: settling programme + catch-up / parent-reply prompts
+-- ---------------------------------------------------------------------------
+INSERT INTO settling_programme_steps (id, band_id, week_number, title, body) VALUES
+  (
+    'b2222222-2222-2222-2222-222222222201',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    1,
+    'Welcome and routines',
+    'Establish morning greeting, bag place, and toilet routine. Keep days short and predictable.'
+  ),
+  (
+    'b2222222-2222-2222-2222-222222222202',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    2,
+    'Separation support',
+    'Offer a brief goodbye ritual. Share one positive observation with the guardian after day one.'
+  ),
+  (
+    'b2222222-2222-2222-2222-222222222203',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    3,
+    'Peer play',
+    'Pair children for short parallel-play moments. Do not force sharing in week three.'
+  ),
+  (
+    'b2222222-2222-2222-2222-222222222204',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    4,
+    'Settle check-in',
+    'Review who is still unsettled. Adjust seating and arrival support. Keep records observational only.'
+  );
+
+INSERT INTO prompts (id, feature_id, band_id, model_tier, system_template, validator_keys)
+VALUES
+  (
+    'a1111111-1111-1111-1111-111111111121',
+    'catch_up_reteach',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    'haiku',
+    $prompt$You write short re-teach moments for a child who missed classroom days. Ground every suggestion in the missed themes listed below. Screen-free home activities only. Never invent milestones or ratings.
+
+Missed themes: {{missed_themes}}
+Child first name (for address only): {{child_name}}$prompt$,
+    ARRAY['no_label_no_rank', 'no_test_language']
+  ),
+  (
+    'a1111111-1111-1111-1111-111111111122',
+    'parent_reply_draft',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    'haiku',
+    $prompt$Draft a short, warm WhatsApp reply a pre-primary teacher can send to a guardian. Never invent observations. Never diagnose. Never compare children. Keep under 80 words. Output draft text only.
+
+Guardian message: {{guardian_message}}$prompt$,
+    ARRAY['no_label_no_rank']
+  );

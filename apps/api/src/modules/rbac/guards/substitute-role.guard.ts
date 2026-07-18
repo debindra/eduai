@@ -39,7 +39,7 @@ export class SubstituteRoleGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
     const sectionId = scopeOptions
-      ? this.resolveSectionId(request, scopeOptions)
+      ? await this.resolveSectionId(request, scopeOptions)
       : undefined;
     if (!sectionId) {
       return true;
@@ -66,7 +66,10 @@ export class SubstituteRoleGuard implements CanActivate {
     return true;
   }
 
-  private resolveSectionId(request: Request, options: SectionSubjectScopeOptions): string | undefined {
+  private async resolveSectionId(
+    request: Request,
+    options: SectionSubjectScopeOptions,
+  ): Promise<string | undefined> {
     if (options.sectionIdParam) {
       const value = request.params[options.sectionIdParam];
       if (typeof value === 'string') {
@@ -79,6 +82,30 @@ export class SubstituteRoleGuard implements CanActivate {
       if (typeof value === 'string') {
         return value;
       }
+    }
+    if (options.entityLookup) {
+      const id = request.params[options.entityLookup.idParam];
+      if (typeof id !== 'string') {
+        return undefined;
+      }
+      const client = this.supabase.getClient();
+      if (!client) {
+        throw new ForbiddenException('Database unavailable');
+      }
+      const sectionColumn = options.entityLookup.sectionColumn ?? 'section_id';
+      const { data, error } = await client
+        .from(options.entityLookup.table)
+        .select(sectionColumn)
+        .eq('id', id)
+        .maybeSingle();
+      if (error) {
+        throw new ForbiddenException('Failed to resolve section for substitute check');
+      }
+      if (!data || typeof data !== 'object') {
+        return undefined;
+      }
+      const sectionId = (data as Record<string, unknown>)[sectionColumn];
+      return typeof sectionId === 'string' ? sectionId : undefined;
     }
     return undefined;
   }

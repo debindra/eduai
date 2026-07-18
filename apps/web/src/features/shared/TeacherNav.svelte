@@ -11,6 +11,8 @@
     { href: '/teacher/lesson', label: 'Lesson' },
     { href: '/teacher/pacing', label: 'Pacing' },
     { href: '/teacher/reports', label: 'Reports' },
+    { href: '/teacher/messaging', label: 'Inbox' },
+    { href: '/teacher/manage', label: 'Manage' },
   ] as const;
 
   const handleSignOut = async () => {

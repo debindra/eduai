@@ -18,6 +18,7 @@ const repoRoot = path.resolve(__dirname, '../..');
 
 const DEFAULT_ROOTS = [
   path.join(repoRoot, 'apps/api/src'),
+  path.join(repoRoot, 'apps/docgen/src'),
   path.join(repoRoot, 'packages/db/supabase/migrations'),
 ];
 

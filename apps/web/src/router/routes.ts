@@ -10,6 +10,11 @@ import DailyLessonPage from '../features/lessons/DailyLessonPage.svelte';
 import PacingPage from '../features/pacing/PacingPage.svelte';
 import ReportReviewPage from '../features/reports/ReportReviewPage.svelte';
 import AttendancePage from '../features/attendance/AttendancePage.svelte';
+import DashboardPage from '../features/admin/DashboardPage.svelte';
+import InboxPage from '../features/messaging/InboxPage.svelte';
+import AdminInboxPage from '../features/messaging/AdminInboxPage.svelte';
+import ManagePage from '../features/manage/ManagePage.svelte';
+import AdminManagePage from '../features/manage/AdminManagePage.svelte';
 import { routePermissions } from './permissions';
 
 export const routes = {
@@ -19,6 +24,18 @@ export const routes = {
   '/login/recovery': RecoveryPage,
   '/admin/calendar': createProtectedRoute({
     component: async () => CalendarWizard,
+    permissions: routePermissions.admin,
+  }),
+  '/admin/dashboard': createProtectedRoute({
+    component: async () => DashboardPage,
+    permissions: routePermissions.admin,
+  }),
+  '/admin/messaging': createProtectedRoute({
+    component: async () => AdminInboxPage,
+    permissions: routePermissions.admin,
+  }),
+  '/admin/manage': createProtectedRoute({
+    component: async () => AdminManagePage,
     permissions: routePermissions.admin,
   }),
   '/teacher/attendance': createProtectedRoute({
@@ -43,6 +60,14 @@ export const routes = {
   }),
   '/teacher/reports': createProtectedRoute({
     component: async () => ReportReviewPage,
+    permissions: routePermissions.teacher,
+  }),
+  '/teacher/messaging': createProtectedRoute({
+    component: async () => InboxPage,
+    permissions: routePermissions.teacher,
+  }),
+  '/teacher/manage': createProtectedRoute({
+    component: async () => ManagePage,
     permissions: routePermissions.teacher,
   }),
 };

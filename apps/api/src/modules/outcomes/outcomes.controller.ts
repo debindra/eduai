@@ -120,7 +120,13 @@ export class OutcomesController {
   }
 
   @Post(':proposalId/confirm')
-  @BlocksSubstituteConfirmation()
+  @BlocksSubstituteConfirmation({
+    entityLookup: {
+      table: 'student_outcomes',
+      idParam: 'proposalId',
+      sectionColumn: 'section_id',
+    },
+  })
   @ApiOperation({ summary: 'Confirm proposed outcome — only write path for confirmed' })
   async confirm(
     @Param('proposalId') proposalId: string,

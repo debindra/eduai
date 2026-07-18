@@ -1,20 +1,32 @@
-import { createServer } from 'node:http';
-import { DB_PACKAGE_VERSION } from '@eduai/db';
+import 'reflect-metadata';
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
 
-const port = Number(process.env.DOCGEN_PORT ?? process.env.PORT ?? 3002);
-
-const server = createServer((_request, response) => {
-  if (_request.url !== '/health') {
-    response.writeHead(404, { 'Content-Type': 'application/json' });
-    response.end(JSON.stringify({ error: 'Not found' }));
-    return;
-  }
-  response.writeHead(200, { 'Content-Type': 'application/json' });
-  response.end(
-    JSON.stringify({ status: 'ok', service: 'docgen', dbPackage: DB_PACKAGE_VERSION }),
+async function bootstrap(): Promise<void> {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
   );
-});
 
-server.listen(port, () => {
-  console.log(`docgen listening on http://localhost:${port}`);
-});
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('EduAI DocGen')
+    .setDescription('Deterministic document rendering (fonts-noto-core + landscape fix)')
+    .setVersion('0.1.0')
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document, {
+    jsonDocumentUrl: 'api/docs-json',
+  });
+
+  const port = Number(process.env.DOCGEN_PORT ?? process.env.PORT ?? 3002);
+  await app.listen(port);
+}
+
+void bootstrap();

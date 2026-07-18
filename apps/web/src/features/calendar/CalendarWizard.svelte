@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import AdminNav from '../shared/AdminNav.svelte';
   import TeachingDays from './TeachingDays.svelte';
   import {
     approveCalendar,
@@ -178,6 +179,8 @@
     }
   });
 </script>
+
+<AdminNav />
 
 <main class="mx-auto min-h-screen max-w-3xl px-4 py-12">
   <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">

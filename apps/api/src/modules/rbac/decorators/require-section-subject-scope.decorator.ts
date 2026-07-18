@@ -10,6 +10,12 @@ export interface SectionSubjectScopeOptions {
   subjectIdParam?: string;
   sectionIdBody?: string;
   subjectIdBody?: string;
+  /** Resolve section_id by looking up an entity row (e.g. confirm by proposalId). */
+  entityLookup?: {
+    table: string;
+    idParam: string;
+    sectionColumn?: string;
+  };
 }
 
 export const SUBSTITUTE_BLOCKS_CONFIRMATION_KEY = 'substituteBlocksConfirmation';
@@ -20,8 +26,9 @@ export const RequireSectionSubjectScope = (options: SectionSubjectScopeOptions) 
     UseGuards(SectionReadGuard, SectionSubjectWriteGuard),
   );
 
-export const BlocksSubstituteConfirmation = () =>
+export const BlocksSubstituteConfirmation = (options?: SectionSubjectScopeOptions) =>
   applyDecorators(
     SetMetadata(SUBSTITUTE_BLOCKS_CONFIRMATION_KEY, true),
+    ...(options ? [SetMetadata(SECTION_SUBJECT_SCOPE_KEY, options)] : []),
     UseGuards(SubstituteRoleGuard),
   );
