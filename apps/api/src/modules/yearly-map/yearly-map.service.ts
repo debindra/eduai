@@ -30,7 +30,7 @@ export class YearlyMapService {
 
   /** Regenerate slices from live teaching_days — deterministic, no AI. */
   async regenerate(sectionId: string) {
-    let map = await this.repository.findMapForSection(sectionId);
+    const map = await this.repository.findMapForSection(sectionId);
     if (!map) {
       throw new NotFoundException('No yearly map for section — create a draft first');
     }
