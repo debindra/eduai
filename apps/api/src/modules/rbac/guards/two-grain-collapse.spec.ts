@@ -131,4 +131,46 @@ describe('two-grain collapse (P3-API-RBAC-01)', () => {
       expect.anything(),
     ]);
   });
+
+  // P4-API-02: same guard, basic_upper few-periods-per-week subject teacher.
+  // Grade 4 section id is fixture-only; guard never branches on band/grade.
+  const GRADE4_SECTION_ID = '66666666-6666-6666-6666-666666666668';
+  const HEALTH_PE_SUBJECT_ID = 'd1111111-1111-1111-1111-111111111116';
+  const LOCAL_SUBJECT_ID = 'd1111111-1111-1111-1111-111111111117';
+
+  it('allows basic_upper write when teacher_sections.subject_id matches (zero guard code change)', async () => {
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
+      sectionIdParam: 'sectionId',
+      subjectIdParam: 'subjectId',
+    });
+    maybeSingle.mockResolvedValue({ data: { id: 'ts-hpe' }, error: null });
+    await expect(
+      guard.canActivate(
+        ctx({
+          sectionId: GRADE4_SECTION_ID,
+          subjectId: HEALTH_PE_SUBJECT_ID,
+        }) as never,
+      ),
+    ).resolves.toBe(true);
+    expect(lastSubjectFilter).toEqual({
+      type: 'eq',
+      value: HEALTH_PE_SUBJECT_ID,
+    });
+  });
+
+  it('rejects basic_upper cross-domain (health_pe teacher cannot write local_subject)', async () => {
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
+      sectionIdParam: 'sectionId',
+      subjectIdParam: 'subjectId',
+    });
+    maybeSingle.mockResolvedValue({ data: null, error: null });
+    await expect(
+      guard.canActivate(
+        ctx({
+          sectionId: GRADE4_SECTION_ID,
+          subjectId: LOCAL_SUBJECT_ID,
+        }) as never,
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
 });
