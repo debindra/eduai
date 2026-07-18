@@ -16,6 +16,8 @@
     { href: '/teacher/remedial', label: 'Remedial' },
     { href: '/teacher/messaging', label: 'Inbox' },
     { href: '/teacher/manage', label: 'Manage' },
+    { href: '/teacher/certification', label: 'Certification' },
+    { href: '/teacher/community', label: 'Community' },
   ] as const;
 
   const handleSignOut = async () => {

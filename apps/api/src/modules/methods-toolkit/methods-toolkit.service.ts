@@ -33,12 +33,22 @@ export class MethodsToolkitRepository {
   async findChild(childId: string) {
     const { data, error } = await this.client()
       .from('children')
-      .select('id, name')
+      .select('id, section_id, sections(school_id)')
       .eq('id', childId)
       .maybeSingle();
     if (error) throw error;
     return data;
   }
+}
+
+function resolveSchoolId(child: Record<string, unknown>): string | undefined {
+  const sections = child.sections as
+    | { school_id: string }
+    | { school_id: string }[]
+    | null
+    | undefined;
+  if (Array.isArray(sections)) return sections[0]?.school_id;
+  return sections?.school_id;
 }
 
 @Injectable()
@@ -74,16 +84,20 @@ export class MethodsToolkitService {
     const child = await this.repository.findChild(input.childId);
     if (!child) throw new Error('Child not found');
 
-    // Generation parity: schoolTier is logged but never changes the prompt/model.
+    // The generated activity is child-agnostic so it can be safely content-cached
+    // and shared across children/schools (see cache-key.ts CACHE_CONFIG). The
+    // teacher addresses the specific child at delivery. schoolTier is passed for
+    // parity logging but never changes the prompt/model, and is excluded from the
+    // cache key.
     const result = await this.ai.orchestrate({
       featureId: 'methods_toolkit',
       bandId: input.bandId,
       variables: {
         activity_type: input.activityType,
         outcome_statement: outcome.statement_en as string,
-        child_name: (child.name as string).split(' ')[0] ?? 'child',
         school_tier: input.schoolTier ?? 'pilot',
       },
+      context: { schoolId: resolveSchoolId(child) },
     });
 
     const activityRef = `methods:${input.activityType}:${input.outcomeId}:${Date.now()}`;

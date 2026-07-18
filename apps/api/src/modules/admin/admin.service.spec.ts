@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminRepository, AdminService } from './admin.service';
+import type { CacheMetricsService } from '../ai-orchestration/cache-metrics.service';
+import type { OutOfSegmentService } from '../out-of-segment/out-of-segment.service';
 import type { OutcomesService } from '../outcomes/outcomes.service';
 import type { PacingService } from '../pacing/pacing.service';
 
@@ -12,6 +14,8 @@ describe('AdminService', () => {
   };
   let pacing: { getPacing: ReturnType<typeof vi.fn> };
   let outcomes: { listStalledMilestones: ReturnType<typeof vi.fn> };
+  let cacheMetrics: { snapshot: ReturnType<typeof vi.fn> };
+  let outOfSegment: { adminCounts: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     repository = {
@@ -28,10 +32,14 @@ describe('AdminService', () => {
     outcomes = {
       listStalledMilestones: vi.fn().mockResolvedValue({ stalledCount: 2 }),
     };
+    cacheMetrics = { snapshot: vi.fn() };
+    outOfSegment = { adminCounts: vi.fn() };
     service = new AdminService(
       repository as unknown as AdminRepository,
       pacing as unknown as PacingService,
       outcomes as unknown as OutcomesService,
+      cacheMetrics as unknown as CacheMetricsService,
+      outOfSegment as unknown as OutOfSegmentService,
     );
   });
 
