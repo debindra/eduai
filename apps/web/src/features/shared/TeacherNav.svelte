@@ -11,6 +11,9 @@
     { href: '/teacher/lesson', label: 'Lesson' },
     { href: '/teacher/pacing', label: 'Pacing' },
     { href: '/teacher/reports', label: 'Reports' },
+    { href: '/teacher/subject', label: 'Subject' },
+    { href: '/teacher/oversight', label: 'Oversight' },
+    { href: '/teacher/remedial', label: 'Remedial' },
     { href: '/teacher/messaging', label: 'Inbox' },
     { href: '/teacher/manage', label: 'Manage' },
   ] as const;

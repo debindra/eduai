@@ -31,6 +31,21 @@ export class DocgenClient {
     return this.post('/docgen/inspection-pack', { sectionId, dateStart, dateEnd });
   }
 
+  async renderAnnex2(childId: string, terminalId?: string): Promise<DocgenRenderResult> {
+    const q = terminalId ? `?terminalId=${encodeURIComponent(terminalId)}` : '';
+    return this.get(`/docgen/annex-2/${childId}${q}`);
+  }
+
+  async renderAnnex3(childId: string, subjectId: string): Promise<DocgenRenderResult> {
+    return this.get(
+      `/docgen/annex-3/${childId}?subjectId=${encodeURIComponent(subjectId)}`,
+    );
+  }
+
+  async renderAnnex4(childId: string): Promise<DocgenRenderResult> {
+    return this.get(`/docgen/annex-4/${childId}`);
+  }
+
   private async get(path: string): Promise<DocgenRenderResult> {
     const res = await fetch(`${this.baseUrl}${path}`);
     if (!res.ok) {

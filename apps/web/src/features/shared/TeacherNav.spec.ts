@@ -31,7 +31,7 @@ describe('TeacherNav', () => {
     });
   });
 
-  it('links to all teacher Phase 1–2 routes', () => {
+  it('links to all teacher Phase 1–3 routes', () => {
     render(TeacherNav);
     expect(screen.getByRole('link', { name: 'Attendance' })).toHaveAttribute(
       'href',
@@ -42,6 +42,15 @@ describe('TeacherNav', () => {
     expect(screen.getByRole('link', { name: 'Lesson' })).toHaveAttribute('href', '/teacher/lesson');
     expect(screen.getByRole('link', { name: 'Pacing' })).toHaveAttribute('href', '/teacher/pacing');
     expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute('href', '/teacher/reports');
+    expect(screen.getByRole('link', { name: 'Subject' })).toHaveAttribute('href', '/teacher/subject');
+    expect(screen.getByRole('link', { name: 'Oversight' })).toHaveAttribute(
+      'href',
+      '/teacher/oversight',
+    );
+    expect(screen.getByRole('link', { name: 'Remedial' })).toHaveAttribute(
+      'href',
+      '/teacher/remedial',
+    );
     expect(screen.getByRole('link', { name: 'Inbox' })).toHaveAttribute('href', '/teacher/messaging');
     expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute('href', '/teacher/manage');
   });

@@ -78,4 +78,36 @@ export class DocgenController {
   leavingPack(@Param('childId') childId: string) {
     return this.renderer.renderLeavingPack(childId);
   }
+
+  @Get('docgen/annex-2/:childId')
+  @ApiOperation({
+    summary: 'Annex 2 assessment log (deterministic, zero AI)',
+    description: 'Confirmed student_outcomes only. Landscape CDC annex.',
+  })
+  annex2(
+    @Param('childId') childId: string,
+    @Query('terminalId') terminalId?: string,
+  ) {
+    return this.renderer.renderAnnex2(childId, terminalId);
+  }
+
+  @Get('docgen/annex-3/:childId')
+  @ApiOperation({
+    summary: 'Annex 3 subject summary with letter grade (deterministic)',
+  })
+  annex3(
+    @Param('childId') childId: string,
+    @Query('subjectId') subjectId: string,
+  ) {
+    return this.renderer.renderAnnex3(childId, subjectId);
+  }
+
+  @Get('docgen/annex-4/:childId')
+  @ApiOperation({
+    summary: 'Annex 4 terminal report card (deterministic)',
+    description: 'Per-subject letter grades from confirmed ratings. Zero AI.',
+  })
+  annex4(@Param('childId') childId: string) {
+    return this.renderer.renderAnnex4(childId);
+  }
 }

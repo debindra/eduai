@@ -15,6 +15,10 @@ import InboxPage from '../features/messaging/InboxPage.svelte';
 import AdminInboxPage from '../features/messaging/AdminInboxPage.svelte';
 import ManagePage from '../features/manage/ManagePage.svelte';
 import AdminManagePage from '../features/manage/AdminManagePage.svelte';
+import SubjectPage from '../features/subject/SubjectPage.svelte';
+import OversightPage from '../features/subject/OversightPage.svelte';
+import RemedialPage from '../features/remedial/RemedialPage.svelte';
+import AdminRemedialPage from '../features/remedial/AdminRemedialPage.svelte';
 import { routePermissions } from './permissions';
 
 export const routes = {
@@ -36,6 +40,10 @@ export const routes = {
   }),
   '/admin/manage': createProtectedRoute({
     component: async () => AdminManagePage,
+    permissions: routePermissions.admin,
+  }),
+  '/admin/remedial': createProtectedRoute({
+    component: async () => AdminRemedialPage,
     permissions: routePermissions.admin,
   }),
   '/teacher/attendance': createProtectedRoute({
@@ -68,6 +76,18 @@ export const routes = {
   }),
   '/teacher/manage': createProtectedRoute({
     component: async () => ManagePage,
+    permissions: routePermissions.teacher,
+  }),
+  '/teacher/subject': createProtectedRoute({
+    component: async () => SubjectPage,
+    permissions: routePermissions.teacher,
+  }),
+  '/teacher/oversight': createProtectedRoute({
+    component: async () => OversightPage,
+    permissions: routePermissions.teacher,
+  }),
+  '/teacher/remedial': createProtectedRoute({
+    component: async () => RemedialPage,
     permissions: routePermissions.teacher,
   }),
 };

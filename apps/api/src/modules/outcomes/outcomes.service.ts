@@ -46,10 +46,15 @@ export class OutcomesRepository {
     rating_code: string | null;
     recorded_by: string | null;
     evidence_note: string | null;
+    attempt?: 'regular' | 'after_support';
   }) {
     const { data, error } = await this.client()
       .from('student_outcomes')
-      .insert({ ...row, state: 'proposed' })
+      .insert({
+        ...row,
+        state: 'proposed',
+        attempt: row.attempt ?? 'regular',
+      })
       .select('*')
       .single();
     if (error) throw error;
@@ -262,6 +267,39 @@ export class OutcomesService {
     return mapOutcome(row);
   }
 
+  /**
+   * After-support re-assessment — propose only (never confirm).
+   * Inserts a new row with attempt=after_support; never mutates a regular pass.
+   */
+  async proposeAfterSupport(
+    sectionId: string,
+    subjectId: string | null,
+    childId: string,
+    outcomeId: string,
+    ratingCode: string,
+    teacherId: string | null,
+    note?: string,
+  ) {
+    if (TOP_BAND_CODES.has(ratingCode.toLowerCase())) {
+      throw new BadRequestException(
+        'After-support propose cannot jump to top band from one sighting',
+      );
+    }
+    await this.validateChildBelongsToSection(childId, sectionId);
+    const row = await this.repository.insertProposed({
+      child_id: childId,
+      outcome_id: outcomeId,
+      section_id: sectionId,
+      subject_id: subjectId,
+      band_code: null,
+      rating_code: ratingCode,
+      recorded_by: teacherId,
+      evidence_note: note ?? 'after_support re-assessment',
+      attempt: 'after_support',
+    });
+    return mapOutcome(row);
+  }
+
   /** Confirm — the ONLY method that writes confirmed. Never calls AI. */
   async confirmOutcome(
     proposalId: string,
@@ -359,6 +397,7 @@ function mapOutcome(row: Record<string, unknown>) {
     sectionId: row.section_id as string,
     ratingCode: row.rating_code as string | null,
     state: row.state as string,
+    attempt: (row.attempt as string | undefined) ?? 'regular',
     evidenceNote: row.evidence_note as string | null,
   };
 }
