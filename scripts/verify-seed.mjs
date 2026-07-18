@@ -82,7 +82,7 @@ const EXPECTED = {
   sections: { min: 1 },
   bands: { min: 1 },
   grade_scales: { min: 3 },
-  outcomes: { min: 1 },
+  outcomes: { min: 12 },
   subjects: { min: 0, max: 0, note: 'intentional empty at pre_primary' },
   band_subjects: { min: 0, max: 0, note: 'intentional empty at pre_primary' },
   identities: { min: 5 },
@@ -97,7 +97,9 @@ const EXPECTED = {
   terminals: { min: 3 },
   calendar_closures: { min: 2 },
   yearly_map: { min: 1 },
-  map_slices: { min: 0, max: 0, note: 'Phase 1 content' },
+  map_slices: { min: 100, note: 'Phase 1 — one slice per teaching day' },
+  map_slice_outcomes: { min: 100, note: 'FK integrity for outcome_refs' },
+  prompts: { min: 4, note: 'outcome_mapper, classroom_coach, lesson_generator, monthly_parent_report' },
   lesson_progress: { min: 0, max: 0, note: 'intentional empty' },
   attendance_record: { min: 2 },
   student_outcomes: { min: 1 },
@@ -157,6 +159,37 @@ async function main() {
     for (const [tid, n] of byTerminal) {
       if (n < 1) failures.push(`terminal ${tid} has 0 teaching days`);
     }
+
+    const sliceCount = await count('map_slices');
+    if (sliceCount !== (teachingDays?.length ?? 0)) {
+      failures.push(
+        `map_slices count ${sliceCount} must equal teaching_days ${(teachingDays?.length ?? 0)}`,
+      );
+    } else {
+      console.log('  OK  map_slices               matches teaching_days count');
+    }
+  }
+
+  const { data: danglingRefs, error: refError } = await client
+    .from('map_slice_outcomes')
+    .select('outcome_id, outcomes!inner(id)');
+  if (refError) {
+    // Fallback: count join via outcomes existence
+    const { data: refs, error: refsErr } = await client.from('map_slice_outcomes').select('outcome_id');
+    if (refsErr) {
+      failures.push(`map_slice_outcomes FK check: ${refsErr.message}`);
+    } else {
+      const { data: outcomes } = await client.from('outcomes').select('id');
+      const ids = new Set((outcomes ?? []).map((o) => o.id));
+      const bad = (refs ?? []).filter((r) => !ids.has(r.outcome_id));
+      if (bad.length > 0) {
+        failures.push(`map_slice_outcomes has ${bad.length} dangling outcome_id refs`);
+      } else {
+        console.log('  OK  map_slice_outcomes      all outcome_id refs resolve');
+      }
+    }
+  } else {
+    console.log(`  OK  map_slice_outcomes      ${(danglingRefs ?? []).length} refs resolve`);
   }
 
   const requireAuth = process.env.VERIFY_SEED_REQUIRE_AUTH === '1';

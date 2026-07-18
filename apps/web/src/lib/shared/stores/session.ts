@@ -17,17 +17,53 @@ export type SessionState = {
   schoolId: string;
 } | null;
 
-export const session = writable<SessionState>(null);
+export const SESSION_STORAGE_KEY = 'eduai.session';
+
+function readStoredSession(): SessionState {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SessionState;
+    if (
+      !parsed ||
+      typeof parsed.accessToken !== 'string' ||
+      !parsed.identity ||
+      (parsed.memberType !== 'admin' && parsed.memberType !== 'teacher') ||
+      typeof parsed.schoolId !== 'string'
+    ) {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+    return null;
+  }
+}
+
+function writeStoredSession(next: SessionState): void {
+  if (typeof localStorage === 'undefined') return;
+  if (next === null) {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+    return;
+  }
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(next));
+}
+
+export const session = writable<SessionState>(readStoredSession());
 
 export function getSession(): SessionState {
   return get(session);
 }
 
 export function setSession(next: SessionState): void {
+  writeStoredSession(next);
   session.set(next);
 }
 
 export function clearSession(): void {
+  writeStoredSession(null);
   session.set(null);
 }
 

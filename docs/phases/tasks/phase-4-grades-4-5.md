@@ -1,6 +1,6 @@
 # Phase 4 — Grades 4–5 extension (tasks)
 
-Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md) § Phase 4.
+Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md)  Phase 4.
 Status: [`../status/phase-4.md`](../status/phase-4.md).
 
 **Gate:** Do not start until Grades 4–5 outcomes bank is confirmed by

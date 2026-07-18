@@ -1,6 +1,6 @@
 # Phase 0 — Foundations (tasks)
 
-Source checklist: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md) § Phase 0.
+Source checklist: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md)  Phase 0.
 Status: [`../status/phase-0.md`](../status/phase-0.md).
 
 **Exit criteria:** one school's calendar entered → festival-adjusted → approved;
@@ -23,7 +23,7 @@ the deterministic placement service (`YearlyMapModule`) is Phase 1.
 - **Acceptance:** `schools`, `identities`, `school_memberships`, `teachers`,
   `school_admins`, `guardians`, `sections`, `children` exist with FKs.
 - **Refs:** `packages/db/supabase/migrations/20250718120000_identity_tenant_auth.sql`,
-  `docs/specs/Data_Model_Identity_Addendum_v1.md` §3a
+  `docs/specs/Data_Model_Identity_Addendum_v1.md` 3a
 
 ### P0-DB-02 — Identities auth columns (no password in Postgres)
 - **Area:** Database

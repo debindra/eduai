@@ -3,6 +3,7 @@ import {
   setCurrentUser,
 } from '@keenmate/svelte-spa-router/helpers/permissions';
 import { push } from '@keenmate/svelte-spa-router';
+import { get } from 'svelte/store';
 import { session } from '../lib/shared/stores/session';
 import {
   checkPermissions,
@@ -24,6 +25,9 @@ export function initRouterPermissions(): void {
       push('/login');
     },
   });
+
+  // Hydrate immediately from restored (localStorage) session before first route guard.
+  setCurrentUser(sessionToRouterUser(get(session)));
 
   session.subscribe((value) => {
     setCurrentUser(sessionToRouterUser(value));

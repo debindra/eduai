@@ -16,7 +16,7 @@
       if (response.memberType === 'admin') {
         push('/admin/calendar');
       } else {
-        push('/');
+        push('/teacher/sweep');
       }
     } catch (err) {
       error = err instanceof Error ? err.message : 'Login failed';

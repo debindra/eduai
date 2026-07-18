@@ -1,6 +1,6 @@
 # Phase 3 — Grades 1–3 extension (tasks)
 
-Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md) § Phase 3.
+Source: [`PHASE_TASKS.md`](../../../PHASE_TASKS.md)  Phase 3.
 Status: [`../status/phase-3.md`](../status/phase-3.md).
 
 **Exit criteria:** Grade 1–3 pilot runs full remedial loop; admin open-loop

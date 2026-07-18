@@ -39,4 +39,16 @@ export class ConsoleMessagingAdapter implements MessagingProviderPort {
     this.logger.log(message);
     teeDevStub(message);
   }
+
+  async sendAttendanceConfirmation(
+    recipient: string,
+    childName: string,
+    status: string,
+    day: string,
+    channel: MessagingChannel,
+  ): Promise<void> {
+    const message = `[dev stub] ${channel} attendance to ${recipient}: ${childName} marked ${status} on ${day}`;
+    this.logger.log(message);
+    teeDevStub(message);
+  }
 }

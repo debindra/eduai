@@ -16,7 +16,13 @@ WHERE n.nspname = 'public'
     'teacher_sections',
     'children',
     'sections',
-    'lesson_progress'
+    'lesson_progress',
+    'yearly_map',
+    'map_slices',
+    'map_slice_outcomes',
+    'prompts',
+    'parent_report_drafts',
+    'coach_messages'
   )
 GROUP BY c.relname
 ORDER BY c.relname;
@@ -35,7 +41,13 @@ BEGIN
       'teacher_sections',
       'children',
       'sections',
-      'lesson_progress'
+      'lesson_progress',
+      'yearly_map',
+      'map_slices',
+      'map_slice_outcomes',
+      'prompts',
+      'parent_report_drafts',
+      'coach_messages'
     ]) AS table_name
   ) t
   WHERE NOT EXISTS (
