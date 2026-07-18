@@ -124,4 +124,11 @@ describe('DeterministicRendererService', () => {
     const putArgs = storage.putObject.mock.calls[0];
     expect(putArgs[1]).toBeInstanceOf(Buffer);
   });
+
+  it('renders Annex 2 with confirmed outcomes only (deterministic)', async () => {
+    const result = await service.renderAnnex2('c1', 'term-1');
+    expect(result.templateType).toBe('annex_2');
+    expect(result.sourceRowHash).toHaveLength(64);
+    expect(storage.putObject).toHaveBeenCalled();
+  });
 });

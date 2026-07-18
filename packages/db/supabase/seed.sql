@@ -6,8 +6,11 @@
 --   section 66666666-6666-6666-6666-666666666666
 --   band    aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa  (migration)
 --   outcome cccccccc-cccc-cccc-cccc-cccccccccccc  (migration)
--- Intentionally empty: subjects, band_subjects, audit_log, lesson_progress
+-- Intentionally empty initially: audit_log, lesson_progress
 -- Phase 1 fills: map_slices, map_slice_outcomes, prompts, extra outcomes
+-- Phase 3 fills: basic_early section, subjects, subject teachers, remedial prompts
+--   band be000000-0000-0000-0000-000000000001 (migration)
+--   subjects d1111111-…111–115 (migration)
 
 -- ---------------------------------------------------------------------------
 -- Tenant
@@ -586,4 +589,157 @@ Child first name (for address only): {{child_name}}$prompt$,
 
 Guardian message: {{guardian_message}}$prompt$,
     ARRAY['no_label_no_rank']
+  );
+
+-- ---------------------------------------------------------------------------
+-- Phase 3: Grade 1 section, subject teachers, methods-toolkit / remedial prompts
+-- ---------------------------------------------------------------------------
+INSERT INTO sections (id, school_id, band_id, grade, name)
+VALUES (
+  '66666666-6666-6666-6666-666666666667',
+  '11111111-1111-1111-1111-111111111111',
+  'be000000-0000-0000-0000-000000000001',
+  'Grade 1',
+  'Grade 1 A'
+);
+
+INSERT INTO identities (id, email, phone, account_status, invited_at) VALUES
+  (
+    '22222222-2222-2222-2222-222222222226',
+    'math@schoolx.dev',
+    NULL,
+    'invited',
+    now()
+  ),
+  (
+    '22222222-2222-2222-2222-222222222227',
+    'english@schoolx.dev',
+    NULL,
+    'invited',
+    now()
+  ),
+  (
+    '22222222-2222-2222-2222-222222222228',
+    'classteacher-g1@schoolx.dev',
+    NULL,
+    'invited',
+    now()
+  );
+
+INSERT INTO school_memberships (id, identity_id, school_id, member_type, status) VALUES
+  (
+    '33333333-3333-3333-3333-333333333336',
+    '22222222-2222-2222-2222-222222222226',
+    '11111111-1111-1111-1111-111111111111',
+    'teacher',
+    'active'
+  ),
+  (
+    '33333333-3333-3333-3333-333333333337',
+    '22222222-2222-2222-2222-222222222227',
+    '11111111-1111-1111-1111-111111111111',
+    'teacher',
+    'active'
+  ),
+  (
+    '33333333-3333-3333-3333-333333333338',
+    '22222222-2222-2222-2222-222222222228',
+    '11111111-1111-1111-1111-111111111111',
+    'teacher',
+    'active'
+  );
+
+INSERT INTO teachers (id, membership_id, display_name, certification_status) VALUES
+  (
+    '55555555-5555-5555-5555-555555555552',
+    '33333333-3333-3333-3333-333333333336',
+    'Grade 1 Math Teacher',
+    'in_programme'
+  ),
+  (
+    '55555555-5555-5555-5555-555555555553',
+    '33333333-3333-3333-3333-333333333337',
+    'Grade 1 English Teacher',
+    'in_programme'
+  ),
+  (
+    '55555555-5555-5555-5555-555555555554',
+    '33333333-3333-3333-3333-333333333338',
+    'Grade 1 Class Teacher',
+    'in_programme'
+  );
+
+INSERT INTO children (id, section_id, name, roll_number, dob, status) VALUES
+  (
+    '88888888-8888-8888-8888-888888888884',
+    '66666666-6666-6666-6666-666666666667',
+    'Nisha Rai',
+    '1',
+    '2019-05-10',
+    'active'
+  ),
+  (
+    '88888888-8888-8888-8888-888888888885',
+    '66666666-6666-6666-6666-666666666667',
+    'Rohan Magar',
+    '2',
+    '2019-08-18',
+    'active'
+  );
+
+-- Subject teachers: write grain (section, subject). Class teacher: subject_id NULL + is_class_teacher.
+INSERT INTO teacher_sections (id, teacher_id, section_id, subject_id, is_class_teacher) VALUES
+  (
+    'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2',
+    '55555555-5555-5555-5555-555555555552',
+    '66666666-6666-6666-6666-666666666667',
+    'd1111111-1111-1111-1111-111111111113',
+    false
+  ),
+  (
+    'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee3',
+    '55555555-5555-5555-5555-555555555553',
+    '66666666-6666-6666-6666-666666666667',
+    'd1111111-1111-1111-1111-111111111112',
+    false
+  ),
+  (
+    'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee4',
+    '55555555-5555-5555-5555-555555555554',
+    '66666666-6666-6666-6666-666666666667',
+    NULL,
+    true
+  );
+
+INSERT INTO prompts (id, feature_id, band_id, model_tier, system_template, validator_keys)
+VALUES
+  (
+    'a1111111-1111-1111-1111-111111111131',
+    'methods_toolkit',
+    'be000000-0000-0000-0000-000000000001',
+    'haiku',
+    $prompt$Generate a short remedial activity for Grades 1–3. Keep it classroom-practical, low-resource, and screen-free. Never invent outcome ratings. Never diagnose. Generation parity: same quality regardless of school tier.
+
+Activity type: {{activity_type}}
+Outcome: {{outcome_statement}}
+Child first name (address only): {{child_name}}$prompt$,
+    ARRAY['no_label_no_rank', 'no_test_language']
+  ),
+  (
+    'a1111111-1111-1111-1111-111111111132',
+    'outcome_mapper',
+    'be000000-0000-0000-0000-000000000001',
+    'haiku',
+    $prompt$You convert a teacher's brief classroom observation into a candidate CDC outcome rating (1–4). You never finalize anything — a human teacher confirms or edits every proposal.
+
+Rules:
+1. Never propose rating 4 from a single sighting alone.
+2. Ambiguous names → return roll-number candidates, never guess.
+3. Non-observations (absent/sick) → attendance route, not an outcome.
+4. Never infer across subject boundaries.
+5. Output only a structured proposal object.
+
+Active outcomes: {{outcomes_json}}
+Observation: {{observation_text}}$prompt$,
+    ARRAY['mapper_guards', 'no_label_no_rank']
   );

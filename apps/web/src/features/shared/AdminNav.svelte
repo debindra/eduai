@@ -9,6 +9,7 @@
     { href: '/admin/dashboard', label: 'Dashboard' },
     { href: '/admin/messaging', label: 'Messaging' },
     { href: '/admin/manage', label: 'Manage' },
+    { href: '/admin/remedial', label: 'Remedial' },
   ] as const;
 
   const handleSignOut = async () => {

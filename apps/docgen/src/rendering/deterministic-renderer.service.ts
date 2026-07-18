@@ -21,7 +21,10 @@ export type TemplateType =
   | 'year_end_report'
   | 'transition_file'
   | 'inspection_pack'
-  | 'leaving_pack';
+  | 'leaving_pack'
+  | 'annex_2'
+  | 'annex_3'
+  | 'annex_4';
 
 export interface RenderResult {
   templateType: TemplateType;
@@ -147,6 +150,131 @@ export class DeterministicRendererService {
     const child = await this.loadChild(childId);
     const buffer = await this.buildLeavingPackDocx(child, assessment.sourceRowHash, transition.sourceRowHash);
     return this.persist('leaving_pack', childId, child.section_id as string, hash, buffer);
+  }
+
+  /**
+   * Annex 2 — per-child outcome rating log (CDC Grades 1–3).
+   * Confirmed rows only; zero AI; landscape.
+   */
+  async renderAnnex2(childId: string, terminalId?: string): Promise<RenderResult> {
+    const child = await this.loadChild(childId);
+    let query = this.client()
+      .from('student_outcomes')
+      .select('id, outcome_id, rating_code, state, confirmed_at, evidence_note, attempt, subject_id')
+      .eq('child_id', childId)
+      .eq('state', 'confirmed');
+    const { data: outcomes, error } = await query;
+    if (error) throw error;
+    const source = { child, terminalId: terminalId ?? null, outcomes: outcomes ?? [] };
+    const hash = hashSourceRows(source);
+    const buffer = await this.buildAnnex2Docx(child, outcomes ?? [], terminalId);
+    return this.persist('annex_2', childId, child.section_id as string, hash, buffer);
+  }
+
+  /**
+   * Annex 3 — subject-level summary with letter grade from aggregation math.
+   * Percent/letter computed from confirmed ratings; cut-offs from grade_scales.
+   */
+  async renderAnnex3(childId: string, subjectId: string): Promise<RenderResult> {
+    const child = await this.loadChild(childId);
+    const section = await this.loadSection(child.section_id as string);
+    const { data: outcomes, error } = await this.client()
+      .from('student_outcomes')
+      .select('id, outcome_id, rating_code, state, confirmed_at, subject_id')
+      .eq('child_id', childId)
+      .eq('subject_id', subjectId)
+      .eq('state', 'confirmed');
+    if (error) throw error;
+    const agg = await this.computeLetterGrade(section.band_id as string, outcomes ?? []);
+    const source = { child, subjectId, outcomes: outcomes ?? [], agg };
+    const hash = hashSourceRows(source);
+    const buffer = await this.buildAnnex3Docx(child, subjectId, outcomes ?? [], agg);
+    return this.persist('annex_3', childId, child.section_id as string, hash, buffer);
+  }
+
+  /**
+   * Annex 4 — terminal report card: letter grades per subject (no AI fiction).
+   */
+  async renderAnnex4(childId: string): Promise<RenderResult> {
+    const child = await this.loadChild(childId);
+    const section = await this.loadSection(child.section_id as string);
+    const { data: outcomes, error } = await this.client()
+      .from('student_outcomes')
+      .select('id, outcome_id, rating_code, state, subject_id')
+      .eq('child_id', childId)
+      .eq('state', 'confirmed');
+    if (error) throw error;
+    const bySubject = new Map<string, Array<Record<string, unknown>>>();
+    for (const o of outcomes ?? []) {
+      const sid = (o.subject_id as string | null) ?? 'none';
+      const list = bySubject.get(sid) ?? [];
+      list.push(o);
+      bySubject.set(sid, list);
+    }
+    const subjectGrades: Array<{ subjectId: string; percent: number; letterCode: string; n: number }> =
+      [];
+    for (const [subjectId, rows] of bySubject) {
+      const agg = await this.computeLetterGrade(section.band_id as string, rows);
+      subjectGrades.push({ subjectId, ...agg });
+    }
+    const source = { child, subjectGrades };
+    const hash = hashSourceRows(source);
+    const buffer = await this.buildAnnex4Docx(child, subjectGrades);
+    return this.persist('annex_4', childId, child.section_id as string, hash, buffer);
+  }
+
+  private async loadSection(sectionId: string) {
+    const { data, error } = await this.client()
+      .from('sections')
+      .select('id, band_id, name')
+      .eq('id', sectionId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new NotFoundException('Section not found');
+    return data;
+  }
+
+  /** Pure arithmetic: Σ ÷ (4 × n) × 100 → letter from grade_scales cut-offs. */
+  private async computeLetterGrade(
+    bandId: string,
+    outcomes: Array<Record<string, unknown>>,
+  ): Promise<{ percent: number; letterCode: string; n: number }> {
+    if (outcomes.length === 0) {
+      return { percent: 0, letterCode: 'E', n: 0 };
+    }
+    const { data: ratings, error: rErr } = await this.client()
+      .from('grade_scales')
+      .select('code, numeric_value')
+      .eq('band_id', bandId)
+      .eq('kind', 'rating');
+    if (rErr) throw rErr;
+    const ratingMap = new Map(
+      (ratings ?? []).map((r) => [r.code as string, Number(r.numeric_value)]),
+    );
+    const { data: letters, error: lErr } = await this.client()
+      .from('grade_scales')
+      .select('code, min_percent, max_percent, sort_order')
+      .eq('band_id', bandId)
+      .eq('kind', 'letter')
+      .order('sort_order', { ascending: true });
+    if (lErr) throw lErr;
+    let sum = 0;
+    for (const o of outcomes) {
+      const n = ratingMap.get(o.rating_code as string);
+      if (n === undefined) throw new Error(`Unknown rating ${o.rating_code}`);
+      sum += n;
+    }
+    const n = outcomes.length;
+    const percent = (sum / (4 * n)) * 100;
+    const cutoffs = letters ?? [];
+    let letterCode = 'E';
+    for (const c of cutoffs) {
+      if (percent >= Number(c.min_percent) && percent <= Number(c.max_percent)) {
+        letterCode = c.code as string;
+        break;
+      }
+    }
+    return { percent, letterCode, n };
   }
 
   private async loadChild(childId: string) {
@@ -330,6 +458,125 @@ export class DeterministicRendererService {
             heading(`Leaving pack — ${String(child.name)}`),
             para(`Assessment log hash: ${assessmentHash}`),
             para(`Transition file hash: ${transitionHash}`),
+          ],
+        },
+      ],
+    });
+    return Buffer.from(await Packer.toBuffer(doc));
+  }
+
+  private async buildAnnex2Docx(
+    child: Record<string, unknown>,
+    outcomes: Array<Record<string, unknown>>,
+    terminalId?: string,
+  ): Promise<Buffer> {
+    const page = landscapePageSize();
+    const rows = outcomes.map(
+      (o) =>
+        new TableRow({
+          children: [
+            cell(String(o.outcome_id ?? '')),
+            cell(String(o.rating_code ?? '')),
+            cell(String(o.attempt ?? 'regular')),
+            cell(String(o.confirmed_at ?? '')),
+          ],
+        }),
+    );
+    const doc = new Document({
+      sections: [
+        {
+          properties: {
+            page: {
+              size: {
+                width: page.width,
+                height: page.height,
+                orientation: PageOrientation.LANDSCAPE,
+              },
+            },
+          },
+          children: [
+            heading(
+              `Annex 2 — ${String(child.name)} (roll ${String(child.roll_number ?? '')})${terminalId ? ` · terminal ${terminalId}` : ''}`,
+            ),
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              rows: [
+                new TableRow({
+                  children: [cell('Outcome'), cell('Rating'), cell('Attempt'), cell('Confirmed')],
+                }),
+                ...rows,
+              ],
+            }),
+          ],
+        },
+      ],
+    });
+    return Buffer.from(await Packer.toBuffer(doc));
+  }
+
+  private async buildAnnex3Docx(
+    child: Record<string, unknown>,
+    subjectId: string,
+    outcomes: Array<Record<string, unknown>>,
+    agg: { percent: number; letterCode: string; n: number },
+  ): Promise<Buffer> {
+    const doc = new Document({
+      sections: [
+        {
+          children: [
+            heading(`Annex 3 — ${String(child.name)} · subject ${subjectId}`),
+            para(`Confirmed outcomes: ${agg.n}`),
+            para(`Percent: ${agg.percent.toFixed(2)}`),
+            para(`Letter grade: ${agg.letterCode}`),
+            ...outcomes.map((o) =>
+              para(`• ${String(o.outcome_id)} — ${String(o.rating_code)}`),
+            ),
+          ],
+        },
+      ],
+    });
+    return Buffer.from(await Packer.toBuffer(doc));
+  }
+
+  private async buildAnnex4Docx(
+    child: Record<string, unknown>,
+    subjectGrades: Array<{ subjectId: string; percent: number; letterCode: string; n: number }>,
+  ): Promise<Buffer> {
+    const page = landscapePageSize();
+    const rows = subjectGrades.map(
+      (g) =>
+        new TableRow({
+          children: [
+            cell(g.subjectId),
+            cell(String(g.n)),
+            cell(g.percent.toFixed(1)),
+            cell(g.letterCode),
+          ],
+        }),
+    );
+    const doc = new Document({
+      sections: [
+        {
+          properties: {
+            page: {
+              size: {
+                width: page.width,
+                height: page.height,
+                orientation: PageOrientation.LANDSCAPE,
+              },
+            },
+          },
+          children: [
+            heading(`Annex 4 — Report card · ${String(child.name)}`),
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              rows: [
+                new TableRow({
+                  children: [cell('Subject'), cell('n'), cell('Percent'), cell('Letter')],
+                }),
+                ...rows,
+              ],
+            }),
           ],
         },
       ],
