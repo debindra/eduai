@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AdminRepository, AdminService } from './admin.service';
+import { AdminRepository, AdminService, exclusivePeriodEnd } from './admin.service';
+import type { SupabaseService } from '../../database/supabase.service';
 import type { CacheMetricsService } from '../ai-orchestration/cache-metrics.service';
 import type { OutOfSegmentService } from '../out-of-segment/out-of-segment.service';
 import type { OutcomesService } from '../outcomes/outcomes.service';
@@ -19,7 +20,12 @@ describe('AdminService', () => {
 
   beforeEach(() => {
     repository = {
-      listSections: vi.fn().mockResolvedValue([{ id: 's1' }, { id: 's2' }]),
+      listSections: vi
+        .fn()
+        .mockResolvedValue([
+          { id: 's1', name: 'UKG A' },
+          { id: 's2', name: 'Grade 1 A' },
+        ]),
       countChildrenWithFreshOutcomes: vi.fn().mockResolvedValue(3),
       communicationReplyRate: vi.fn().mockResolvedValue(0.8),
     };
@@ -48,13 +54,66 @@ describe('AdminService', () => {
     expect(result.sectionsBehindCount).toBe(1);
     expect(result.sectionsTotal).toBe(2);
     expect(result.coverageBySection).toEqual([
-      { sectionId: 's1', childrenWithFreshOutcomes: 3 },
-      { sectionId: 's2', childrenWithFreshOutcomes: 3 },
+      { sectionId: 's1', sectionName: 'UKG A', childrenWithFreshOutcomes: 3 },
+      { sectionId: 's2', sectionName: 'Grade 1 A', childrenWithFreshOutcomes: 3 },
     ]);
     expect(result.needsSupportBySection.every((r) => 'stalledCount' in r)).toBe(true);
     const json = JSON.stringify(result);
     expect(json).not.toMatch(/childNames|bandDistribution|ratingDistribution|teacherId/i);
     expect(Object.keys(result)).not.toContain('childNames');
     expect(Object.keys(result)).not.toContain('teacherLeague');
+  });
+});
+
+describe('exclusivePeriodEnd', () => {
+  it('advances a date-only period end by one day to an exclusive UTC bound', () => {
+    expect(exclusivePeriodEnd('2025-04-30')).toBe('2025-05-01T00:00:00.000Z');
+  });
+
+  it('rolls month/year boundaries correctly', () => {
+    expect(exclusivePeriodEnd('2025-12-31')).toBe('2026-01-01T00:00:00.000Z');
+  });
+
+  it('ignores any time component and uses the calendar day', () => {
+    expect(exclusivePeriodEnd('2025-04-30T18:42:00.000Z')).toBe('2025-05-01T00:00:00.000Z');
+  });
+});
+
+describe('AdminRepository.countChildrenWithFreshOutcomes', () => {
+  function buildRepository(rows: Array<{ child_id: string }>) {
+    const resolved = { data: rows, error: null };
+    const gte = vi.fn().mockReturnThis();
+    const lt = vi.fn().mockReturnThis();
+    const lte = vi.fn().mockReturnThis();
+    // Chainable query builder; awaiting it resolves to { data, error }.
+    const query = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte,
+      lt,
+      lte,
+      then: (resolve: (v: typeof resolved) => unknown) => resolve(resolved),
+    };
+    const client = { from: vi.fn().mockReturnValue(query) };
+    const supabase = { getClient: vi.fn().mockReturnValue(client) };
+    const repository = new AdminRepository(supabase as unknown as SupabaseService);
+    return { repository, gte, lt, lte };
+  }
+
+  it('counts distinct children and includes outcomes confirmed on the last day', async () => {
+    const { repository, gte, lt, lte } = buildRepository([
+      { child_id: 'c1' },
+      { child_id: 'c1' },
+      { child_id: 'c2' },
+    ]);
+    const count = await repository.countChildrenWithFreshOutcomes(
+      's1',
+      '2025-04-01',
+      '2025-04-30',
+    );
+    expect(count).toBe(2);
+    expect(gte).toHaveBeenCalledWith('confirmed_at', '2025-04-01');
+    expect(lt).toHaveBeenCalledWith('confirmed_at', '2025-05-01T00:00:00.000Z');
+    expect(lte).not.toHaveBeenCalled();
   });
 });
