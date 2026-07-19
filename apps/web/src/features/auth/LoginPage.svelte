@@ -14,7 +14,7 @@
     try {
       const response = await login({ identifier, password });
       if (response.memberType === 'admin') {
-        push('/admin/calendar');
+        push('/admin/dashboard');
       } else {
         push('/teacher/sweep');
       }

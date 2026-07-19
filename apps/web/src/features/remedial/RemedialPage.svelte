@@ -1,18 +1,31 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
+  import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
   import { getRemedialPlans } from './api';
   import { teacherPlanLine, type RemedialListShape } from './remedial-logic';
+
+  const loadGate = createAssignmentLoadGate();
 
   let list = $state<RemedialListShape | null>(null);
   let error = $state<string | null>(null);
 
-  onMount(async () => {
-    try {
-      list = await getRemedialPlans();
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load remedial plans';
-    }
+  $effect(() => {
+    const key = $selectedAssignmentKey;
+    const token = loadGate.begin(key);
+    if (token === null) return;
+    void (async () => {
+      try {
+        const next = await getRemedialPlans();
+        if (!loadGate.isCurrent(token)) return;
+        list = next;
+        error = null;
+      } catch (err) {
+        if (!loadGate.isCurrent(token)) return;
+        error = err instanceof Error ? err.message : 'Failed to load remedial plans';
+        list = null;
+      }
+    })();
   });
 </script>
 

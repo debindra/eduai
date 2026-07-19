@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import { RequireSectionSubjectScope } from '../rbac/decorators/require-section-subject-scope.decorator';
+import { RequireSectionReadScope } from '../rbac/decorators/require-section-subject-scope.decorator';
 import { AggregationService } from './aggregation.service';
 
 @ApiTags('aggregation')
@@ -28,7 +28,7 @@ export class AggregationController {
   }
 
   @Get('section/:sectionId/child/:childId')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({ summary: 'Scoped per-child aggregation (section read)' })
   aggregateChildScoped(
     @Param('childId') childId: string,

@@ -1,5 +1,8 @@
 import { apiFetch } from '../../lib/shared/api/client';
-import { getTeacherBandId, getTeacherSectionId } from '../outcomes/api';
+import {
+  requireBandId,
+  requireSectionId,
+} from '../../lib/shared/stores/teacher-context';
 
 export async function draftMonthlyReport(input: {
   childId: string;
@@ -12,11 +15,11 @@ export async function draftMonthlyReport(input: {
     thinData: boolean;
     evidenceSnapshot: unknown;
     state: string;
-  }>(`/reports/${getTeacherSectionId()}/monthly/draft`, {
+  }>(`/reports/${requireSectionId()}/monthly/draft`, {
     method: 'POST',
     body: {
       ...input,
-      bandId: getTeacherBandId(),
+      bandId: requireBandId(),
     },
   });
 }

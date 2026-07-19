@@ -3,7 +3,10 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { ForbiddenException } from '@nestjs/common';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import { RequireSectionSubjectScope } from '../rbac/decorators/require-section-subject-scope.decorator';
+import {
+  RequireSectionReadScope,
+  RequireSectionSubjectScope,
+} from '../rbac/decorators/require-section-subject-scope.decorator';
 import { SubjectService } from './subject.service';
 
 @ApiTags('subject')
@@ -39,7 +42,7 @@ export class SubjectController {
   }
 
   @Get('section/:sectionId/oversight')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({
     summary: 'Class-teacher oversight + report assembly inputs',
     description: 'Section-wide child summaries with per-child letter grades (never ranked).',

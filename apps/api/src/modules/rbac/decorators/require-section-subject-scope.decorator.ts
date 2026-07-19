@@ -20,6 +20,20 @@ export interface SectionSubjectScopeOptions {
 
 export const SUBSTITUTE_BLOCKS_CONFIRMATION_KEY = 'substituteBlocksConfirmation';
 
+/**
+ * Section read scope — any teacher_sections row for the section is enough.
+ * Use on GET / list endpoints. Does not enforce (section, subject) write grain.
+ */
+export const RequireSectionReadScope = (options: SectionSubjectScopeOptions) =>
+  applyDecorators(
+    SetMetadata(SECTION_SUBJECT_SCOPE_KEY, options),
+    UseGuards(SectionReadGuard),
+  );
+
+/**
+ * Section + subject write scope — requires a matching teacher_sections grain.
+ * Use on propose / mutate endpoints.
+ */
 export const RequireSectionSubjectScope = (options: SectionSubjectScopeOptions) =>
   applyDecorators(
     SetMetadata(SECTION_SUBJECT_SCOPE_KEY, options),

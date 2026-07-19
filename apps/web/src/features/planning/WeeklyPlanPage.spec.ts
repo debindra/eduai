@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import WeeklyPlanPage from './WeeklyPlanPage.svelte';
+import { seedTeacherContext } from '../../lib/shared/stores/teacher-context.test-helpers';
 
 vi.mock('@keenmate/svelte-spa-router', () => ({
   link: () => ({ destroy: () => {} }),
@@ -28,6 +29,7 @@ const mockAdjustWeekly = vi.mocked(adjustWeekly);
 describe('WeeklyPlanPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    seedTeacherContext();
     mockGetWeekly.mockResolvedValue({
       sectionId: 'section-1',
       weekStart: '2025-04-14',

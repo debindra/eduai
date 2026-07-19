@@ -50,8 +50,8 @@ export class SectionReadGuard implements CanActivate {
       .select('id')
       .eq('teacher_id', teacherId)
       .eq('section_id', sectionId)
-      .maybeSingle();
-    if (error || !data) {
+      .limit(1);
+    if (error || !data || data.length === 0) {
       throw new ForbiddenException('Section read scope denied');
     }
     return true;

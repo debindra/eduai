@@ -1,10 +1,12 @@
 import { apiFetch } from '../../lib/shared/api/client';
 import { getAdminSchoolId } from '../admin/api';
-import { getGrade1SectionId } from '../subject/api';
+import { requireSectionId } from '../../lib/shared/stores/teacher-context';
 import type { AdminOpenLoopCountsShape, RemedialListShape } from './remedial-logic';
 
 export async function getRemedialPlans() {
-  return apiFetch<RemedialListShape>(`/remedial/section/${getGrade1SectionId()}/plans`);
+  return apiFetch<RemedialListShape>(
+    `/remedial/section/${requireSectionId()}/plans`,
+  );
 }
 
 export async function getAdminOpenLoopCounts() {

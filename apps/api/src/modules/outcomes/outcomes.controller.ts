@@ -4,7 +4,11 @@ import { Type } from 'class-transformer';
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
 import type { Request } from 'express';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import { BlocksSubstituteConfirmation, RequireSectionSubjectScope } from '../rbac/decorators/require-section-subject-scope.decorator';
+import {
+  BlocksSubstituteConfirmation,
+  RequireSectionReadScope,
+  RequireSectionSubjectScope,
+} from '../rbac/decorators/require-section-subject-scope.decorator';
 import { OutcomesService } from './outcomes.service';
 
 class SweepItemDto {
@@ -141,13 +145,27 @@ export class OutcomesController {
   }
 
   @Get(':sectionId/proposed')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   listProposed(@Param('sectionId') sectionId: string) {
     return this.service.listProposed(sectionId);
   }
 
+  @Get(':sectionId/sweep-context')
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
+  @ApiOperation({
+    summary: 'Sweep UI bootstrap: active children + band-derived milestones',
+    description:
+      'Reads band_id off the section (band-as-data). Optional subjectId filters outcomes for Grade 1+ subject teachers. Children ordered by roll number only — never by rating.',
+  })
+  sweepContext(
+    @Param('sectionId') sectionId: string,
+    @Query('subjectId') subjectId?: string,
+  ) {
+    return this.service.getSweepContext(sectionId, subjectId || null);
+  }
+
   @Get(':sectionId/stalled')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({ summary: 'Private inclusive-assistant stall prompt (not admin flag)' })
   stalled(
     @Param('sectionId') sectionId: string,

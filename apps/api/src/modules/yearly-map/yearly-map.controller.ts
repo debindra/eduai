@@ -1,7 +1,10 @@
 import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import { RequireSectionSubjectScope } from '../rbac/decorators/require-section-subject-scope.decorator';
+import {
+  RequireSectionReadScope,
+  RequireSectionSubjectScope,
+} from '../rbac/decorators/require-section-subject-scope.decorator';
 import { YearlyMapService } from './yearly-map.service';
 
 @ApiTags('yearly-map')
@@ -12,7 +15,7 @@ export class YearlyMapController {
   constructor(private readonly service: YearlyMapService) {}
 
   @Get(':sectionId')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({ summary: 'Get yearly map and slices for a section' })
   getMap(@Param('sectionId') sectionId: string) {
     return this.service.getMap(sectionId);

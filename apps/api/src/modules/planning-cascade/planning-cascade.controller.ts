@@ -3,7 +3,10 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProperty, ApiTags } from
 import { IsOptional, IsString } from 'class-validator';
 import type { Request } from 'express';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import { RequireSectionSubjectScope } from '../rbac/decorators/require-section-subject-scope.decorator';
+import {
+  RequireSectionReadScope,
+  RequireSectionSubjectScope,
+} from '../rbac/decorators/require-section-subject-scope.decorator';
 import {
   DailyPlanResponseDto,
   MonthlyPlanResponseDto,
@@ -34,7 +37,7 @@ export class PlanningCascadeController {
   constructor(private readonly service: PlanningCascadeService) {}
 
   @Get(':sectionId/monthly')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({ summary: 'Monthly plan auto-derived from yearly map' })
   @ApiOkResponse({ type: MonthlyPlanResponseDto })
   getMonthly(
@@ -46,7 +49,7 @@ export class PlanningCascadeController {
   }
 
   @Get(':sectionId/weekly')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({ summary: 'Weekly plan with Sunday-adjustable overrides' })
   @ApiOkResponse({ type: WeeklyPlanResponseDto })
   getWeekly(
@@ -77,7 +80,7 @@ export class PlanningCascadeController {
   }
 
   @Get(':sectionId/daily')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({ summary: 'Daily cell pre-filled from weekly plan' })
   @ApiOkResponse({ type: DailyPlanResponseDto })
   getDaily(

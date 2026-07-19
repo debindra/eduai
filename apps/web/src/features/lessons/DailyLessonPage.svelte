@@ -1,8 +1,11 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import TeacherNav from '../shared/TeacherNav.svelte';
   import { ApiError } from '../../lib/shared/api/client';
+  import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
+  import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
   import { generateLesson, getDaily, markLessonDone } from './api';
+
+  const loadGate = createAssignmentLoadGate();
 
   let date = $state(new Date().toISOString().slice(0, 10));
   let theme = $state<string | null>(null);
@@ -12,15 +15,19 @@
   let notATeachingDay = $state(false);
 
   const load = async () => {
+    const token = loadGate.begin($selectedAssignmentKey);
+    if (token === null) return;
     error = null;
     notATeachingDay = false;
     theme = null;
     mapSliceId = null;
     try {
       const daily = await getDaily(date);
+      if (!loadGate.isCurrent(token)) return;
       theme = daily.themeOrChapter;
       mapSliceId = daily.mapSliceId;
     } catch (err) {
+      if (!loadGate.isCurrent(token)) return;
       if (err instanceof ApiError && err.status === 404) {
         notATeachingDay = true;
       } else {
@@ -29,7 +36,12 @@
     }
   };
 
-  onMount(load);
+  $effect(() => {
+    const key = $selectedAssignmentKey;
+    const _date = date;
+    if (!key) return;
+    void load();
+  });
 
   const handleGenerate = async () => {
     error = null;
@@ -61,7 +73,7 @@
   <h1 class="text-2xl font-semibold text-slate-900">Daily lesson</h1>
   <p class="mt-1 text-sm text-slate-600">Pre-filled from the weekly cell — coverage separate from learning.</p>
 
-  <input class="mt-4 rounded border px-2 py-1 text-sm" type="date" bind:value={date} onchange={load} aria-label="Lesson date" />
+  <input class="mt-4 rounded border px-2 py-1 text-sm" type="date" bind:value={date} aria-label="Lesson date" />
 
   {#if notATeachingDay}
     <p class="mt-2 text-sm text-slate-500" role="status">No school on this day — not a teaching day.</p>

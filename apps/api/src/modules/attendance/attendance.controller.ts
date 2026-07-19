@@ -4,7 +4,10 @@ import { Type } from 'class-transformer';
 import { IsArray, IsIn, IsString, ValidateNested } from 'class-validator';
 import type { Request } from 'express';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import { RequireSectionSubjectScope } from '../rbac/decorators/require-section-subject-scope.decorator';
+import {
+  RequireSectionReadScope,
+  RequireSectionSubjectScope,
+} from '../rbac/decorators/require-section-subject-scope.decorator';
 import { AttendanceService, type AttendanceStatus } from './attendance.service';
 
 class AttendanceMarkDto {
@@ -50,7 +53,7 @@ export class AttendanceController {
   }
 
   @Get(':sectionId')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({ summary: 'List children for attendance day' })
   list(@Param('sectionId') sectionId: string, @Query('day') day: string) {
     return this.service.listForDay(sectionId, day);

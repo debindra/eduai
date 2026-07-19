@@ -1,12 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearSession, setSession } from '../stores/session';
+import { clearSession, getSession, setSession } from '../stores/session';
 import { ApiError, apiFetch, getApiBaseUrl } from './client';
+
+const pushMock = vi.fn();
+vi.mock('@keenmate/svelte-spa-router', () => ({
+  push: (...args: unknown[]) => pushMock(...args),
+}));
+
+const authedSession = {
+  accessToken: 'token-1',
+  identity: {
+    id: 'identity-1',
+    email: 't@school.dev',
+    phone: null,
+    displayName: null,
+  },
+  memberType: 'teacher' as const,
+  schoolId: 'school-1',
+};
 
 describe('api client', () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
     clearSession();
+    pushMock.mockClear();
     vi.stubGlobal('fetch', fetchMock);
   });
 
@@ -97,6 +115,34 @@ describe('api client', () => {
       status: 502,
       message: 'Request failed (502)',
     } satisfies Partial<ApiError>);
+  });
+
+  it('clears session and redirects to login on 401 for authenticated requests', async () => {
+    setSession(authedSession);
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => JSON.stringify({ message: 'Token expired' }),
+    });
+
+    await expect(apiFetch('/calendar/setup')).rejects.toMatchObject({
+      status: 401,
+    });
+    expect(getSession()).toBeNull();
+    expect(pushMock).toHaveBeenCalledWith('/login');
+  });
+
+  it('does not redirect on 401 for unauthenticated requests', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => JSON.stringify({ message: 'Invalid credentials' }),
+    });
+
+    await expect(
+      apiFetch('/auth/login', { auth: false }),
+    ).rejects.toMatchObject({ status: 401 });
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it('returns undefined for empty success body', async () => {

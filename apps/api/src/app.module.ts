@@ -24,7 +24,9 @@ import { PlanningCascadeModule } from './modules/planning-cascade/planning-casca
 import { RbacModule } from './modules/rbac/rbac.module';
 import { RemedialModule } from './modules/remedial/remedial.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { RosterModule } from './modules/roster/roster.module';
 import { SubjectModule } from './modules/subject/subject.module';
+import { TeacherContextModule } from './modules/teacher-context/teacher-context.module';
 import { YearlyMapModule } from './modules/yearly-map/yearly-map.module';
 
 @Module({
@@ -38,6 +40,8 @@ import { YearlyMapModule } from './modules/yearly-map/yearly-map.module';
     RbacModule,
     BandConfigModule,
     CalendarModule,
+    RosterModule,
+    TeacherContextModule,
     AiOrchestrationModule,
     YearlyMapModule,
     PlanningCascadeModule,

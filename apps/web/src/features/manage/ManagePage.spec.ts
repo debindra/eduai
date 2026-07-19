@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/svelte';
 import ManagePage from './ManagePage.svelte';
+import { seedTeacherContext } from '../../lib/shared/stores/teacher-context.test-helpers';
 
 vi.mock('@keenmate/svelte-spa-router', () => ({
   link: () => ({ destroy: () => {} }),
@@ -20,7 +21,10 @@ vi.mock('./api', () => ({
 import { getFestivalPlanner, getSettlingProgramme, getSubstitutePack } from './api';
 
 describe('ManagePage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    seedTeacherContext();
+  });
 
   it('shows festival planner and settling programme', async () => {
     vi.mocked(getFestivalPlanner).mockResolvedValue({

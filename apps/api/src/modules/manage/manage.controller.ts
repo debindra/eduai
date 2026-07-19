@@ -3,7 +3,10 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
 import { RequireRoleGuard } from '../auth/guards/require-role.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import { RequireSectionSubjectScope } from '../rbac/decorators/require-section-subject-scope.decorator';
+import {
+  RequireSectionReadScope,
+  RequireSectionSubjectScope,
+} from '../rbac/decorators/require-section-subject-scope.decorator';
 import { ManageService } from './manage.service';
 
 @ApiTags('manage')
@@ -31,7 +34,7 @@ export class ManageController {
   }
 
   @Get(':sectionId/substitute-pack')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({
     summary: 'Substitute day pack (read-only)',
     description: 'Assembles lesson, roster, schedule. Outcome confirmation remains blocked by SubstituteRoleGuard.',
@@ -41,7 +44,7 @@ export class ManageController {
   }
 
   @Get(':sectionId/catch-up/:childId')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({
     summary: 'Catch-up pack from lesson_progress × attendance',
     description: 'Generates re-teach content only — never writes student_outcomes.',
@@ -55,7 +58,7 @@ export class ManageController {
   }
 
   @Get(':sectionId/festival-planner')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({ summary: 'Festival planner from calendar_closures + pacing' })
   festivalPlanner(@Param('sectionId') sectionId: string) {
     return this.service.getFestivalPlanner(sectionId);

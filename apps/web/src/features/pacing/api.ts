@@ -1,5 +1,5 @@
 import { apiFetch } from '../../lib/shared/api/client';
-import { getTeacherSectionId } from '../outcomes/api';
+import { requireSectionId } from '../../lib/shared/stores/teacher-context';
 import type { PacingApiState } from './pacing-logic';
 
 export async function getPacing() {
@@ -9,5 +9,5 @@ export async function getPacing() {
     teachingDaysRemaining: number;
     plannedIndex: number;
     actualDone: number;
-  }>(`/pacing/${getTeacherSectionId()}`);
+  }>(`/pacing/${requireSectionId()}`);
 }

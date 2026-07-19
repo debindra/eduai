@@ -1,27 +1,38 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
+  import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
   import { getPacing } from './api';
   import { assertNoOutcomeMerge, pacingBadgeLabel, type PacingApiState } from './pacing-logic';
+
+  const loadGate = createAssignmentLoadGate();
 
   let state = $state<PacingApiState | null>(null);
   let remaining = $state(0);
   let gap = $state(0);
   let error = $state<string | null>(null);
 
-  onMount(async () => {
-    try {
-      const pacing = await getPacing();
-      if (!assertNoOutcomeMerge(pacing as unknown as Record<string, unknown>)) {
-        error = 'Invalid pacing payload — outcomes must not merge into coverage';
-        return;
+  $effect(() => {
+    const key = $selectedAssignmentKey;
+    const token = loadGate.begin(key);
+    if (token === null) return;
+    void (async () => {
+      try {
+        const pacing = await getPacing();
+        if (!loadGate.isCurrent(token)) return;
+        if (!assertNoOutcomeMerge(pacing as unknown as Record<string, unknown>)) {
+          error = 'Invalid pacing payload — outcomes must not merge into coverage';
+          return;
+        }
+        state = pacing.state;
+        remaining = pacing.teachingDaysRemaining;
+        gap = pacing.gapTeachingDays;
+        error = null;
+      } catch (err) {
+        if (!loadGate.isCurrent(token)) return;
+        error = err instanceof Error ? err.message : 'Failed to load pacing';
       }
-      state = pacing.state;
-      remaining = pacing.teachingDaysRemaining;
-      gap = pacing.gapTeachingDays;
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load pacing';
-    }
+    })();
   });
 </script>
 
