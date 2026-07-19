@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { getMyCertification } from './api';
   import {
     certificationStatusLabel,
@@ -17,7 +19,7 @@
     try {
       view = await getMyCertification();
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load certification progress';
+      error = toErrorMessage(err, 'Failed to load certification progress');
     }
   });
 </script>
@@ -30,9 +32,7 @@
   </p>
 
   {#if error}
-    <p class="mt-6 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" data-testid="cert-error">
-      {error}
-    </p>
+    <Alert message={error} class="mt-6" testId="cert-error" />
   {:else if !view}
     <p class="mt-6 text-sm text-slate-500">Loading…</p>
   {:else}

@@ -70,6 +70,12 @@ export class SupabaseAuthGuard implements CanActivate {
       client,
       (memberships ?? []) as MembershipGuardRow[],
     );
+    const { data: platformAdminRow } = await client
+      .from('platform_admins')
+      .select('id, display_name, status')
+      .eq('identity_id', identityRow.id)
+      .eq('status', 'active')
+      .maybeSingle();
     const requestUser: RequestUser = {
       identityId: identityRow.id,
       authUserId: identityRow.auth_user_id,
@@ -77,6 +83,9 @@ export class SupabaseAuthGuard implements CanActivate {
       email: identityRow.email,
       phone: identityRow.phone,
       memberships: resolvedMemberships,
+      platformAdmin: platformAdminRow
+        ? { id: platformAdminRow.id as string, displayName: platformAdminRow.display_name ?? null }
+        : null,
     };
     request.user = requestUser;
     return true;

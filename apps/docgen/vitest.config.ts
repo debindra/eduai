@@ -5,5 +5,8 @@ export default defineConfig({
     globals: false,
     environment: 'node',
     include: ['src/**/*.spec.ts'],
+    env: {
+      TZ: 'Asia/Kathmandu',
+    },
   },
 });

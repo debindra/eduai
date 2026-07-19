@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import AdminNav from '../shared/AdminNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { getAdminDashboard } from './api';
   import { assertGravitySafe, formatReplyRate, type AdminDashboardShape } from './admin-logic';
 
@@ -16,7 +18,7 @@
       }
       data = dashboard;
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load dashboard';
+      error = toErrorMessage(err, 'Failed to load dashboard');
     }
   });
 </script>
@@ -57,7 +59,5 @@
       </div>
     </dl>
   {/if}
-  {#if error}
-    <p class="mt-4 text-sm text-red-700" role="alert">{error}</p>
-  {/if}
+  <Alert message={error} class="mt-4" />
 </main>

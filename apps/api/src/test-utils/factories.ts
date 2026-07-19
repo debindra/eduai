@@ -22,6 +22,7 @@ export function getMockRequestUser(overrides?: Partial<RequestUser>): RequestUse
     email: 'teacher@schoolx.dev',
     phone: null,
     memberships: [getMockMembership()],
+    platformAdmin: null,
     ...overrides,
   };
 }

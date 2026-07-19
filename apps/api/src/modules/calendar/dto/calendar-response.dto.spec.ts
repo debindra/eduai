@@ -12,12 +12,14 @@ describe('PatchFestivalTemplateDto', () => {
           name: 'Dashain',
           startDate: '2025-10-02',
           endDate: '2025-10-12',
+          category: 'school_holiday',
         },
         {
           id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbc2',
           name: 'Tihar',
           startDate: '2025-10-20',
           endDate: '2025-10-24',
+          category: 'school_holiday',
         },
       ],
     });
@@ -35,6 +37,7 @@ describe('PatchFestivalTemplateDto', () => {
           name: 'Dashain',
           startDate: '2025-10-02',
           endDate: '2025-10-12',
+          category: 'school_holiday',
         },
       ],
     });

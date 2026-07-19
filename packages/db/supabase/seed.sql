@@ -10,10 +10,13 @@
 --   band    b4000000-0000-0000-0000-000000000001  (basic_upper, migration)
 --   outcome cccccccc-cccc-cccc-cccc-cccccccccccc  (migration)
 --   subjects d1111111-…111–117 (migration)
+--   platform identity 22222222-2222-2222-2222-222222222260
+--   platform_admin    a1000000-0000-0000-0000-000000000001
+--   national_calendar a2000000-0000-0000-0000-000000000082 (BS 2082)
 -- Full school: Nursery–Grade 5, ~120 children, 15 sections.
 -- Intentionally empty: audit_log, lesson_progress, out_of_segment_query_log,
 --   weekly_plan_overrides, lesson_drafts, parent_report_drafts, coach_messages,
---   document_render, handover_pack, remedial_plans.
+--   document_render, handover_pack, remedial_plans, support_sessions.
 
 -- ---------------------------------------------------------------------------
 -- Tenant
@@ -88,7 +91,17 @@ INSERT INTO identities (id, email, phone, account_status, invited_at) VALUES
   ('22222222-2222-2222-2222-222222222248', 'science-upper@schoolx.dev', NULL, 'invited', now()),
   ('22222222-2222-2222-2222-222222222249', 'social-upper@schoolx.dev', NULL, 'invited', now()),
   ('22222222-2222-2222-2222-222222222250', 'health-upper@schoolx.dev', NULL, 'invited', now()),
-  ('22222222-2222-2222-2222-222222222251', 'local-upper@schoolx.dev', NULL, 'invited', now());
+  ('22222222-2222-2222-2222-222222222251', 'local-upper@schoolx.dev', NULL, 'invited', now()),
+  -- platform super admin (no school_memberships — cross-tenant axis)
+  ('22222222-2222-2222-2222-222222222260', 'platform@eduai.dev', NULL, 'invited', now());
+
+INSERT INTO platform_admins (id, identity_id, display_name, status) VALUES
+  (
+    'a1000000-0000-0000-0000-000000000001',
+    '22222222-2222-2222-2222-222222222260',
+    'Platform Admin (dev)',
+    'active'
+  );
 
 INSERT INTO school_memberships (id, identity_id, school_id, member_type, status) VALUES
   ('33333333-3333-3333-3333-333333333331', '22222222-2222-2222-2222-222222222221', '11111111-1111-1111-1111-111111111111', 'admin', 'active'),
@@ -426,6 +439,56 @@ INSERT INTO calendar_closures (
     '2025-10-20',
     '2025-10-24',
     'festival_template'
+  );
+
+-- ---------------------------------------------------------------------------
+-- National calendar (published BS 2082) — data rows, not app hardcodes.
+-- Dashain/Tihar overlap school festival_template dates (no extra teaching-day
+-- loss). Fixed govt holiday lands on Saturday (weekly off) so map_slices
+-- still equals teaching_days after VIEW extension.
+-- ---------------------------------------------------------------------------
+INSERT INTO national_calendars (id, bs_year, status) VALUES
+  ('a2000000-0000-0000-0000-000000000082', 2082, 'published');
+
+INSERT INTO national_closures (
+  id,
+  national_calendar_id,
+  name,
+  category,
+  start_date,
+  end_date,
+  bs_label,
+  movable
+) VALUES
+  (
+    'a2000000-0000-0000-0000-0000000000c1',
+    'a2000000-0000-0000-0000-000000000082',
+    'Dashain',
+    'festival',
+    '2025-10-02',
+    '2025-10-12',
+    'Ashwin 2082',
+    true
+  ),
+  (
+    'a2000000-0000-0000-0000-0000000000c2',
+    'a2000000-0000-0000-0000-000000000082',
+    'Tihar',
+    'festival',
+    '2025-10-20',
+    '2025-10-24',
+    'Kartik 2082',
+    true
+  ),
+  (
+    'a2000000-0000-0000-0000-0000000000c3',
+    'a2000000-0000-0000-0000-000000000082',
+    'Representative Day Off (seed)',
+    'govt_holiday',
+    '2025-04-19',
+    '2025-04-19',
+    'Baisakh 6, 2082',
+    false
   );
 
 -- ---------------------------------------------------------------------------

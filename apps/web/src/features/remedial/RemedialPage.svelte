@@ -1,5 +1,7 @@
 <script lang="ts">
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
   import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
   import { getRemedialPlans } from './api';
@@ -22,7 +24,7 @@
         error = null;
       } catch (err) {
         if (!loadGate.isCurrent(token)) return;
-        error = err instanceof Error ? err.message : 'Failed to load remedial plans';
+        error = toErrorMessage(err, 'Failed to load remedial plans');
         list = null;
       }
     })();
@@ -48,7 +50,5 @@
     </section>
   {/if}
 
-  {#if error}
-    <p class="mt-4 text-sm text-red-700" role="alert">{error}</p>
-  {/if}
+  <Alert message={error} class="mt-4" />
 </main>

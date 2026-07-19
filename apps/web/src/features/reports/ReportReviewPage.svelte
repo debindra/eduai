@@ -1,5 +1,7 @@
 <script lang="ts">
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
   import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
   import { listSectionChildren, type AttendanceChild } from '../attendance/api';
@@ -34,7 +36,7 @@
       childId = result.children[0]?.id ?? '';
     } catch (err) {
       if (!loadGate.isCurrent(token)) return;
-      error = err instanceof Error ? err.message : 'Failed to load children';
+      error = toErrorMessage(err, 'Failed to load children');
       children = [];
       childId = '';
     } finally {
@@ -66,7 +68,7 @@
       thinData = draft.thinData;
       evidence = draft.evidenceSnapshot;
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Draft failed';
+      error = toErrorMessage(err, 'Draft failed');
     } finally {
       busy = false;
     }
@@ -79,7 +81,7 @@
     try {
       await approveReport(draftId);
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Approve failed';
+      error = toErrorMessage(err, 'Approve failed');
     } finally {
       busy = false;
     }
@@ -141,7 +143,5 @@
     </button>
   {/if}
 
-  {#if error}
-    <p class="mt-4 text-sm text-red-700" role="alert">{error}</p>
-  {/if}
+  <Alert message={error} class="mt-4" />
 </main>

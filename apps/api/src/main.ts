@@ -1,3 +1,4 @@
+import './timezone';
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -7,9 +8,11 @@ import { AppModule } from './app.module';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
-  const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:5173';
+  // Allow both localhost and 127.0.0.1 — browsers treat them as distinct origins.
+  const corsOrigin =
+    process.env.CORS_ORIGIN ?? 'http://localhost:5173,http://127.0.0.1:5173';
   app.enableCors({
-    origin: corsOrigin.split(',').map((value) => value.trim()),
+    origin: corsOrigin.split(',').map((value) => value.trim()).filter(Boolean),
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

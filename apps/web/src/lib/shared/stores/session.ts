@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
 
 /** Client-side session only — not a security boundary; API enforces access. */
-export type MemberType = 'admin' | 'teacher';
+export type MemberType = 'admin' | 'teacher' | 'super_admin';
 
 export type SessionIdentity = {
   id: string;
@@ -14,10 +14,15 @@ export type SessionState = {
   accessToken: string;
   identity: SessionIdentity;
   memberType: MemberType;
-  schoolId: string;
+  /** Null for super_admin (no school membership). */
+  schoolId: string | null;
 } | null;
 
 export const SESSION_STORAGE_KEY = 'eduai.session';
+
+function isValidMemberType(value: unknown): value is MemberType {
+  return value === 'admin' || value === 'teacher' || value === 'super_admin';
+}
 
 function readStoredSession(): SessionState {
   if (typeof localStorage === 'undefined') return null;
@@ -29,9 +34,15 @@ function readStoredSession(): SessionState {
       !parsed ||
       typeof parsed.accessToken !== 'string' ||
       !parsed.identity ||
-      (parsed.memberType !== 'admin' && parsed.memberType !== 'teacher') ||
-      typeof parsed.schoolId !== 'string'
+      !isValidMemberType(parsed.memberType)
     ) {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+    if (parsed.memberType === 'super_admin') {
+      return { ...parsed, schoolId: null };
+    }
+    if (typeof parsed.schoolId !== 'string') {
       localStorage.removeItem(SESSION_STORAGE_KEY);
       return null;
     }

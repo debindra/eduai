@@ -13,6 +13,7 @@ import { getSession } from '../../lib/shared/stores/session';
 import {
   approveCalendar,
   getCalendarStatus,
+  getCalendarView,
   getFestivalTemplate,
   getTeachingDays,
   patchFestivalTemplate,
@@ -78,12 +79,26 @@ describe('calendar api', () => {
     expect(mockApiFetch).toHaveBeenCalledWith('/calendar/school-1/festival-template');
 
     await patchFestivalTemplate({
-      closures: [{ name: 'Dashain', startDate: '2025-10-01', endDate: '2025-10-10' }],
+      closures: [
+        {
+          name: 'Dashain',
+          startDate: '2025-10-01',
+          endDate: '2025-10-10',
+          category: 'school_holiday',
+        },
+      ],
     });
     expect(mockApiFetch).toHaveBeenCalledWith('/calendar/school-1/festival-template', {
       method: 'PATCH',
       body: {
-        closures: [{ name: 'Dashain', startDate: '2025-10-01', endDate: '2025-10-10' }],
+        closures: [
+          {
+            name: 'Dashain',
+            startDate: '2025-10-01',
+            endDate: '2025-10-10',
+            category: 'school_holiday',
+          },
+        ],
       },
     });
 
@@ -103,6 +118,18 @@ describe('calendar api', () => {
     const days = await getTeachingDays();
     expect(days).toEqual({ schoolId: 'school-1', terminals: [] });
     expect(mockApiFetch).toHaveBeenCalledWith('/calendar/school-1/teaching-days');
+  });
+
+  it('getCalendarView uses school-scoped path', async () => {
+    mockApiFetch.mockResolvedValue({
+      schoolId: 'school-1',
+      approvalStatus: 'approved',
+      nationalClosures: [],
+      closures: [],
+      terminals: [],
+    });
+    await getCalendarView();
+    expect(mockApiFetch).toHaveBeenCalledWith('/calendar/school-1/view');
   });
 
   it('throws when session has no schoolId', async () => {

@@ -1,12 +1,11 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
+import { RequireSchoolAdmin } from '../auth/decorators/require-school-admin.decorator';
 import { RequireRoleGuard } from '../auth/guards/require-role.guard';
+import { RequireSchoolAdminGuard } from '../auth/guards/require-school-admin.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import {
-  RequireSectionReadScope,
-  RequireSectionSubjectScope,
-} from '../rbac/decorators/require-section-subject-scope.decorator';
+import { RequireSectionReadScope } from '../rbac/decorators/require-section-subject-scope.decorator';
 import { ManageService } from './manage.service';
 
 @ApiTags('manage')
@@ -23,8 +22,9 @@ export class ManageController {
   }
 
   @Get('admin/festival-planner')
-  @UseGuards(RequireRoleGuard)
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
   @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdQuery: 'schoolId' })
   @ApiOperation({
     summary: 'Admin festival planner (school altitude)',
     description: 'Festivals + sections-behind pacing counts. No teacher profile required.',

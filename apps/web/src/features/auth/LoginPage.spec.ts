@@ -94,4 +94,32 @@ describe('LoginPage', () => {
       expect(mockPush).toHaveBeenCalledWith('/teacher/sweep');
     });
   });
+
+  it('redirects super_admin to platform board after successful login', async () => {
+    mockLogin.mockResolvedValue({
+      accessToken: 'token-1',
+      refreshToken: 'refresh-1',
+      expiresIn: 3600,
+      identity: {
+        id: 'identity-p',
+        email: 'platform@eduai.dev',
+        phone: null,
+        displayName: 'Platform',
+      },
+      memberType: 'super_admin',
+      schoolId: null,
+      memberships: [],
+    });
+    const user = userEvent.setup();
+
+    render(LoginPage);
+
+    await user.type(screen.getByLabelText('Username'), 'platform@eduai.dev');
+    await user.type(screen.getByLabelText('Password'), 'DevPassword123!');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/platform/schools');
+    });
+  });
 });

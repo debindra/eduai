@@ -11,6 +11,11 @@ export interface RequestMembership {
   adminId: string | null;
 }
 
+export interface RequestPlatformAdmin {
+  id: string;
+  displayName: string | null;
+}
+
 export interface RequestUser {
   identityId: string;
   authUserId: string;
@@ -18,6 +23,8 @@ export interface RequestUser {
   email: string | null;
   phone: string | null;
   memberships: RequestMembership[];
+  /** Present when the identity is an active platform super admin. */
+  platformAdmin: RequestPlatformAdmin | null;
 }
 
 declare global {

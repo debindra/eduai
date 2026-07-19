@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { getTeachingDays } from './api';
+  import { toErrorMessage } from '../../lib/shared/errors';
 
   type TerminalRow = {
     terminalId: string;
@@ -19,7 +20,7 @@
       schoolId = response.schoolId;
       terminals = response.terminals;
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Could not load teaching days';
+      error = toErrorMessage(err, 'Could not load teaching days');
     } finally {
       loading = false;
     }

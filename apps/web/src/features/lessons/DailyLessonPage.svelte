@@ -1,5 +1,7 @@
 <script lang="ts">
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { ApiError } from '../../lib/shared/api/client';
   import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
   import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
@@ -31,7 +33,7 @@
       if (err instanceof ApiError && err.status === 404) {
         notATeachingDay = true;
       } else {
-        error = err instanceof Error ? err.message : 'Load failed';
+        error = toErrorMessage(err, 'Load failed');
       }
     }
   };
@@ -52,7 +54,7 @@
       if (err instanceof ApiError && err.status === 404) {
         notATeachingDay = true;
       } else {
-        error = err instanceof Error ? err.message : 'Generate failed';
+        error = toErrorMessage(err, 'Generate failed');
       }
     }
   };
@@ -63,7 +65,7 @@
     try {
       await markLessonDone(mapSliceId);
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Mark done failed';
+      error = toErrorMessage(err, 'Mark done failed');
     }
   };
 </script>
@@ -103,7 +105,5 @@
   {#if lesson}
     <p class="mt-4 text-sm">Pedagogy: {lesson.pedagogyType} · {lesson.theme}</p>
   {/if}
-  {#if error}
-    <p class="mt-4 text-sm text-red-700" role="alert">{error}</p>
-  {/if}
+  <Alert message={error} class="mt-4" />
 </main>

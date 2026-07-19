@@ -45,6 +45,31 @@ describe('sessionToRouterUser', () => {
       permissions: ['teacher'],
     });
   });
+
+  it('maps super_admin to platform permission only', () => {
+    expect(
+      sessionToRouterUser(
+        getMockSession({ memberType: 'super_admin', schoolId: null }),
+      ),
+    ).toEqual({
+      memberType: 'super_admin',
+      schoolId: null,
+      permissions: ['platform'],
+    });
+  });
+
+  it('grants admin chrome to super_admin when support session is active', () => {
+    expect(
+      sessionToRouterUser(
+        getMockSession({ memberType: 'super_admin', schoolId: null }),
+        { schoolId: 'school-2' },
+      ),
+    ).toEqual({
+      memberType: 'super_admin',
+      schoolId: 'school-2',
+      permissions: ['platform', 'admin'],
+    });
+  });
 });
 
 describe('checkPermissions', () => {
@@ -52,15 +77,32 @@ describe('checkPermissions', () => {
   const teacherUser = sessionToRouterUser(
     getMockSession({ memberType: 'teacher' }),
   );
+  const platformUser = sessionToRouterUser(
+    getMockSession({ memberType: 'super_admin', schoolId: null }),
+  );
+  const platformWithSupport = sessionToRouterUser(
+    getMockSession({ memberType: 'super_admin', schoolId: null }),
+    { schoolId: 'school-2' },
+  );
 
   it('denies when user or requirements are missing', () => {
     expect(checkPermissions(null, routePermissions.admin)).toBe(false);
     expect(checkPermissions(adminUser, undefined)).toBe(false);
   });
 
-  it('allows admin route for admin, denies for teacher', () => {
+  it('allows admin route for admin, denies for teacher and platform without support', () => {
     expect(checkPermissions(adminUser, routePermissions.admin)).toBe(true);
     expect(checkPermissions(teacherUser, routePermissions.admin)).toBe(false);
+    expect(checkPermissions(platformUser, routePermissions.admin)).toBe(false);
+  });
+
+  it('allows admin route for super_admin with active support session', () => {
+    expect(checkPermissions(platformWithSupport, routePermissions.admin)).toBe(true);
+  });
+
+  it('allows platform route for super_admin only', () => {
+    expect(checkPermissions(platformUser, routePermissions.platform)).toBe(true);
+    expect(checkPermissions(adminUser, routePermissions.platform)).toBe(false);
   });
 
   it('allows teacher route for both admin and teacher', () => {

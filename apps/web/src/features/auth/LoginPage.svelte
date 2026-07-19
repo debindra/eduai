@@ -1,5 +1,7 @@
 <script lang="ts">
   import { link, push } from '@keenmate/svelte-spa-router';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { login } from './api';
 
   let identifier = $state('');
@@ -13,13 +15,15 @@
     error = null;
     try {
       const response = await login({ identifier, password });
-      if (response.memberType === 'admin') {
+      if (response.memberType === 'super_admin') {
+        push('/platform/schools');
+      } else if (response.memberType === 'admin') {
         push('/admin/dashboard');
       } else {
         push('/teacher/sweep');
       }
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Login failed';
+      error = toErrorMessage(err, 'Login failed');
     } finally {
       loading = false;
     }
@@ -64,11 +68,7 @@
         />
       </div>
 
-      {#if error}
-        <p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {error}
-        </p>
-      {/if}
+      <Alert message={error} />
 
       <button
         type="submit"

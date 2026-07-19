@@ -18,9 +18,20 @@ export default defineConfig({
   resolve: {
     conditions: ['browser'],
   },
+  ssr: {
+    noExternal: ['@eduai/bs-date', 'nepali-datetime'],
+  },
   test: {
     environment: 'happy-dom',
     include: ['src/**/*.{test,spec}.ts'],
     setupFiles: ['./src/test-setup.ts'],
+    env: {
+      TZ: 'Asia/Kathmandu',
+    },
+    server: {
+      deps: {
+        inline: ['@eduai/bs-date', 'nepali-datetime'],
+      },
+    },
   },
 });

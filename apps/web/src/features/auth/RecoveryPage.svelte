@@ -1,5 +1,7 @@
 <script lang="ts">
   import { link, push } from '@keenmate/svelte-spa-router';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { requestRecoveryOtp, verifyRecoveryOtpAndSetPassword } from './api';
 
   let step = $state<'request' | 'verify'>('request');
@@ -20,7 +22,7 @@
       message = response.message;
       step = 'verify';
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Could not send OTP';
+      error = toErrorMessage(err, 'Could not send OTP');
     } finally {
       loading = false;
     }
@@ -38,7 +40,7 @@
       });
       push('/login');
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Verification failed';
+      error = toErrorMessage(err, 'Verification failed');
     } finally {
       loading = false;
     }
@@ -71,11 +73,7 @@
           />
         </div>
 
-        {#if error}
-          <p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-            {error}
-          </p>
-        {/if}
+        <Alert message={error} />
 
         <button
           type="submit"
@@ -86,11 +84,7 @@
         </button>
       </form>
     {:else}
-      {#if message}
-        <p class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-          {message}
-        </p>
-      {/if}
+      <Alert variant="success" message={message} class="mt-4" />
 
       <form class="mt-6 space-y-4" onsubmit={handleVerify}>
         <div>
@@ -121,11 +115,7 @@
           />
         </div>
 
-        {#if error}
-          <p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-            {error}
-          </p>
-        {/if}
+        <Alert message={error} />
 
         <button
           type="submit"

@@ -19,7 +19,7 @@ export class CreateSectionDto {
   name!: string;
 
   @ApiProperty({ format: 'uuid', description: 'Band this section belongs to' })
-  @IsUUID()
+  @IsUUID('loose')
   bandId!: string;
 
   @ApiPropertyOptional({ example: 'Nursery' })
@@ -37,7 +37,7 @@ export class UpdateSectionDto {
 
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
-  @IsUUID()
+  @IsUUID('loose')
   bandId?: string;
 
   @ApiPropertyOptional({ example: 'Nursery' })
@@ -69,7 +69,7 @@ export class SectionResponseDto {
 
 export class CreateChildDto {
   @ApiProperty({ format: 'uuid' })
-  @IsUUID()
+  @IsUUID('loose')
   sectionId!: string;
 
   @ApiProperty({ example: 'Aarav Sharma' })
@@ -107,7 +107,7 @@ export class UpdateChildDto {
 
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
-  @IsUUID()
+  @IsUUID('loose')
   sectionId?: string;
 
   @ApiPropertyOptional()
@@ -169,11 +169,11 @@ export class ChildResponseDto {
 
 export class CreateTeacherSectionDto {
   @ApiProperty({ format: 'uuid' })
-  @IsUUID()
+  @IsUUID('loose')
   teacherId!: string;
 
   @ApiProperty({ format: 'uuid' })
-  @IsUUID()
+  @IsUUID('loose')
   sectionId!: string;
 
   @ApiPropertyOptional({
@@ -182,7 +182,7 @@ export class CreateTeacherSectionDto {
     description: 'NULL at pre-primary; required subject from band_subjects for Grades 1–5',
   })
   @IsOptional()
-  @IsUUID()
+  @IsUUID('loose')
   subjectId?: string | null;
 
   @ApiPropertyOptional({ default: false })

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import AdminNav from '../shared/AdminNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { getAdminOpenLoopCounts } from './api';
   import {
     adminOpenLoopSummary,
@@ -20,7 +22,7 @@
       }
       counts = payload;
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load open-loop counts';
+      error = toErrorMessage(err, 'Failed to load open-loop counts');
     }
   });
 </script>
@@ -36,7 +38,5 @@
     </section>
   {/if}
 
-  {#if error}
-    <p class="mt-4 text-sm text-red-700" role="alert">{error}</p>
-  {/if}
+  <Alert message={error} class="mt-4" />
 </main>

@@ -103,6 +103,20 @@ describe('api client', () => {
     } satisfies Partial<ApiError>);
   });
 
+  it('joins Nest validation message arrays into one ApiError message', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () => JSON.stringify({ message: ['schoolId must be a UUID', 'reason too short'] }),
+    });
+
+    await expect(apiFetch('/platform/support-sessions', { auth: false })).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 400,
+      message: 'schoolId must be a UUID, reason too short',
+    } satisfies Partial<ApiError>);
+  });
+
   it('throws ApiError with status fallback when body is not JSON', async () => {
     fetchMock.mockResolvedValue({
       ok: false,

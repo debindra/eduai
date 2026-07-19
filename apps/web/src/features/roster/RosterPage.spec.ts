@@ -34,14 +34,15 @@ vi.mock('./api', () => ({
 }));
 
 import {
-  createChild,
   createSection,
+  createTeacherSection,
   inviteTeacher,
   listBands,
   listChildren,
   listSections,
   listTeacherSections,
   listTeachers,
+  updateChild,
 } from './api';
 
 describe('RosterPage', () => {
@@ -55,6 +56,13 @@ describe('RosterPage', () => {
         grade: 'Nursery',
         name: 'Nursery A',
       },
+      {
+        id: 's2',
+        schoolId: 'school-1',
+        bandId: 'band-pp',
+        grade: 'Nursery',
+        name: 'Nursery B',
+      },
     ]);
     vi.mocked(listChildren).mockResolvedValue([
       {
@@ -62,6 +70,16 @@ describe('RosterPage', () => {
         sectionId: 's1',
         name: 'Aarav',
         rollNumber: '12',
+        dob: null,
+        status: 'active',
+        reportLanguageOverride: null,
+        accessNote: null,
+      },
+      {
+        id: 'c2',
+        sectionId: 's2',
+        name: 'Priya',
+        rollNumber: '3',
         dob: null,
         status: 'active',
         reportLanguageOverride: null,
@@ -126,30 +144,58 @@ describe('RosterPage', () => {
     });
   });
 
-  it('creates a child in the selected section', async () => {
+  it('places an existing child into the selected section via name search', async () => {
     const user = userEvent.setup();
-    vi.mocked(createChild).mockResolvedValue({
+    vi.mocked(updateChild).mockResolvedValue({
       id: 'c2',
       sectionId: 's1',
       name: 'Priya',
-      rollNumber: '13',
+      rollNumber: '3',
       dob: null,
       status: 'active',
       reportLanguageOverride: null,
       accessNote: null,
     });
     render(RosterPage);
-    await waitFor(() => expect(screen.getByTestId('create-child')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('place-child')).toBeInTheDocument());
 
-    await user.type(screen.getByTestId('child-name'), 'Priya');
-    await user.type(screen.getByTestId('child-roll'), '13');
-    await user.click(screen.getByTestId('create-child'));
+    await user.type(screen.getByTestId('child-search'), 'Pri');
+    await waitFor(() => {
+      expect(screen.getByTestId('child-search-results')).toHaveTextContent('Priya');
+    });
+    await user.click(screen.getByRole('button', { name: /Priya/i }));
+    await user.click(screen.getByTestId('place-child'));
 
     await waitFor(() => {
-      expect(createChild).toHaveBeenCalledWith({
+      expect(updateChild).toHaveBeenCalledWith('c2', { sectionId: 's1' });
+    });
+  });
+
+  it('assigns a teacher via name search', async () => {
+    const user = userEvent.setup();
+    vi.mocked(createTeacherSection).mockResolvedValue({
+      id: 'a1',
+      teacherId: 't1',
+      sectionId: 's1',
+      subjectId: null,
+      isClassTeacher: false,
+    });
+    render(RosterPage);
+    await waitFor(() => expect(screen.getByTestId('create-assignment')).toBeInTheDocument());
+
+    await user.type(screen.getByTestId('assign-teacher'), 'May');
+    await waitFor(() => {
+      expect(screen.getByTestId('teacher-search-results')).toHaveTextContent('Maya');
+    });
+    await user.click(screen.getByRole('button', { name: /Maya/i }));
+    await user.click(screen.getByTestId('create-assignment'));
+
+    await waitFor(() => {
+      expect(createTeacherSection).toHaveBeenCalledWith({
+        teacherId: 't1',
         sectionId: 's1',
-        name: 'Priya',
-        rollNumber: '13',
+        subjectId: null,
+        isClassTeacher: false,
       });
     });
   });

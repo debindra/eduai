@@ -2,7 +2,9 @@ import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { IsInt, IsOptional, Min } from 'class-validator';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
+import { RequireSchoolAdmin } from '../auth/decorators/require-school-admin.decorator';
 import { RequireRoleGuard } from '../auth/guards/require-role.guard';
+import { RequireSchoolAdminGuard } from '../auth/guards/require-school-admin.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import { ExitService } from './exit.service';
 
@@ -32,6 +34,8 @@ export class ExitController {
   }
 
   @Post('schools/:schoolId/initiate')
+  @UseGuards(RequireSchoolAdminGuard)
+  @RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
   @ApiOperation({ summary: 'Initiate school exit + schedule deletion after retention window' })
   initiate(@Param('schoolId') schoolId: string, @Body() dto: InitiateExitDto) {
     return this.service.initiateSchoolExit(schoolId, dto.retentionDays);

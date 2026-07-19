@@ -3,15 +3,16 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "pnpm --filter @eduai/db build && pnpm --filter @eduai/ai build && nest build",
+    "build": "pnpm --filter @eduai/db build && pnpm --filter @eduai/ai build && pnpm --filter @eduai/bs-date build && nest build",
     "dev": "nest start --watch",
     "start": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "pnpm --filter @eduai/ai build && tsc --noEmit"
+    "typecheck": "pnpm --filter @eduai/ai build && pnpm --filter @eduai/bs-date build && tsc --noEmit"
   },
   "dependencies": {
     "@eduai/ai": "workspace:*",
+    "@eduai/bs-date": "workspace:*",
     "@eduai/db": "workspace:*",
     "@nestjs/common": "^11.1.3",
     "@nestjs/config": "^4.0.2",

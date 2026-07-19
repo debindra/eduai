@@ -68,12 +68,15 @@ export async function apiFetch<T>(
       });
       void push('/login');
     }
-    const message =
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      'message' in parsed &&
-      typeof (parsed as { message: unknown }).message === 'string'
-        ? (parsed as { message: string }).message
+    const rawMessage =
+      typeof parsed === 'object' && parsed !== null && 'message' in parsed
+        ? (parsed as { message: unknown }).message
+        : undefined;
+    const message = Array.isArray(rawMessage)
+      ? rawMessage.filter((part): part is string => typeof part === 'string').join(', ') ||
+        `Request failed (${response.status})`
+      : typeof rawMessage === 'string'
+        ? rawMessage
         : `Request failed (${response.status})`;
     throw new ApiError(message, response.status, parsed);
   }

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import AdminNav from '../shared/AdminNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { listAdminQueue } from './api';
   import { queueLabel, type MessageRow } from './messaging-logic';
 
@@ -11,7 +13,7 @@
     try {
       rows = await listAdminQueue();
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load admin queue';
+      error = toErrorMessage(err, 'Failed to load admin queue');
     }
   });
 </script>
@@ -31,7 +33,5 @@
       <li class="text-sm text-slate-500">Queue empty.</li>
     {/each}
   </ul>
-  {#if error}
-    <p class="mt-4 text-sm text-red-700" role="alert">{error}</p>
-  {/if}
+  <Alert message={error} class="mt-4" />
 </main>

@@ -5,6 +5,7 @@ import {
 import { push } from '@keenmate/svelte-spa-router';
 import { get } from 'svelte/store';
 import { session } from '../lib/shared/stores/session';
+import { supportSession } from '../lib/shared/stores/support-session';
 import {
   checkPermissions,
   sessionToRouterUser,
@@ -17,6 +18,16 @@ export {
   type RouterUser,
 } from './permission-logic';
 
+function syncRouterUser(): void {
+  const support = get(supportSession);
+  setCurrentUser(
+    sessionToRouterUser(
+      get(session),
+      support ? { schoolId: support.schoolId } : null,
+    ),
+  );
+}
+
 /** Wire router permission checks to session — UX only, not a security boundary. */
 export function initRouterPermissions(): void {
   configurePermissions({
@@ -27,9 +38,12 @@ export function initRouterPermissions(): void {
   });
 
   // Hydrate immediately from restored (localStorage) session before first route guard.
-  setCurrentUser(sessionToRouterUser(get(session)));
+  syncRouterUser();
 
-  session.subscribe((value) => {
-    setCurrentUser(sessionToRouterUser(value));
+  session.subscribe(() => {
+    syncRouterUser();
+  });
+  supportSession.subscribe(() => {
+    syncRouterUser();
   });
 }

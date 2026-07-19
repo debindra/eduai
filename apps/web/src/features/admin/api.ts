@@ -1,11 +1,9 @@
 import { apiFetch } from '../../lib/shared/api/client';
-import { get } from 'svelte/store';
-import { session } from '../../lib/shared/stores/session';
+import { requireResolvedSchoolId } from '../../lib/shared/stores/school-scope';
 import type { AdminDashboardShape } from './admin-logic';
 
 export function getAdminSchoolId(): string {
-  const s = get(session);
-  return s?.schoolId ?? '11111111-1111-1111-1111-111111111111';
+  return requireResolvedSchoolId();
 }
 
 export async function getAdminDashboard(periodStart?: string, periodEnd?: string) {
