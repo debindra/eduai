@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
+import { BAND_ORDER } from '../out-of-segment/out-of-segment-logic';
 
 export interface BandConfigRow {
   id: string;
@@ -30,20 +31,35 @@ export interface BandConfigRow {
 export class BandConfigService {
   constructor(private readonly supabase: SupabaseService) {}
 
-  async listPrePrimaryBands(): Promise<BandConfigRow[]> {
+  /**
+   * Returns every band row with its grade_scales and band_subjects.
+   * Band-as-data — callers must not branch on grade numbers; they read
+   * assessment_mode / aggregation_rule off each band.
+   */
+  async listBands(): Promise<BandConfigRow[]> {
     const client = this.supabase.getClient();
     if (!client) {
       throw new NotFoundException('Database is not configured');
     }
     const { data: bands, error: bandsError } = await client
       .from('bands')
-      .select('id, code, name_en, name_np, assessment_mode, aggregation_rule, grade_range')
-      .eq('code', 'pre_primary');
+      .select('id, code, name_en, name_np, assessment_mode, aggregation_rule, grade_range');
     if (bandsError || !bands?.length) {
-      throw new NotFoundException('Pre-primary band config not found');
+      throw new NotFoundException('Band config not found');
     }
+
+    const orderIndex = new Map<string, number>(
+      BAND_ORDER.map((code, index) => [code, index]),
+    );
+    const sortedBands = [...bands].sort((a, b) => {
+      const ai = orderIndex.get(a.code as string) ?? Number.MAX_SAFE_INTEGER;
+      const bi = orderIndex.get(b.code as string) ?? Number.MAX_SAFE_INTEGER;
+      if (ai !== bi) return ai - bi;
+      return String(a.code).localeCompare(String(b.code));
+    });
+
     const results: BandConfigRow[] = [];
-    for (const band of bands) {
+    for (const band of sortedBands) {
       const { data: gradeScales } = await client
         .from('grade_scales')
         .select('id, code, label_en, label_np, sort_order, numeric_value')
