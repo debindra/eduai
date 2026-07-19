@@ -9,11 +9,24 @@ export interface AdminDashboardResponse {
   schoolId: string;
   periodStart: string;
   periodEnd: string;
-  coverageBySection: Array<{ sectionId: string; childrenWithFreshOutcomes: number }>;
+  coverageBySection: Array<{ sectionId: string; sectionName: string; childrenWithFreshOutcomes: number }>;
   sectionsBehindCount: number;
   sectionsTotal: number;
   communicationReplyWithinDayRate: number | null;
-  needsSupportBySection: Array<{ sectionId: string; stalledCount: number }>;
+  needsSupportBySection: Array<{ sectionId: string; sectionName: string; stalledCount: number }>;
+}
+
+/**
+ * Exclusive upper bound for an inclusive date-only period end. `confirmed_at` is
+ * a timestamptz; comparing it `<= 'YYYY-MM-DD'` coerces the bound to midnight and
+ * silently drops every row confirmed during the final day. Use `< (periodEnd + 1
+ * day)` so the whole last day is counted.
+ */
+export function exclusivePeriodEnd(periodEnd: string): string {
+  const dateOnly = periodEnd.slice(0, 10);
+  const d = new Date(`${dateOnly}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString();
 }
 
 @Injectable()
@@ -29,7 +42,7 @@ export class AdminRepository {
   async listSections(schoolId: string) {
     const { data, error } = await this.client()
       .from('sections')
-      .select('id')
+      .select('id, name')
       .eq('school_id', schoolId);
     if (error) throw error;
     return data ?? [];
@@ -42,7 +55,7 @@ export class AdminRepository {
       .eq('section_id', sectionId)
       .eq('state', 'confirmed')
       .gte('confirmed_at', periodStart)
-      .lte('confirmed_at', periodEnd);
+      .lt('confirmed_at', exclusivePeriodEnd(periodEnd));
     if (error) throw error;
     const unique = new Set((data ?? []).map((r) => r.child_id as string));
     return unique.size;
@@ -117,12 +130,13 @@ export class AdminService {
 
     for (const section of sections) {
       const sectionId = section.id as string;
+      const sectionName = (section.name as string) ?? sectionId;
       const childrenWithFreshOutcomes = await this.repository.countChildrenWithFreshOutcomes(
         sectionId,
         periodStart,
         periodEnd,
       );
-      coverageBySection.push({ sectionId, childrenWithFreshOutcomes });
+      coverageBySection.push({ sectionId, sectionName, childrenWithFreshOutcomes });
 
       const pacing = await this.pacing.getPacing(sectionId);
       if (pacing.state === 'behind') {
@@ -130,7 +144,7 @@ export class AdminService {
       }
 
       const stalled = await this.outcomes.listStalledMilestones(sectionId);
-      needsSupportBySection.push({ sectionId, stalledCount: stalled.stalledCount });
+      needsSupportBySection.push({ sectionId, sectionName, stalledCount: stalled.stalledCount });
     }
 
     const communicationReplyWithinDayRate = await this.repository.communicationReplyRate(

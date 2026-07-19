@@ -5,8 +5,9 @@
   import { clearSession, session } from '../../lib/shared/stores/session';
 
   const links = [
-    { href: '/admin/calendar', label: 'Calendar' },
     { href: '/admin/dashboard', label: 'Dashboard' },
+    { href: '/admin/calendar', label: 'Calendar' },
+    { href: '/admin/roster', label: 'Roster' },
     { href: '/admin/messaging', label: 'Messaging' },
     { href: '/admin/manage', label: 'Manage' },
     { href: '/admin/remedial', label: 'Remedial' },

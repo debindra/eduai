@@ -2,11 +2,11 @@ export interface AdminDashboardShape {
   schoolId: string;
   periodStart: string;
   periodEnd: string;
-  coverageBySection: Array<{ sectionId: string; childrenWithFreshOutcomes: number }>;
+  coverageBySection: Array<{ sectionId: string; sectionName: string; childrenWithFreshOutcomes: number }>;
   sectionsBehindCount: number;
   sectionsTotal: number;
   communicationReplyWithinDayRate: number | null;
-  needsSupportBySection: Array<{ sectionId: string; stalledCount: number }>;
+  needsSupportBySection: Array<{ sectionId: string; sectionName: string; stalledCount: number }>;
 }
 
 const FORBIDDEN_KEYS = [

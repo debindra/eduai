@@ -10,13 +10,13 @@ export class BandConfigController {
 
   @Get()
   @ApiOperation({
-    summary: 'List pre-primary band configuration',
+    summary: 'List band configuration',
     description:
-      'Returns bands, grade_scales, and subjects for the pre_primary band only. Band-as-data — no grade-number branching.',
+      'Returns all bands with grade_scales and subjects. Band-as-data — no grade-number branching; read assessment_mode / aggregation_rule off each band row.',
   })
   @ApiOkResponse({ type: BandsListResponseDto })
   async listBands(): Promise<BandsListResponseDto> {
-    const bands = await this.bandConfigService.listPrePrimaryBands();
+    const bands = await this.bandConfigService.listBands();
     return { bands };
   }
 }

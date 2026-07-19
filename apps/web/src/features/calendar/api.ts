@@ -2,13 +2,13 @@ import { apiFetch } from '../../lib/shared/api/client';
 import { getSession } from '../../lib/shared/stores/session';
 import type { components } from '../../lib/shared/api/generated-types';
 
-type CalendarSetupRequest = components['schemas']['CalendarSetupRequest'];
-type CalendarSetupResponse = components['schemas']['CalendarSetupResponse'];
-type CalendarStatusResponse = components['schemas']['CalendarStatusResponse'];
-type FestivalTemplateResponse = components['schemas']['FestivalTemplateResponse'];
-type FestivalTemplatePatch = components['schemas']['FestivalTemplatePatch'];
-type CalendarApproveResponse = components['schemas']['CalendarApproveResponse'];
-type TeachingDaysResponse = components['schemas']['TeachingDaysResponse'];
+type CalendarSetupRequest = components['schemas']['CalendarSetupDto'];
+type CalendarSetupResponse = components['schemas']['CalendarSetupResponseDto'];
+type CalendarStatusResponse = components['schemas']['CalendarStatusResponseDto'];
+type FestivalTemplateResponse = components['schemas']['FestivalTemplateResponseDto'];
+type FestivalTemplatePatch = components['schemas']['PatchFestivalTemplateDto'];
+type CalendarApproveResponse = components['schemas']['ApproveCalendarResponseDto'];
+type TeachingDaysResponse = components['schemas']['TeachingDaysResponseDto'];
 
 function requireSchoolId(): string {
   const schoolId = getSession()?.schoolId;

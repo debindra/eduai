@@ -43,7 +43,7 @@
         <dt class="text-sm text-slate-500">Coverage by section (fresh outcomes)</dt>
         <dd class="mt-2 space-y-1 text-sm">
           {#each data.coverageBySection as row}
-            <p>Section {row.sectionId.slice(0, 8)}… — {row.childrenWithFreshOutcomes} children</p>
+            <p>{row.sectionName} — {row.childrenWithFreshOutcomes} children</p>
           {/each}
         </dd>
       </div>
@@ -51,7 +51,7 @@
         <dt class="text-sm text-slate-500">Needs support (stalled count)</dt>
         <dd class="mt-2 space-y-1 text-sm">
           {#each data.needsSupportBySection as row}
-            <p>Section {row.sectionId.slice(0, 8)}… — {row.stalledCount}</p>
+            <p>{row.sectionName} — {row.stalledCount}</p>
           {/each}
         </dd>
       </div>

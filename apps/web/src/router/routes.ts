@@ -21,6 +21,7 @@ import RemedialPage from '../features/remedial/RemedialPage.svelte';
 import AdminRemedialPage from '../features/remedial/AdminRemedialPage.svelte';
 import CertificationPage from '../features/certification/CertificationPage.svelte';
 import CommunityPage from '../features/community/CommunityPage.svelte';
+import RosterPage from '../features/roster/RosterPage.svelte';
 import { routePermissions } from './permissions';
 
 export const routes = {
@@ -34,6 +35,10 @@ export const routes = {
   }),
   '/admin/dashboard': createProtectedRoute({
     component: async () => DashboardPage,
+    permissions: routePermissions.admin,
+  }),
+  '/admin/roster': createProtectedRoute({
+    component: async () => RosterPage,
     permissions: routePermissions.admin,
   }),
   '/admin/messaging': createProtectedRoute({

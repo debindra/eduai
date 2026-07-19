@@ -35,6 +35,7 @@ describe('AdminNav', () => {
     render(AdminNav);
     expect(screen.getByRole('link', { name: 'Calendar' })).toHaveAttribute('href', '/admin/calendar');
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/admin/dashboard');
+    expect(screen.getByRole('link', { name: 'Roster' })).toHaveAttribute('href', '/admin/roster');
     expect(screen.getByRole('link', { name: 'Messaging' })).toHaveAttribute('href', '/admin/messaging');
     expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute('href', '/admin/manage');
     expect(screen.getByRole('link', { name: 'Remedial' })).toHaveAttribute('href', '/admin/remedial');
