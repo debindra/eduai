@@ -1,6 +1,6 @@
 # Phase status summary
 
-Updated: 2026-07-18
+Updated: 2026-07-19
 
 | Phase | Done / Total | Exit criteria | Notes |
 |---|---|---|---|
@@ -11,8 +11,10 @@ Updated: 2026-07-18
 | [4 Grades 4–5](phase-4.md) | 5 / 5 | Met (engineering) | Content bank + final NG–A+/subjects still gated |
 | [5 Cost / career](phase-5.md) | 5 / 5 | Met (engineering) | Cache/metrics/WhatsApp stubbed; cost-validation waits on pilot traffic |
 | [6 Pilot / launch](phase-6.md) | 0 / 7 | Open | |
+| [7 Platform / Super Admin](phase-7.md) | 0 / 18 | Open | Spec only; BS↔AD + festival-owner open items |
 
 **Active phase:** Phase 5 engineering complete (cache monitoring, out-of-segment
 log, certification, community). Phase 6 (pilot hardening/launch) next.
+Phase 7 (platform super admin + Nepali calendar) documented, not started.
 
 **Counts rule:** update this table when marking IDs `done` in per-phase status files.

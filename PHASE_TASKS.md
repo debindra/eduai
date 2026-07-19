@@ -397,6 +397,78 @@ list has a corresponding automated test, not just a code comment.
 
 ---
 
+## Phase 7 — Platform / Super Admin + Nepali calendar redesign
+
+Cross-tenant platform role (not an extension of school `admin`), global
+national calendar that auto-applies to every school, and hamropatro-style
+BS-primary calendar UI. Full drill-down into a school is only via an
+audited, time-boxed `support_session` (gravity rule + consent). Detail:
+[`docs/phases/tasks/phase-7-platform-super-admin.md`](docs/phases/tasks/phase-7-platform-super-admin.md).
+
+### Database / Schema
+- [ ] `platform_admins` linked to `identities` (no `school_id`) —
+      `P7-DB-01`
+- [ ] `support_sessions` (reason, school, expiry, status) + drill-down
+      writes to `audit_log` — `P7-DB-02`
+- [ ] `national_calendars` + `national_closures` (govt_holiday /
+      festival / day_off; movable as data, not hardcoded years) —
+      `P7-DB-03`
+- [ ] Extend `teaching_days` VIEW: exclude published national closures
+      **or** per-school `calendar_closures`; still derived — `P7-DB-04`
+- [ ] Seed: one platform admin + published national calendar for current
+      BS year; `teaching_days` non-zero — `P7-DB-05`
+
+### Backend (NestJS)
+- [ ] Platform login → `memberType = 'super_admin'`, `schoolId = null`;
+      `RequirePlatformAdminGuard`; fix multi-membership `.limit(1)` gap —
+      `P7-API-PLAT-01`
+- [ ] `PlatformModule`: `GET /platform/schools` + per-school aggregate
+      shapes only (gravity + no rank-order) — `P7-API-PLAT-02`
+- [ ] Support sessions + `PlatformSupportSessionGuard` for scoped
+      school-admin drill-down — `P7-API-PLAT-03`
+- [ ] `NationalCalendarModule` CRUD (super-admin only; deterministic) —
+      `P7-API-CAL-NAT-01`
+- [ ] School calendar setup auto-applies published national closures;
+      drop hardcoded `DEFAULT_FESTIVAL_TEMPLATE`; local closures still
+      allowed — `P7-API-CAL-02`
+- [ ] Shared `@eduai/bs-date` BS↔AD package (vetted library; pure +
+      unit-tested) — `P7-API-BS-01`
+
+### Frontend (Svelte 5 SPA + Tailwind)
+- [ ] Shared `NepaliCalendar`: BS date big / AD small; monthly prev/next
+      within current BS year only; 12-month overview → enlarge month —
+      `P7-WEB-BS-01`
+- [ ] Rebuild school `CalendarWizard` on `NepaliCalendar` (multi-terminal,
+      local closures) — `P7-WEB-CAL-01`
+- [ ] `super_admin` routes + session: monitoring board, national calendar
+      editor, support-session entry — `P7-WEB-PLAT-01`
+- [ ] Login redirect + `PlatformNav`; school chrome only during active
+      support session — `P7-WEB-PLAT-02`
+
+### Suggested additional powers (ticket if needed; not exit-critical)
+- [ ] School provisioning (`POST /platform/schools` + invite first admin)
+- [ ] Band / grade-config / subjects management
+- [ ] AI prompt-template management
+- [ ] Per-school licensing / feature flags
+- [ ] Cross-school out-of-segment + cache/cost dashboards
+- [ ] Audit-log review console (platform read)
+
+### Testing / CI
+- [ ] Support-session 403 without session; audit_log on drill-down;
+      gravity + rank-order on platform endpoints — `P7-TEST-01`
+- [ ] National closure reflows `teaching_days` (national + local) —
+      `P7-TEST-02`
+- [ ] BS↔AD conversion unit tests across year boundaries — `P7-TEST-03`
+
+**Exit criteria:** a platform super admin can list every school
+(aggregates only), open an audited support session and drill into one
+school's admin surfaces, maintain a published national calendar that
+auto-applies into every school's `teaching_days`, and use a shared
+hamropatro-style BS-primary calendar (monthly + 12-month overview) in
+both platform and school-admin UIs.
+
+---
+
 ## Cross-phase discipline reminders
 
 - Every new NestJS guard/interceptor should have a unit test with a
