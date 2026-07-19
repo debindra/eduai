@@ -49,6 +49,10 @@ describe('TeacherNav', () => {
 
   it('links to all teacher Phase 1–3 routes', () => {
     render(TeacherNav);
+    expect(screen.getByRole('link', { name: 'Calendar' })).toHaveAttribute(
+      'href',
+      '/teacher/calendar',
+    );
     expect(screen.getByRole('link', { name: 'Attendance' })).toHaveAttribute(
       'href',
       '/teacher/attendance',

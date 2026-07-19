@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   Min,
   MinLength,
   ValidateNested,
@@ -63,6 +64,19 @@ export class PatchNationalClosuresDto {
   closures!: UpsertNationalClosureDto[];
 }
 
+export class PatchNationalWeeklyOffsDto {
+  @ApiProperty({
+    type: [Number],
+    description: 'ISO weekdays that are national weekly offs (1=Mon … 7=Sun)',
+    example: [6, 7],
+  })
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @Max(7, { each: true })
+  weeklyOffs!: number[];
+}
+
 export class NationalClosureDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
@@ -95,6 +109,13 @@ export class NationalCalendarDto {
 
   @ApiProperty({ enum: ['draft', 'published'] })
   status!: 'draft' | 'published';
+
+  @ApiProperty({
+    type: [Number],
+    description: 'ISO weekdays that are national weekly offs (1=Mon … 7=Sun)',
+    example: [6],
+  })
+  weeklyOffs!: number[];
 
   @ApiProperty({ type: [NationalClosureDto] })
   closures!: NationalClosureDto[];

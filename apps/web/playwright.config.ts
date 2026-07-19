@@ -39,7 +39,7 @@ export default defineConfig({
       env: {
         ...process.env,
         API_PORT: '3000',
-        CORS_ORIGIN: 'http://localhost:5173',
+        CORS_ORIGIN: 'http://localhost:5173,http://127.0.0.1:5173',
         API_LOG_FILE: process.env.API_LOG_FILE ?? apiLogFile,
       },
     },

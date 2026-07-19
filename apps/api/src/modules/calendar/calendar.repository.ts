@@ -31,7 +31,11 @@ interface ClosureRow {
   start_date: string;
   end_date: string;
   source: string;
+  category: string;
 }
+
+const CLOSURE_SELECT =
+  'id, school_calendar_id, name, start_date, end_date, source, category';
 
 interface TeachingDayRow {
   terminal_id: string;
@@ -160,11 +164,12 @@ export class CalendarRepository {
       start_date: closure.startDate,
       end_date: closure.endDate,
       source: 'festival_template',
+      category: 'school_holiday',
     }));
     const { data, error } = await this.client()
       .from('calendar_closures')
       .insert(rows)
-      .select('id, school_calendar_id, name, start_date, end_date, source');
+      .select(CLOSURE_SELECT);
     if (error || !data) {
       throw new Error(error?.message ?? 'Failed to seed festival closures');
     }
@@ -174,7 +179,7 @@ export class CalendarRepository {
   async listFestivalClosures(schoolCalendarId: string): Promise<ClosureRow[]> {
     const { data, error } = await this.client()
       .from('calendar_closures')
-      .select('id, school_calendar_id, name, start_date, end_date, source')
+      .select(CLOSURE_SELECT)
       .eq('school_calendar_id', schoolCalendarId)
       .eq('source', 'festival_template')
       .order('start_date', { ascending: true });
@@ -188,13 +193,27 @@ export class CalendarRepository {
   async listSchoolClosures(schoolCalendarId: string): Promise<ClosureRow[]> {
     const { data, error } = await this.client()
       .from('calendar_closures')
-      .select('id, school_calendar_id, name, start_date, end_date, source')
+      .select(CLOSURE_SELECT)
       .eq('school_calendar_id', schoolCalendarId)
       .order('start_date', { ascending: true });
     if (error) {
       throw new Error(error.message);
     }
     return (data as ClosureRow[]) ?? [];
+  }
+
+  async deleteLocalClosure(
+    schoolCalendarId: string,
+    closureId: string,
+  ): Promise<void> {
+    const { error } = await this.client()
+      .from('calendar_closures')
+      .delete()
+      .eq('id', closureId)
+      .eq('school_calendar_id', schoolCalendarId);
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   async upsertFestivalClosure(
@@ -210,6 +229,7 @@ export class CalendarRepository {
     closure: FestivalClosureDto,
   ): Promise<ClosureRow> {
     const source = 'local';
+    const category = closure.category;
     if (closure.id) {
       const { data, error } = await this.client()
         .from('calendar_closures')
@@ -218,10 +238,11 @@ export class CalendarRepository {
           start_date: closure.startDate,
           end_date: closure.endDate,
           source,
+          category,
         })
         .eq('id', closure.id)
         .eq('school_calendar_id', schoolCalendarId)
-        .select('id, school_calendar_id, name, start_date, end_date, source')
+        .select(CLOSURE_SELECT)
         .single();
       if (error || !data) {
         throw new Error(error?.message ?? 'Failed to update local closure');
@@ -236,8 +257,9 @@ export class CalendarRepository {
         start_date: closure.startDate,
         end_date: closure.endDate,
         source,
+        category,
       })
-      .select('id, school_calendar_id, name, start_date, end_date, source')
+      .select(CLOSURE_SELECT)
       .single();
     if (error || !data) {
       throw new Error(error?.message ?? 'Failed to create local closure');
@@ -266,6 +288,83 @@ export class CalendarRepository {
       throw new Error(error?.message ?? 'Failed to approve calendar');
     }
     return data as SchoolCalendarRow;
+  }
+
+  /** Mark live approved calendars for this school+year as superseded (before promoting a draft). */
+  async supersedeApprovedForSchoolYear(
+    schoolId: string,
+    academicYearLabel: string,
+  ): Promise<void> {
+    const { error } = await this.client()
+      .from('school_calendars')
+      .update({ approval_status: 'superseded' })
+      .eq('school_id', schoolId)
+      .eq('academic_year_label', academicYearLabel)
+      .eq('approval_status', 'approved');
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async updateDraftCalendar(
+    schoolCalendarId: string,
+    dto: CalendarSetupDto,
+  ): Promise<SchoolCalendarRow> {
+    const { data, error } = await this.client()
+      .from('school_calendars')
+      .update({
+        academic_year_label: dto.academicYearLabel,
+        session_start: dto.sessionStart,
+        session_end: dto.sessionEnd,
+        weekly_offs: dto.weeklyOffs,
+      })
+      .eq('id', schoolCalendarId)
+      .eq('approval_status', 'draft')
+      .select(
+        'id, school_id, academic_year_label, session_start, session_end, weekly_offs, approval_status, approved_at',
+      )
+      .single();
+    if (error || !data) {
+      throw new Error(error?.message ?? 'Failed to update draft calendar');
+    }
+    return data as SchoolCalendarRow;
+  }
+
+  async deleteTerminalsForCalendar(schoolCalendarId: string): Promise<void> {
+    const { error } = await this.client()
+      .from('terminals')
+      .delete()
+      .eq('school_calendar_id', schoolCalendarId);
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  /** Copy closures onto a new calendar (new ids). */
+  async copyClosures(
+    sourceCalendarId: string,
+    targetCalendarId: string,
+  ): Promise<ClosureRow[]> {
+    const source = await this.listSchoolClosures(sourceCalendarId);
+    if (source.length === 0) {
+      return [];
+    }
+    const rows = source.map((closure) => ({
+      school_calendar_id: targetCalendarId,
+      name: closure.name,
+      start_date: closure.start_date,
+      end_date: closure.end_date,
+      source: closure.source,
+      category: closure.category,
+    }));
+    const { data, error } = await this.client()
+      .from('calendar_closures')
+      .insert(rows)
+      .select(CLOSURE_SELECT);
+    if (error || !data) {
+      throw new Error(error?.message ?? 'Failed to copy closures');
+    }
+    return data as ClosureRow[];
   }
 
   async listTerminals(schoolCalendarId: string): Promise<TerminalRow[]> {

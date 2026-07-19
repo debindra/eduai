@@ -7,9 +7,12 @@ vi.mock('./api', () => ({
   setupCalendar: vi.fn(),
   getCalendarStatus: vi.fn(),
   getFestivalTemplate: vi.fn(),
+  getCalendarView: vi.fn(),
   patchFestivalTemplate: vi.fn(),
   approveCalendar: vi.fn(),
   getTeachingDays: vi.fn(),
+  getWeeklyOffPreset: vi.fn(),
+  ensureCalendarDraft: vi.fn(),
 }));
 
 vi.mock('../shared/NepaliDatePicker.svelte', async () => {
@@ -20,8 +23,10 @@ vi.mock('../shared/NepaliDatePicker.svelte', async () => {
 import {
   approveCalendar,
   getCalendarStatus,
+  getCalendarView,
   getFestivalTemplate,
   getTeachingDays,
+  getWeeklyOffPreset,
   patchFestivalTemplate,
   setupCalendar,
 } from './api';
@@ -29,9 +34,11 @@ import {
 const mockSetupCalendar = vi.mocked(setupCalendar);
 const mockGetCalendarStatus = vi.mocked(getCalendarStatus);
 const mockGetFestivalTemplate = vi.mocked(getFestivalTemplate);
+const mockGetCalendarView = vi.mocked(getCalendarView);
 const mockPatchFestivalTemplate = vi.mocked(patchFestivalTemplate);
 const mockApproveCalendar = vi.mocked(approveCalendar);
 const mockGetTeachingDays = vi.mocked(getTeachingDays);
+const mockGetWeeklyOffPreset = vi.mocked(getWeeklyOffPreset);
 
 describe('CalendarWizard', () => {
   beforeEach(() => {
@@ -41,6 +48,18 @@ describe('CalendarWizard', () => {
       schoolCalendarId: null,
     });
     mockGetTeachingDays.mockResolvedValue({ schoolId: 'school-1', terminals: [] });
+    mockGetWeeklyOffPreset.mockResolvedValue({
+      bsYear: 2082,
+      weeklyOffs: [6],
+      fromNational: false,
+    });
+    mockGetCalendarView.mockResolvedValue({
+      schoolId: 'school-1',
+      approvalStatus: 'none',
+      nationalClosures: [],
+      closures: [],
+      terminals: [],
+    });
   });
 
   it('starts at step 1 (setup) when no calendar exists', async () => {
@@ -77,6 +96,7 @@ describe('CalendarWizard', () => {
           startDate: '2025-06-01',
           endDate: '2025-06-01',
           source: 'local',
+          category: 'school_holiday',
         },
       ],
     });
@@ -84,7 +104,7 @@ describe('CalendarWizard', () => {
     render(CalendarWizard);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Local PD day')).toBeInTheDocument();
+      expect(screen.getByText('Local PD day')).toBeInTheDocument();
     });
     expect(screen.getByText('Dashain')).toBeInTheDocument();
     expect(mockGetFestivalTemplate).toHaveBeenCalledTimes(1);
@@ -96,12 +116,28 @@ describe('CalendarWizard', () => {
       schoolCalendarId: 'cal-2',
       academicYearLabel: '2082/83',
     });
+    mockGetCalendarView.mockResolvedValue({
+      schoolId: 'school-1',
+      approvalStatus: 'approved',
+      academicYearLabel: '2082/83',
+      bsYear: 2082,
+      sessionStart: '2025-04-14',
+      sessionEnd: '2026-04-13',
+      weeklyOffs: [6],
+      nationalClosures: [],
+      closures: [],
+      terminals: [],
+    });
 
     render(CalendarWizard);
 
     await waitFor(() => {
-      expect(screen.getByText(/Calendar for 2082\/83 is approved/)).toBeInTheDocument();
+      expect(screen.getByTestId('calendar-wizard-approved-title')).toHaveTextContent(
+        '2082/83 Academic Calendar',
+      );
     });
+    expect(screen.queryByText(/Same board as teachers/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/School calendar wizard/i)).not.toBeInTheDocument();
     expect(mockGetFestivalTemplate).not.toHaveBeenCalled();
   });
 
@@ -113,7 +149,17 @@ describe('CalendarWizard', () => {
     });
     mockGetFestivalTemplate.mockResolvedValue({
       schoolCalendarId: 'cal-1',
-      closures: [{ id: 'c1', name: 'Dashain', startDate: '2025-10-01', endDate: '2025-10-10' }],
+      bsYear: 2082,
+      closures: [
+        {
+          id: 'c1',
+          name: 'Sports day',
+          startDate: '2025-10-01',
+          endDate: '2025-10-10',
+          category: 'eca',
+          source: 'local',
+        },
+      ],
     });
     mockPatchFestivalTemplate.mockResolvedValue({
       schoolCalendarId: 'cal-1',
@@ -139,10 +185,21 @@ describe('CalendarWizard', () => {
     await user.click(screen.getByRole('button', { name: /continue to closures/i }));
 
     await waitFor(() => expect(mockSetupCalendar).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.getByDisplayValue('Dashain')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Sports day')).toBeInTheDocument());
 
     await user.click(screen.getByRole('button', { name: /continue to approve/i }));
     await waitFor(() => expect(mockPatchFestivalTemplate).toHaveBeenCalledTimes(1));
+    expect(mockPatchFestivalTemplate).toHaveBeenCalledWith({
+      closures: [
+        {
+          id: 'c1',
+          name: 'Sports day',
+          startDate: '2025-10-01',
+          endDate: '2025-10-10',
+          category: 'eca',
+        },
+      ],
+    });
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /approve calendar/i })).toBeInTheDocument();

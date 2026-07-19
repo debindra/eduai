@@ -22,6 +22,7 @@ import {
   NationalCalendarDto,
   NationalCalendarsResponseDto,
   PatchNationalClosuresDto,
+  PatchNationalWeeklyOffsDto,
 } from './dto/national-calendar.dto';
 import { NationalCalendarService } from './national-calendar.service';
 
@@ -55,13 +56,27 @@ export class NationalCalendarController {
   }
 
   @Patch(':id/closures')
-  @ApiOperation({ summary: 'Upsert closures on a draft national calendar' })
+  @ApiOperation({ summary: 'Upsert closures on a national calendar' })
   @ApiResponse({ status: 200, type: NationalCalendarDto })
   patchClosures(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: PatchNationalClosuresDto,
   ): Promise<NationalCalendarDto> {
     return this.service.upsertClosures(id, dto.closures);
+  }
+
+  @Patch(':id/weekly-offs')
+  @ApiOperation({
+    summary: 'Set national weekly day-off preset (ISO weekdays)',
+    description:
+      'Schools inherit these at calendar setup; school admins may override later on school_calendars.weekly_offs.',
+  })
+  @ApiResponse({ status: 200, type: NationalCalendarDto })
+  patchWeeklyOffs(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PatchNationalWeeklyOffsDto,
+  ): Promise<NationalCalendarDto> {
+    return this.service.patchWeeklyOffs(id, dto.weeklyOffs);
   }
 
   @Post(':id/publish')

@@ -107,6 +107,41 @@ export function formatAdSecondary(adIso: string): string {
   return `${Number(d)}/${Number(m)}/${y}`;
 }
 
+/** Humanized BS date for list/labels — e.g. "Jestha 15, 2082". */
+export function formatBsPrimary(adIso: string): string {
+  if (!adIso) return '';
+  const { bsYear, bsMonth, bsDay } = adToBs(adIso);
+  return `${bsMonthName(bsMonth)} ${bsDay}, ${bsYear}`;
+}
+
+/**
+ * Humanized BS range for closures — primary display.
+ * Same day: "Jestha 15, 2082"
+ * Same month: "Jestha 15–18, 2082"
+ * Same year: "Jestha 15 – Ashadh 2, 2082"
+ */
+export function formatBsDateRangePrimary(startAdIso: string, endAdIso: string): string {
+  if (!startAdIso) return '';
+  if (!endAdIso || endAdIso === startAdIso) return formatBsPrimary(startAdIso);
+  const start = adToBs(startAdIso);
+  const end = adToBs(endAdIso);
+  if (start.bsYear === end.bsYear && start.bsMonth === end.bsMonth) {
+    return `${bsMonthName(start.bsMonth)} ${start.bsDay}–${end.bsDay}, ${start.bsYear}`;
+  }
+  if (start.bsYear === end.bsYear) {
+    return `${bsMonthName(start.bsMonth)} ${start.bsDay} – ${bsMonthName(end.bsMonth)} ${end.bsDay}, ${start.bsYear}`;
+  }
+  return `${formatBsPrimary(startAdIso)} – ${formatBsPrimary(endAdIso)}`;
+}
+
+/** AD secondary for a range — e.g. "AD 29/5/2025" or "AD 1/10/2025 → 7/10/2025". */
+export function formatAdDateRangeSecondary(startAdIso: string, endAdIso: string): string {
+  if (!startAdIso) return '';
+  const start = formatAdSecondary(startAdIso);
+  if (!endAdIso || endAdIso === startAdIso) return `AD ${start}`;
+  return `AD ${start} → ${formatAdSecondary(endAdIso)}`;
+}
+
 export function partsFromAdIso(adIso: string) {
   return adToBs(adIso);
 }

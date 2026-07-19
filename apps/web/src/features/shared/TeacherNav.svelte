@@ -15,6 +15,7 @@
   } from '../../lib/shared/stores/teacher-context';
 
   const links = [
+    { href: '/teacher/calendar', label: 'Calendar' },
     { href: '/teacher/attendance', label: 'Attendance' },
     { href: '/teacher/sweep', label: 'Sweep' },
     { href: '/teacher/weekly', label: 'Weekly' },

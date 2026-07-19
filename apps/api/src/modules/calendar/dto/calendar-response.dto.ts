@@ -5,12 +5,16 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
+
+export const SCHOOL_CLOSURE_CATEGORIES = ['school_holiday', 'eca', 'cca'] as const;
+export type SchoolClosureCategory = (typeof SCHOOL_CLOSURE_CATEGORIES)[number];
 
 export class FestivalClosureDto {
   @ApiPropertyOptional({ format: 'uuid', description: 'Existing closure id to update' })
@@ -30,6 +34,14 @@ export class FestivalClosureDto {
   @ApiProperty({ example: '2025-10-10' })
   @IsDateString()
   endDate!: string;
+
+  @ApiProperty({
+    enum: SCHOOL_CLOSURE_CATEGORIES,
+    description:
+      'school_holiday subtracts from teaching_days; eca/cca are the same event-marker type (ECA Extra Curricular / CCA Co-Curricular) and do not subtract',
+  })
+  @IsEnum(SCHOOL_CLOSURE_CATEGORIES)
+  category!: SchoolClosureCategory;
 }
 
 export class PatchFestivalTemplateDto {
@@ -62,16 +74,43 @@ export class FestivalClosureResponseDto {
   @IsBoolean()
   readOnly?: boolean;
 
-  @ApiPropertyOptional({ enum: ['govt_holiday', 'festival', 'day_off'] })
-  category?: 'govt_holiday' | 'festival' | 'day_off';
+  @ApiPropertyOptional({
+    enum: [...SCHOOL_CLOSURE_CATEGORIES, 'govt_holiday', 'festival', 'day_off'],
+    description: 'School category or national overlay category',
+  })
+  category?: SchoolClosureCategory | 'govt_holiday' | 'festival' | 'day_off';
 }
 
 export class FestivalTemplateResponseDto {
   @ApiProperty({ format: 'uuid' })
   schoolCalendarId!: string;
 
+  @ApiPropertyOptional({
+    description: 'Academic year label from the school calendar (e.g. 2082/83)',
+  })
+  academicYearLabel?: string;
+
+  @ApiPropertyOptional({
+    enum: ['draft', 'approved'],
+    description: 'Approved calendars are view-only; draft can be patched',
+  })
+  approvalStatus?: 'draft' | 'approved';
+
   @ApiPropertyOptional({ description: 'BS year derived from session_start' })
   bsYear?: number;
+
+  @ApiPropertyOptional({ description: 'AD session start (YYYY-MM-DD)' })
+  sessionStart?: string;
+
+  @ApiPropertyOptional({ description: 'AD session end (YYYY-MM-DD)' })
+  sessionEnd?: string;
+
+  @ApiPropertyOptional({
+    type: [Number],
+    description: 'ISO weekdays that are weekly offs (1=Mon … 7=Sun)',
+    example: [6, 7],
+  })
+  weeklyOffs?: number[];
 
   @ApiPropertyOptional({
     type: [FestivalClosureResponseDto],
@@ -92,6 +131,16 @@ export class CalendarSetupResponseDto {
 
   @ApiProperty({ enum: ['draft'] })
   approvalStatus!: 'draft';
+
+  @ApiPropertyOptional({
+    description: 'True when this draft was cloned from the live approved calendar',
+  })
+  clonedFromApproved?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'True when an approved calendar is still live for teachers',
+  })
+  hasLiveApproved?: boolean;
 }
 
 export class CalendarStatusResponseDto {
@@ -103,6 +152,11 @@ export class CalendarStatusResponseDto {
 
   @ApiPropertyOptional()
   academicYearLabel?: string;
+
+  @ApiPropertyOptional({
+    description: 'True when teachers still see a published approved calendar',
+  })
+  hasLiveApproved?: boolean;
 }
 
 export class ApproveCalendarResponseDto {
@@ -133,6 +187,21 @@ export class TeachingDaysResponseDto {
 
   @ApiProperty({ type: [TeachingDaysTerminalCountDto] })
   terminals!: TeachingDaysTerminalCountDto[];
+}
+
+/** National weekly-off preset for school setup (overridable on school calendar). */
+export class WeeklyOffPresetResponseDto {
+  @ApiProperty({ description: 'BS year the preset was resolved for' })
+  bsYear!: number;
+
+  @ApiProperty({
+    type: [Number],
+    description: 'ISO weekdays (1=Mon … 7=Sun). Defaults to [6] when none published.',
+  })
+  weeklyOffs!: number[];
+
+  @ApiProperty({ description: 'True when values came from a published national calendar' })
+  fromNational!: boolean;
 }
 
 export class CalendarViewTerminalDto {
@@ -171,6 +240,13 @@ export class CalendarViewResponseDto {
 
   @ApiPropertyOptional()
   sessionEnd?: string;
+
+  @ApiPropertyOptional({
+    type: [Number],
+    description: 'ISO weekdays that are weekly offs (1=Mon … 7=Sun)',
+    example: [6, 7],
+  })
+  weeklyOffs?: number[];
 
   @ApiProperty({ type: [FestivalClosureResponseDto] })
   nationalClosures!: FestivalClosureResponseDto[];

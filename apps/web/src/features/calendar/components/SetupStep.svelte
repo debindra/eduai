@@ -9,6 +9,7 @@
     weeklyOffDays: number[];
     terminals: TerminalDraft[];
     loading: boolean;
+    submitLabel?: string;
     onSubmit: (event: SubmitEvent) => void;
   };
 
@@ -19,6 +20,7 @@
     weeklyOffDays = $bindable(),
     terminals = $bindable(),
     loading,
+    submitLabel = 'Continue to closures',
     onSubmit,
   }: Props = $props();
 
@@ -159,6 +161,6 @@
     disabled={loading}
     class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
   >
-    {loading ? 'Saving…' : 'Continue to closures'}
+    {loading ? 'Saving…' : submitLabel}
   </button>
 </form>

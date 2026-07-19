@@ -31,12 +31,20 @@ function countTeachingDays(input: {
   start: string;
   end: string;
   weeklyOffs: number[];
-  schoolClosures: Array<{ start: string; end: string }>;
+  schoolClosures: Array<{ start: string; end: string; category?: string }>;
   nationalClosures: Array<{ start: string; end: string; published: boolean }>;
 }): number {
   return isoDaysBetween(input.start, input.end).filter((day) => {
     if (input.weeklyOffs.includes(isoDow(day))) return false;
-    if (input.schoolClosures.some((c) => overlaps(day, c.start, c.end))) return false;
+    if (
+      input.schoolClosures.some(
+        (c) =>
+          (c.category ?? 'school_holiday') === 'school_holiday' &&
+          overlaps(day, c.start, c.end),
+      )
+    ) {
+      return false;
+    }
     if (
       input.nationalClosures.some(
         (c) => c.published && overlaps(day, c.start, c.end),
@@ -93,9 +101,23 @@ describe('P7-TEST-02 national closure reflows teaching_days', () => {
       nationalClosures: [
         { start: '2025-09-08', end: '2025-09-08', published: true },
       ],
-      schoolClosures: [{ start: '2025-09-09', end: '2025-09-09' }],
+      schoolClosures: [{ start: '2025-09-09', end: '2025-09-09', category: 'school_holiday' }],
     });
     expect(both).toBe(nationalOnly - 1);
+  });
+
+  it('ECA/CCA school rows do not subtract from teaching_days', () => {
+    const baseline = countTeachingDays(base);
+    const withEca = countTeachingDays({
+      ...base,
+      schoolClosures: [{ start: '2025-09-09', end: '2025-09-09', category: 'eca' }],
+    });
+    const withCca = countTeachingDays({
+      ...base,
+      schoolClosures: [{ start: '2025-09-09', end: '2025-09-09', category: 'cca' }],
+    });
+    expect(withEca).toBe(baseline);
+    expect(withCca).toBe(baseline);
   });
 
   it('does not store a teaching-day count — result is recomputed from inputs', () => {

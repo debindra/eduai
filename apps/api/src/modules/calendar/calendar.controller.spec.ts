@@ -14,6 +14,7 @@ describe('CalendarController endpoints', () => {
     patchFestivalTemplate: ReturnType<typeof vi.fn>;
     approveCalendar: ReturnType<typeof vi.fn>;
     getTeachingDays: ReturnType<typeof vi.fn>;
+    getCalendarView: ReturnType<typeof vi.fn>;
   };
 
   const setupDto: CalendarSetupDto = {
@@ -40,6 +41,7 @@ describe('CalendarController endpoints', () => {
       patchFestivalTemplate: vi.fn(),
       approveCalendar: vi.fn(),
       getTeachingDays: vi.fn(),
+      getCalendarView: vi.fn(),
     };
     controller = new CalendarController(
       calendarService as unknown as CalendarService,
@@ -95,12 +97,13 @@ describe('CalendarController endpoints', () => {
           name: 'Dashain',
           startDate: '2025-10-01',
           endDate: '2025-10-10',
+          category: 'school_holiday' as const,
         },
       ],
     };
     calendarService.patchFestivalTemplate.mockResolvedValue({
       schoolCalendarId: 'cal-1',
-      closures: [{ ...dto.closures[0], source: 'festival_template' as const }],
+      closures: [{ ...dto.closures[0], source: 'local' as const }],
     });
 
     const actual = await controller.patchFestivalTemplate('school-1', dto);
@@ -153,5 +156,20 @@ describe('CalendarController endpoints', () => {
 
     expect(calendarService.getTeachingDays).toHaveBeenCalledWith('school-1');
     expect(actual.schoolId).toBe('school-1');
+  });
+
+  it('GET /calendar/:schoolId/view delegates to getCalendarView', async () => {
+    calendarService.getCalendarView.mockResolvedValue({
+      schoolId: 'school-1',
+      approvalStatus: 'approved',
+      nationalClosures: [],
+      closures: [],
+      terminals: [],
+    });
+
+    const actual = await controller.getCalendarView('school-1');
+
+    expect(calendarService.getCalendarView).toHaveBeenCalledWith('school-1');
+    expect(actual.approvalStatus).toBe('approved');
   });
 });

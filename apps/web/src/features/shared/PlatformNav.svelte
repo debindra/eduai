@@ -27,14 +27,16 @@
 
 <header class="border-b border-slate-200 bg-white">
   <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-    <nav class="flex flex-wrap items-center gap-4 text-sm">
-      <span class="font-semibold text-violet-800">Platform</span>
+    <nav class="flex flex-wrap items-center gap-1 text-sm" aria-label="Platform">
       {#each links as item (item.href)}
         <a
           use:link
-          use:active={'font-semibold text-violet-700'}
+          use:active={{
+            className: 'bg-violet-50 font-medium text-violet-800',
+            inactiveClassName: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+          }}
           href={item.href}
-          class="text-slate-600 hover:text-slate-900"
+          class="rounded-md px-2.5 py-1.5"
         >
           {item.label}
         </a>

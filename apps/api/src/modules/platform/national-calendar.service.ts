@@ -18,7 +18,7 @@ export class NationalCalendarService {
     const client = this.requireClient();
     const { data: calendars, error } = await client
       .from('national_calendars')
-      .select('id, bs_year, status')
+      .select('id, bs_year, status, weekly_offs')
       .order('bs_year', { ascending: false });
     if (error) {
       throw new BadRequestException(error.message);
@@ -26,12 +26,7 @@ export class NationalCalendarService {
     const result = [];
     for (const cal of calendars ?? []) {
       const closures = await this.listClosures(cal.id as string);
-      result.push({
-        id: cal.id as string,
-        bsYear: cal.bs_year as number,
-        status: cal.status as 'draft' | 'published',
-        closures,
-      });
+      result.push(this.mapCalendar(cal, closures));
     }
     return { calendars: result };
   }
@@ -40,7 +35,7 @@ export class NationalCalendarService {
     const client = this.requireClient();
     const { data, error } = await client
       .from('national_calendars')
-      .select('id, bs_year, status')
+      .select('id, bs_year, status, weekly_offs')
       .eq('id', id)
       .maybeSingle();
     if (error) {
@@ -49,38 +44,40 @@ export class NationalCalendarService {
     if (!data) {
       throw new NotFoundException('National calendar not found');
     }
-    return {
-      id: data.id as string,
-      bsYear: data.bs_year as number,
-      status: data.status as 'draft' | 'published',
-      closures: await this.listClosures(data.id as string),
-    };
+    return this.mapCalendar(data, await this.listClosures(data.id as string));
   }
 
   async createDraft(dto: CreateNationalCalendarDto) {
     const client = this.requireClient();
     const { data, error } = await client
       .from('national_calendars')
-      .insert({ bs_year: dto.bsYear, status: 'draft' })
-      .select('id, bs_year, status')
+      .insert({ bs_year: dto.bsYear, status: 'draft', weekly_offs: [6] })
+      .select('id, bs_year, status, weekly_offs')
       .single();
     if (error || !data) {
       throw new BadRequestException(error?.message ?? 'Failed to create national calendar');
     }
-    return {
-      id: data.id as string,
-      bsYear: data.bs_year as number,
-      status: 'draft' as const,
-      closures: [],
-    };
+    return this.mapCalendar(data, []);
   }
 
   async upsertClosures(calendarId: string, closures: UpsertNationalClosureDto[]) {
     const calendar = await this.getCalendar(calendarId);
-    if (calendar.status === 'published') {
-      // Closures remain editable; teaching_days VIEW recomputes on read.
-    }
     const client = this.requireClient();
+    const existing = await this.listClosures(calendarId);
+    const keptIds = new Set(
+      closures.map((c) => c.id).filter((id): id is string => Boolean(id)),
+    );
+    const toDelete = existing.filter((row) => !keptIds.has(row.id)).map((row) => row.id);
+    if (toDelete.length > 0) {
+      const { error: deleteError } = await client
+        .from('national_closures')
+        .delete()
+        .eq('national_calendar_id', calendarId)
+        .in('id', toDelete);
+      if (deleteError) {
+        throw new BadRequestException(deleteError.message);
+      }
+    }
     const updated = [];
     for (const closure of closures) {
       if (closure.id) {
@@ -125,10 +122,25 @@ export class NationalCalendarService {
     return { ...calendar, closures: updated };
   }
 
+  async patchWeeklyOffs(calendarId: string, weeklyOffs: number[]) {
+    const normalized = this.normalizeWeeklyOffs(weeklyOffs);
+    const client = this.requireClient();
+    const existing = await this.getCalendar(calendarId);
+    const { data, error } = await client
+      .from('national_calendars')
+      .update({ weekly_offs: normalized })
+      .eq('id', calendarId)
+      .select('id, bs_year, status, weekly_offs')
+      .single();
+    if (error || !data) {
+      throw new BadRequestException(error?.message ?? 'Failed to update weekly offs');
+    }
+    return this.mapCalendar(data, existing.closures);
+  }
+
   async publish(calendarId: string) {
     const client = this.requireClient();
     const calendar = await this.getCalendar(calendarId);
-    // Demote any other published calendar for this bs_year (partial unique index).
     const { error: demoteError } = await client
       .from('national_calendars')
       .update({ status: 'draft' })
@@ -142,17 +154,12 @@ export class NationalCalendarService {
       .from('national_calendars')
       .update({ status: 'published' })
       .eq('id', calendarId)
-      .select('id, bs_year, status')
+      .select('id, bs_year, status, weekly_offs')
       .single();
     if (error || !data) {
       throw new BadRequestException(error?.message ?? 'Failed to publish');
     }
-    return {
-      id: data.id as string,
-      bsYear: data.bs_year as number,
-      status: 'published' as const,
-      closures: await this.listClosures(data.id as string),
-    };
+    return this.mapCalendar(data, await this.listClosures(data.id as string));
   }
 
   /** Published closures for a BS year — used by school calendar setup. */
@@ -171,6 +178,52 @@ export class NationalCalendarService {
       return [];
     }
     return this.listClosures(calendar.id as string);
+  }
+
+  /**
+   * Published national weekly-off preset for a BS year.
+   * Schools copy this into school_calendars.weekly_offs at setup (overridable later).
+   */
+  async getPublishedWeeklyOffs(bsYear: number): Promise<number[] | null> {
+    const client = this.requireClient();
+    const { data, error } = await client
+      .from('national_calendars')
+      .select('weekly_offs')
+      .eq('bs_year', bsYear)
+      .eq('status', 'published')
+      .maybeSingle();
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+    if (!data) {
+      return null;
+    }
+    return this.normalizeWeeklyOffs((data.weekly_offs as number[] | null) ?? []);
+  }
+
+  private normalizeWeeklyOffs(weeklyOffs: number[]): number[] {
+    const unique = [
+      ...new Set(weeklyOffs.filter((d) => Number.isInteger(d) && d >= 1 && d <= 7)),
+    ].sort((a, b) => a - b);
+    return unique.length > 0 ? unique : [6];
+  }
+
+  private mapCalendar(
+    row: {
+      id: unknown;
+      bs_year: unknown;
+      status: unknown;
+      weekly_offs?: unknown;
+    },
+    closures: ReturnType<NationalCalendarService['mapClosure']>[],
+  ) {
+    return {
+      id: row.id as string,
+      bsYear: row.bs_year as number,
+      status: row.status as 'draft' | 'published',
+      weeklyOffs: this.normalizeWeeklyOffs((row.weekly_offs as number[] | null) ?? []),
+      closures,
+    };
   }
 
   private async listClosures(calendarId: string) {

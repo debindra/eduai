@@ -8,6 +8,7 @@ function createThenableResult<T>(result: T) {
     select: vi.fn(() => builder),
     insert: vi.fn(() => builder),
     update: vi.fn(() => builder),
+    delete: vi.fn(() => builder),
     eq: vi.fn(() => builder),
     neq: vi.fn(() => builder),
     in: vi.fn(() => builder),
@@ -38,7 +39,7 @@ describe('NationalCalendarService', () => {
     it('creates a draft calendar for a BS year', async () => {
       from.mockImplementation(() =>
         createThenableResult({
-          data: { id: 'nat-1', bs_year: 2082, status: 'draft' },
+          data: { id: 'nat-1', bs_year: 2082, status: 'draft', weekly_offs: [6] },
           error: null,
         }),
       );
@@ -47,6 +48,7 @@ describe('NationalCalendarService', () => {
         id: 'nat-1',
         bsYear: 2082,
         status: 'draft',
+        weeklyOffs: [6],
         closures: [],
       });
     });
@@ -225,8 +227,8 @@ describe('NationalCalendarService', () => {
         }
         if (table === 'national_closures') {
           closuresFromCount += 1;
-          if (closuresFromCount === 1) {
-            // listClosures inside getCalendar
+          if (closuresFromCount <= 2) {
+            // getCalendar listClosures + existing list for delete sync
             return createThenableResult({ data: [], error: null });
           }
           return createThenableResult({
@@ -256,6 +258,51 @@ describe('NationalCalendarService', () => {
       expect(actual.closures).toHaveLength(1);
       expect(actual.closures[0]?.id).toBe('nc-new');
       expect(actual.closures[0]?.name).toBe('Local festival');
+      expect(actual.weeklyOffs).toEqual([6]);
+    });
+  });
+
+  describe('patchWeeklyOffs', () => {
+    it('updates and normalizes ISO weekdays', async () => {
+      from.mockImplementation((table: string) => {
+        if (table === 'national_calendars') {
+          return createThenableResult({
+            data: {
+              id: 'nat-1',
+              bs_year: 2082,
+              status: 'draft',
+              weekly_offs: [6, 7],
+            },
+            error: null,
+          });
+        }
+        if (table === 'national_closures') {
+          return createThenableResult({ data: [], error: null });
+        }
+        return createThenableResult({ data: null, error: null });
+      });
+
+      const actual = await service.patchWeeklyOffs('nat-1', [7, 6, 6, 0, 9]);
+      expect(actual.weeklyOffs).toEqual([6, 7]);
+    });
+  });
+
+  describe('getPublishedWeeklyOffs', () => {
+    it('returns null when no published calendar', async () => {
+      from.mockImplementation(() =>
+        createThenableResult({ data: null, error: null }),
+      );
+      await expect(service.getPublishedWeeklyOffs(2082)).resolves.toBeNull();
+    });
+
+    it('returns published weekly offs', async () => {
+      from.mockImplementation(() =>
+        createThenableResult({
+          data: { weekly_offs: [6, 7] },
+          error: null,
+        }),
+      );
+      await expect(service.getPublishedWeeklyOffs(2082)).resolves.toEqual([6, 7]);
     });
   });
 });

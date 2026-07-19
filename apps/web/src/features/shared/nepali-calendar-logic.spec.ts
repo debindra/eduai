@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  adToBs,
   buildMonthGrid,
   clampMonth,
+  formatAdDateRangeSecondary,
+  formatBsDateRangePrimary,
   formatBsDayDevanagari,
+  formatBsPrimary,
   shiftMonthInYear,
 } from './nepali-calendar-logic';
 
@@ -41,5 +45,24 @@ describe('nepali-calendar-logic', () => {
 
   it('renders Devanagari day numerals', () => {
     expect(formatBsDayDevanagari(14)).toBe('१४');
+  });
+
+  it('formats a single AD date as humanized BS primary', () => {
+    const parts = adToBs('2025-04-14');
+    expect(formatBsPrimary('2025-04-14')).toBe(
+      `Baisakh ${parts.bsDay}, ${parts.bsYear}`,
+    );
+  });
+
+  it('formats same-day and multi-day BS ranges with AD secondary', () => {
+    const singleBs = formatBsDateRangePrimary('2025-05-29', '2025-05-29');
+    expect(singleBs).toMatch(/^\w+ \d+, \d{4}$/);
+    expect(formatAdDateRangeSecondary('2025-05-29', '2025-05-29')).toBe('AD 29/5/2025');
+
+    const rangeBs = formatBsDateRangePrimary('2025-10-01', '2025-10-07');
+    expect(rangeBs).toMatch(/–/);
+    expect(formatAdDateRangeSecondary('2025-10-01', '2025-10-07')).toBe(
+      'AD 1/10/2025 → 7/10/2025',
+    );
   });
 });

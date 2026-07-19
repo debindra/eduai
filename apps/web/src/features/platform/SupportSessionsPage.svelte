@@ -5,6 +5,7 @@
   import Alert from '../shared/Alert.svelte';
   import { toErrorMessage } from '../../lib/shared/errors';
   import { setSupportSession } from '../../lib/shared/stores/support-session';
+  import { ECA_CCA_LABEL } from '../calendar/calendar-markers-logic';
   import {
     createSupportSession,
     listPlatformSchools,
@@ -68,7 +69,7 @@
       schoolName: session.schoolName,
       expiresAt: session.expiresAt,
     });
-    push(`/admin/dashboard?schoolId=${session.schoolId}`);
+    push(`/admin/calendar`);
   };
 
   const handleRevoke = async (id: string) => {
@@ -87,7 +88,8 @@
   <div>
     <h1 class="text-2xl font-semibold text-slate-900">Support sessions</h1>
     <p class="mt-1 text-sm text-slate-600">
-      Time-boxed, consented drill-down into one school. Every access is audited.
+      Time-boxed, consented drill-down into one school. Enter opens that school’s admin calendar
+      (setup, holidays, {ECA_CCA_LABEL}). Every access is audited.
     </p>
   </div>
 
@@ -149,7 +151,7 @@
                 class="rounded-lg bg-violet-700 px-3 py-1.5 text-white"
                 onclick={() => handleEnter(session)}
               >
-                Enter
+                Enter calendar
               </button>
               <button
                 type="button"

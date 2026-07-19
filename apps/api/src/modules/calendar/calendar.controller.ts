@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -11,8 +11,10 @@ import {
 import type { Request } from 'express';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
 import { RequireSchoolAdmin } from '../auth/decorators/require-school-admin.decorator';
+import { RequireSchoolMember } from '../auth/decorators/require-school-member.decorator';
 import { RequireRoleGuard } from '../auth/guards/require-role.guard';
 import { RequireSchoolAdminGuard } from '../auth/guards/require-school-admin.guard';
+import { RequireSchoolMemberGuard } from '../auth/guards/require-school-member.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import type { RequestUser } from '../auth/types/request-user.types';
 import { CalendarService } from './calendar.service';
@@ -21,21 +23,38 @@ import {
   ApproveCalendarResponseDto,
   CalendarSetupResponseDto,
   CalendarStatusResponseDto,
+  CalendarViewResponseDto,
   FestivalTemplateResponseDto,
   PatchFestivalTemplateDto,
   TeachingDaysResponseDto,
+  WeeklyOffPresetResponseDto,
 } from './dto/calendar-response.dto';
 
 @ApiTags('calendar')
 @ApiBearerAuth()
 @Controller('calendar')
-@UseGuards(SupabaseAuthGuard, RequireRoleGuard, RequireSchoolAdminGuard)
-@RequireRole('admin')
-@RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
+@UseGuards(SupabaseAuthGuard)
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 
+  @Get(':schoolId/view')
+  @UseGuards(RequireSchoolMemberGuard)
+  @RequireSchoolMember({ schoolIdParam: 'schoolId' })
+  @ApiOperation({
+    summary: 'Shared school calendar view (read-only)',
+    description:
+      'Admin, teacher (school membership), or platform with active support session. ' +
+      'Returns national + local closures for the BS calendar board. Prefer approved calendar.',
+  })
+  @ApiOkResponse({ type: CalendarViewResponseDto })
+  async getCalendarView(@Param('schoolId') schoolId: string): Promise<CalendarViewResponseDto> {
+    return this.calendarService.getCalendarView(schoolId);
+  }
+
   @Post(':schoolId/setup')
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
+  @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
   @ApiOperation({
     summary: 'Create a draft school calendar',
     description:
@@ -51,11 +70,48 @@ export class CalendarController {
     return this.calendarService.setupCalendar(schoolId, dto);
   }
 
+  @Patch(':schoolId/setup')
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
+  @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
+  @ApiOperation({
+    summary: 'Update draft calendar session / terminals',
+    description:
+      'Requires admin role. Updates the editable draft only — live approved calendars are unchanged until approve.',
+  })
+  @ApiOkResponse({ type: CalendarSetupResponseDto })
+  @ApiNotFoundResponse({ description: 'Draft calendar not found' })
+  async updateSetup(
+    @Param('schoolId') schoolId: string,
+    @Body() dto: CalendarSetupDto,
+  ): Promise<CalendarSetupResponseDto> {
+    return this.calendarService.updateDraftSetup(schoolId, dto);
+  }
+
+  @Post(':schoolId/ensure-draft')
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
+  @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
+  @ApiOperation({
+    summary: 'Ensure an editable draft calendar',
+    description:
+      'Returns the existing draft, or clones the live approved calendar into a new draft. ' +
+      'Teachers keep seeing the approved copy until the draft is approved.',
+  })
+  @ApiOkResponse({ type: CalendarSetupResponseDto })
+  @ApiNotFoundResponse({ description: 'No approved calendar to clone' })
+  async ensureDraft(@Param('schoolId') schoolId: string): Promise<CalendarSetupResponseDto> {
+    return this.calendarService.ensureEditableDraft(schoolId);
+  }
+
   @Get(':schoolId/status')
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
+  @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
   @ApiOperation({
     summary: 'Get calendar wizard status',
     description:
-      'Requires admin role. Returns draft calendar when one exists, otherwise the latest approved calendar, otherwise none.',
+      'Requires admin role. Returns draft when one exists (even if an approved calendar is live), otherwise approved, otherwise none.',
   })
   @ApiOkResponse({ type: CalendarStatusResponseDto })
   async getCalendarStatus(
@@ -65,6 +121,9 @@ export class CalendarController {
   }
 
   @Get(':schoolId/festival-template')
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
+  @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
   @ApiOperation({
     summary: 'Get festival-template closures for review',
     description: 'Requires admin role. Reads draft calendar closures with source=festival_template.',
@@ -78,6 +137,9 @@ export class CalendarController {
   }
 
   @Patch(':schoolId/festival-template')
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
+  @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
   @ApiOperation({
     summary: 'Edit festival-template closures',
     description: 'Requires admin role. Upserts festival_template closures on the draft calendar.',
@@ -91,10 +153,13 @@ export class CalendarController {
   }
 
   @Post(':schoolId/approve')
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
+  @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
   @ApiOperation({
     summary: 'Approve the draft calendar',
     description:
-      'Requires admin role. One approval action that unlocks downstream pacing/reporting triggers. Terminals remain coverage boundaries only — never exam dates.',
+      'Requires admin role. Promotes the draft to approved and supersedes any previous approved calendar for the same academic year. Teachers and teaching_days then read the new approved copy.',
   })
   @ApiOkResponse({ type: ApproveCalendarResponseDto })
   @ApiNotFoundResponse({ description: 'Draft calendar not found' })
@@ -106,7 +171,27 @@ export class CalendarController {
     return this.calendarService.approveCalendar(schoolId, user.identityId);
   }
 
+  @Get(':schoolId/weekly-off-preset')
+  @UseGuards(RequireSchoolMemberGuard)
+  @RequireSchoolMember({ schoolIdParam: 'schoolId' })
+  @ApiOperation({
+    summary: 'National weekly day-off preset for school calendar setup',
+    description:
+      'Returns published national weekly offs for the BS year (default Saturday). ' +
+      'School admins may override when configuring school_calendars.weekly_offs.',
+  })
+  @ApiOkResponse({ type: WeeklyOffPresetResponseDto })
+  async getWeeklyOffPreset(
+    @Param('schoolId') _schoolId: string,
+    @Query('bsYear', ParseIntPipe) bsYear: number,
+  ): Promise<WeeklyOffPresetResponseDto> {
+    return this.calendarService.getWeeklyOffPreset(bsYear);
+  }
+
   @Get(':schoolId/teaching-days')
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
+  @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdParam: 'schoolId' })
   @ApiOperation({
     summary: 'Read teaching-day counts per terminal',
     description:

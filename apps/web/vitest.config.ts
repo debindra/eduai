@@ -25,6 +25,9 @@ export default defineConfig({
     environment: 'happy-dom',
     include: ['src/**/*.{test,spec}.ts'],
     setupFiles: ['./src/test-setup.ts'],
+    env: {
+      TZ: 'Asia/Kathmandu',
+    },
     server: {
       deps: {
         inline: ['@eduai/bs-date', 'nepali-datetime'],

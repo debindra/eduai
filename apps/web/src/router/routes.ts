@@ -23,8 +23,10 @@ import CertificationPage from '../features/certification/CertificationPage.svelt
 import CommunityPage from '../features/community/CommunityPage.svelte';
 import RosterPage from '../features/roster/RosterPage.svelte';
 import TenantBoardPage from '../features/platform/TenantBoardPage.svelte';
+import TenantCalendarPage from '../features/platform/TenantCalendarPage.svelte';
 import NationalCalendarPage from '../features/platform/NationalCalendarPage.svelte';
 import SupportSessionsPage from '../features/platform/SupportSessionsPage.svelte';
+import TeacherCalendarPage from '../features/calendar/TeacherCalendarPage.svelte';
 import { routePermissions } from './permissions';
 
 export const routes = {
@@ -32,6 +34,10 @@ export const routes = {
   '/health': Health,
   '/login': LoginPage,
   '/login/recovery': RecoveryPage,
+  '/platform/schools/:schoolId/calendar': createProtectedRoute({
+    component: async () => TenantCalendarPage,
+    permissions: routePermissions.platform,
+  }),
   '/platform/schools': createProtectedRoute({
     component: async () => TenantBoardPage,
     permissions: routePermissions.platform,
@@ -67,6 +73,10 @@ export const routes = {
   '/admin/remedial': createProtectedRoute({
     component: async () => AdminRemedialPage,
     permissions: routePermissions.admin,
+  }),
+  '/teacher/calendar': createProtectedRoute({
+    component: async () => TeacherCalendarPage,
+    permissions: routePermissions.teacher,
   }),
   '/teacher/attendance': createProtectedRoute({
     component: async () => AttendancePage,

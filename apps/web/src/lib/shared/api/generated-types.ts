@@ -133,7 +133,11 @@ export interface paths {
          */
         get: operations["PlatformController_listSchools"];
         put?: never;
-        post?: never;
+        /**
+         * Create a tenant and invite the first school admin
+         * @description Platform-only provisioning. Inserts the school row then invites the first admin (email or mobile).
+         */
+        post: operations["PlatformController_createSchool"];
         delete?: never;
         options?: never;
         head?: never;
@@ -256,6 +260,26 @@ export interface paths {
          * @description Returns all bands with grade_scales and subjects. Band-as-data — no grade-number branching; read assessment_mode / aggregation_rule off each band row.
          */
         get: operations["BandConfigController_listBands"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/calendar/{schoolId}/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shared school calendar view (read-only)
+         * @description Admin, teacher (school membership), or platform with active support session. Returns national + local closures for the BS calendar board. Prefer approved calendar.
+         */
+        get: operations["CalendarController_getCalendarView"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1710,13 +1734,43 @@ export interface components {
             tier?: string | null;
             licensedBandRange?: string | null;
             exitStatus?: string | null;
+            /** @enum {string} */
+            calendarStatus: "none" | "draft" | "approved";
             /** @description Total sections in the school */
             sectionsTotal: number;
             /** @description Sections with no approved calendar or zero teaching days — shape only, no names */
             sectionsBehind: number;
+            /** @description Active teacher memberships — count only */
+            teachersTotal: number;
+            /** @description Enrolled children — count only, no names */
+            studentsTotal: number;
+            /** @description Distinct subjects assigned via teacher_sections — count only */
+            subjectsTotal: number;
         };
         PlatformSchoolsResponseDto: {
             schools: components["schemas"]["PlatformSchoolDto"][];
+        };
+        CreatePlatformSchoolDto: {
+            name: string;
+            region?: string;
+            tier?: string;
+            /** @description e.g. pre_primary,basic_early,basic_upper */
+            licensedBandRange?: string;
+            /** @description First admin email — omit for mobile-only */
+            adminEmail?: string;
+            /** @description First admin phone — omit for email */
+            adminPhone?: string;
+            adminDisplayName?: string;
+        };
+        PlatformSchoolAdminInviteDto: {
+            /** Format: uuid */
+            identityId: string;
+            /** @enum {string} */
+            delivery: "email" | "mobile";
+        };
+        CreatePlatformSchoolResponseDto: {
+            school: components["schemas"]["PlatformSchoolDto"];
+            admin: components["schemas"]["PlatformSchoolAdminInviteDto"];
         };
         CreateSupportSessionDto: {
             /** Format: uuid */
@@ -1826,6 +1880,44 @@ export interface components {
         BandsListResponseDto: {
             bands: components["schemas"]["BandResponseDto"][];
         };
+        FestivalClosureResponseDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            startDate: string;
+            endDate: string;
+            /** @enum {string} */
+            source: "festival_template" | "manual" | "local" | "national";
+            readOnly?: boolean;
+            /**
+             * @description School category or national overlay category
+             * @enum {string}
+             */
+            category?: "school_holiday" | "eca" | "cca" | "govt_holiday" | "festival" | "day_off";
+        };
+        CalendarViewTerminalDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            startDate: string;
+            endDate: string;
+        };
+        CalendarViewResponseDto: {
+            /** Format: uuid */
+            schoolId: string;
+            /** @enum {string} */
+            approvalStatus: "none" | "draft" | "approved";
+            /** Format: uuid */
+            schoolCalendarId?: string;
+            academicYearLabel?: string;
+            /** @description BS year derived from session_start */
+            bsYear?: number;
+            sessionStart?: string;
+            sessionEnd?: string;
+            nationalClosures: components["schemas"]["FestivalClosureResponseDto"][];
+            closures: components["schemas"]["FestivalClosureResponseDto"][];
+            terminals: components["schemas"]["CalendarViewTerminalDto"][];
+        };
         TerminalSetupDto: {
             name: string;
             sortOrder: number;
@@ -1866,18 +1958,6 @@ export interface components {
             schoolCalendarId?: string;
             academicYearLabel?: string;
         };
-        FestivalClosureResponseDto: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            startDate: string;
-            endDate: string;
-            /** @enum {string} */
-            source: "festival_template" | "manual" | "local" | "national";
-            readOnly?: boolean;
-            /** @enum {string} */
-            category?: "govt_holiday" | "festival" | "day_off";
-        };
         FestivalTemplateResponseDto: {
             /** Format: uuid */
             schoolCalendarId: string;
@@ -1898,6 +1978,11 @@ export interface components {
             startDate: string;
             /** @example 2025-10-10 */
             endDate: string;
+            /**
+             * @description school_holiday subtracts from teaching_days; eca/cca are event markers only
+             * @enum {string}
+             */
+            category: "school_holiday" | "eca" | "cca";
         };
         PatchFestivalTemplateDto: {
             /** @description Local/manual school closures only */
@@ -2380,6 +2465,29 @@ export interface operations {
             };
         };
     };
+    PlatformController_createSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlatformSchoolDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatePlatformSchoolResponseDto"];
+                };
+            };
+        };
+    };
     PlatformController_listSupportSessions: {
         parameters: {
             query?: never;
@@ -2567,6 +2675,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BandsListResponseDto"];
+                };
+            };
+        };
+    };
+    CalendarController_getCalendarView: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarViewResponseDto"];
                 };
             };
         };
