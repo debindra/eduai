@@ -97,6 +97,11 @@ const EXPECTED = {
   support_sessions: { min: 0, max: 0, note: 'intentional empty' },
   national_calendars: { min: 1, note: 'Phase 7 — published BS 2082' },
   national_closures: { min: 3, note: 'Dashain + Tihar + fixed govt holiday' },
+  eca_cca_catalog: { min: 8, note: 'Phase 8 — global ECA/CCA catalog' },
+  school_eca_cca_items: {
+    min: 3,
+    note: 'Phase 8 — School X enables catalog + school-only',
+  },
   children: { min: 120, note: 'Full school ~120 children' },
   guardian_child_links: { min: 4 },
   teacher_sections: { min: 59, note: '15 class + 30 early subject + 14 upper subject' },

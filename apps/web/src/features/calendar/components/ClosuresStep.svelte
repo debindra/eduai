@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { SchoolEcaCcaItem } from '../../eca-cca/eca-cca-logic';
   import type { LocalClosure, NationalClosure } from '../calendar-wizard-logic';
   import CalendarBoard from './CalendarBoard.svelte';
 
@@ -10,6 +11,7 @@
     sessionEnd: string;
     weeklyOffs: number[];
     loading: boolean;
+    schoolActivities?: SchoolEcaCcaItem[];
     /** Approved calendars: board is view-only and continue is hidden. */
     readOnly?: boolean;
     /** Optional draft-only save (platform configure flow). */
@@ -27,6 +29,7 @@
     sessionEnd,
     weeklyOffs,
     loading,
+    schoolActivities = [],
     readOnly = false,
     saveDraftLabel = 'Save changes (Draft)',
     onSaveDraft,
@@ -45,6 +48,7 @@
       {sessionStart}
       {sessionEnd}
       {weeklyOffs}
+      {schoolActivities}
       editable={!readOnly}
       readOnly={readOnly}
       initialView="month"

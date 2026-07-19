@@ -228,6 +228,12 @@ new configuration rows.
   BS↔AD library, and the working-name replacement across every parent- and
   school-facing artifact.
 
+## Phase 8 — ECA / CCA catalog + calendar
+
+Platform-owned ECA/CCA catalog (icons); school enable or school-only
+items; place on calendar without affecting `teaching_days`. Detail:
+[`docs/phases/tasks/phase-8-eca-cca.md`](docs/phases/tasks/phase-8-eca-cca.md).
+
 ---
 
 ## Sequencing notes / things not to parallelize carelessly

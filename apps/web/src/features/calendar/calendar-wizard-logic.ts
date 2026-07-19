@@ -15,6 +15,8 @@ export type LocalClosure = {
   startDate: string;
   endDate: string;
   category: SchoolClosureCategory;
+  schoolActivityId?: string | null;
+  iconKey?: string | null;
 };
 
 export type NationalClosure = {

@@ -469,6 +469,54 @@ both platform and school-admin UIs.
 
 ---
 
+## Phase 8 — ECA / CCA catalog + calendar
+
+Platform-owned global ECA/CCA catalog (with icons); school admin
+enables catalog items or adds school-only items and places them on the
+school calendar. ECA/CCA remain board markers only (do not subtract from
+`teaching_days`). Minimal scope — no participation, staff assignment, or
+parent views. Detail:
+[`docs/phases/tasks/phase-8-eca-cca.md`](docs/phases/tasks/phase-8-eca-cca.md).
+
+### Database / Schema
+- [x] `eca_cca_catalog` (global name, kind, icon_key allowlist, active,
+      soft-delete) + RLS — `P8-DB-01`
+- [x] `school_eca_cca_items` (enable catalog or school-only) + RLS —
+      `P8-DB-02`
+- [x] `calendar_closures.school_activity_id` nullable FK; CHECK with
+      `eca`/`cca` category — `P8-DB-03`
+- [x] Seed ~8–12 Nepal-relevant catalog rows; School X enables a subset —
+      `P8-DB-04`
+
+### Backend (NestJS)
+- [x] Platform `EcaCcaCatalogModule` CRUD (super admin only) —
+      `P8-API-CAT-01`
+- [x] School admin: list / enable-disable / CRUD school-only —
+      `P8-API-SCH-01`
+- [x] Calendar closures accept optional `schoolActivityId`; board returns
+      icon/kind; `teaching_days` unchanged — `P8-API-CAL-01`
+
+### Frontend (Svelte 5 SPA + Tailwind)
+- [x] Platform catalog page + `PlatformNav` link; icon picker —
+      `P8-WEB-PLAT-01`
+- [x] School manage surface: enable catalog / add-edit-delete school-only —
+      `P8-WEB-ADM-01`
+- [x] Closure dialog activity picker + icons on calendar board —
+      `P8-WEB-CAL-01`
+
+### Testing / CI
+- [x] Platform vs school RBAC; school-only isolation — `P8-TEST-01`
+- [x] Calendar link + `teaching_days` still ignores ECA/CCA —
+      `P8-TEST-02`
+- [x] FE picker + icon-mapping tests — `P8-TEST-03`
+
+**Exit criteria:** platform can maintain the global ECA/CCA catalog with
+icons; school admin can enable catalog items or add school-only items and
+place them on the calendar with icons; ECA/CCA remain non-teaching-day
+markers.
+
+---
+
 ## Cross-phase discipline reminders
 
 - Every new NestJS guard/interceptor should have a unit test with a

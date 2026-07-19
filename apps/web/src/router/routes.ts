@@ -25,6 +25,7 @@ import RosterPage from '../features/roster/RosterPage.svelte';
 import TenantBoardPage from '../features/platform/TenantBoardPage.svelte';
 import TenantCalendarPage from '../features/platform/TenantCalendarPage.svelte';
 import NationalCalendarPage from '../features/platform/NationalCalendarPage.svelte';
+import EcaCcaCatalogPage from '../features/platform/EcaCcaCatalogPage.svelte';
 import SupportSessionsPage from '../features/platform/SupportSessionsPage.svelte';
 import TeacherCalendarPage from '../features/calendar/TeacherCalendarPage.svelte';
 import { routePermissions } from './permissions';
@@ -44,6 +45,10 @@ export const routes = {
   }),
   '/platform/national-calendar': createProtectedRoute({
     component: async () => NationalCalendarPage,
+    permissions: routePermissions.platform,
+  }),
+  '/platform/eca-cca': createProtectedRoute({
+    component: async () => EcaCcaCatalogPage,
     permissions: routePermissions.platform,
   }),
   '/platform/support-sessions': createProtectedRoute({

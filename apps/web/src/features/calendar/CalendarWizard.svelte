@@ -8,6 +8,11 @@
   import ApproveStep from './components/ApproveStep.svelte';
   import { ECA_CCA_LABEL } from './calendar-markers-logic';
   import {
+    activePickerItems,
+    type SchoolEcaCcaItem,
+  } from '../eca-cca/eca-cca-logic';
+  import { getSchoolEcaCcaBundle } from '../manage/api';
+  import {
     approveCalendar,
     ensureCalendarDraft,
     getCalendarStatus,
@@ -56,6 +61,16 @@
   let closures = $state<LocalClosure[]>([]);
   let nationalClosures = $state<NationalClosure[]>([]);
   let bsYear = $state<number | null>(null);
+  let schoolActivities = $state<SchoolEcaCcaItem[]>([]);
+
+  const loadSchoolActivities = async () => {
+    try {
+      const bundle = await getSchoolEcaCcaBundle();
+      schoolActivities = activePickerItems(bundle.schoolItems);
+    } catch {
+      schoolActivities = [];
+    }
+  };
 
   const goToFestivals = () => {
     step = 2;
@@ -116,6 +131,9 @@
       startDate: c.startDate,
       endDate: c.endDate,
       category: (c.category as LocalClosure['category']) ?? 'school_holiday',
+      schoolActivityId:
+        (c as { schoolActivityId?: string | null }).schoolActivityId ?? null,
+      iconKey: (c as { iconKey?: string | null }).iconKey ?? null,
     }));
   };
 
@@ -151,8 +169,11 @@
         category:
           ((c as { category?: LocalClosure['category'] }).category as LocalClosure['category']) ??
           'school_holiday',
+        schoolActivityId:
+          (c as { schoolActivityId?: string | null }).schoolActivityId ?? null,
+        iconKey: (c as { iconKey?: string | null }).iconKey ?? null,
       }));
-      await applySessionFromView();
+      await Promise.all([applySessionFromView(), loadSchoolActivities()]);
     } catch (err) {
       const message = toErrorMessage(err, 'Could not load festival template');
       if (isDraftCalendarNotFoundError(message)) {
@@ -195,14 +216,15 @@
       await patchFestivalTemplate({
         closures: closures
           .filter((c) => c.name && c.startDate && c.endDate)
-          .map(({ id, name, startDate, endDate, category }) => ({
+          .map(({ id, name, startDate, endDate, category, schoolActivityId }) => ({
             id,
             name,
             startDate,
             endDate,
             category,
+            schoolActivityId: schoolActivityId ?? null,
           })),
-      });
+      } as Parameters<typeof patchFestivalTemplate>[0]);
       const view = await getCalendarView();
       applyViewClosures(view);
       step = 3;
@@ -340,6 +362,7 @@
         sessionStart={sessionStart}
         sessionEnd={sessionEnd}
         weeklyOffs={weeklyOffDays.map(toIsoWeekday)}
+        {schoolActivities}
         {loading}
         onContinue={handleFestivalsContinue}
       />

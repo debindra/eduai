@@ -358,8 +358,9 @@ BEGIN
 END $$;
 
 -- ---------------------------------------------------------------------------
--- Calendar draft (not approved — wizard/API can still approve)
--- Session roughly Baisakh 2082 – Chaitra 2082 (AD approx)
+-- Calendar approved (teaching_days VIEW reads approved only — draft yields
+-- zero days and map_slices seed would be empty). Session roughly Baisakh
+-- 2082 – Chaitra 2082 (AD approx). Admins can still clone a draft via ensure-draft.
 -- ---------------------------------------------------------------------------
 INSERT INTO school_calendars (
   id,
@@ -368,7 +369,9 @@ INSERT INTO school_calendars (
   session_start,
   session_end,
   weekly_offs,
-  approval_status
+  approval_status,
+  approved_at,
+  approved_by
 ) VALUES (
   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
   '11111111-1111-1111-1111-111111111111',
@@ -376,7 +379,9 @@ INSERT INTO school_calendars (
   '2025-04-14',
   '2026-04-13',
   '{6}',
-  'draft'
+  'approved',
+  now(),
+  '22222222-2222-2222-2222-222222222221'
 );
 
 INSERT INTO terminals (
@@ -490,6 +495,56 @@ INSERT INTO national_closures (
     'Baisakh 6, 2082',
     false
   );
+
+-- ---------------------------------------------------------------------------
+-- Phase 8 — global ECA/CCA catalog + School X enables a subset
+-- ---------------------------------------------------------------------------
+INSERT INTO eca_cca_catalog (id, name, kind, icon_key, sort_order, is_active) VALUES
+  ('a3000000-0000-0000-0000-000000000001', 'Sports Day', 'eca', 'sports', 10, true),
+  ('a3000000-0000-0000-0000-000000000002', 'Music Club', 'cca', 'music', 20, true),
+  ('a3000000-0000-0000-0000-000000000003', 'Art & Craft', 'cca', 'art', 30, true),
+  ('a3000000-0000-0000-0000-000000000004', 'Dance', 'eca', 'dance', 40, true),
+  ('a3000000-0000-0000-0000-000000000005', 'Drama / Theatre', 'cca', 'drama', 50, true),
+  ('a3000000-0000-0000-0000-000000000006', 'Scouts / Guides', 'eca', 'scout', 60, true),
+  ('a3000000-0000-0000-0000-000000000007', 'Debate', 'cca', 'debate', 70, true),
+  ('a3000000-0000-0000-0000-000000000008', 'Science Club', 'cca', 'science', 80, true),
+  ('a3000000-0000-0000-0000-000000000009', 'Computer Club', 'cca', 'computer', 90, true),
+  ('a3000000-0000-0000-0000-00000000000a', 'Yoga', 'eca', 'yoga', 100, true),
+  ('a3000000-0000-0000-0000-00000000000b', 'Gardening', 'eca', 'gardening', 110, true),
+  ('a3000000-0000-0000-0000-00000000000c', 'Library Hour', 'cca', 'library', 120, true);
+
+INSERT INTO school_eca_cca_items (id, school_id, catalog_id, is_active) VALUES
+  (
+    'a3100000-0000-0000-0000-000000000001',
+    '11111111-1111-1111-1111-111111111111',
+    'a3000000-0000-0000-0000-000000000001',
+    true
+  ),
+  (
+    'a3100000-0000-0000-0000-000000000002',
+    '11111111-1111-1111-1111-111111111111',
+    'a3000000-0000-0000-0000-000000000002',
+    true
+  ),
+  (
+    'a3100000-0000-0000-0000-000000000003',
+    '11111111-1111-1111-1111-111111111111',
+    'a3000000-0000-0000-0000-000000000003',
+    true
+  );
+
+-- School-only example (not in global catalog)
+INSERT INTO school_eca_cca_items (
+  id, school_id, catalog_id, name, kind, icon_key, is_active
+) VALUES (
+  'a3100000-0000-0000-0000-0000000000f1',
+  '11111111-1111-1111-1111-111111111111',
+  NULL,
+  'House Competition',
+  'eca',
+  'sports',
+  true
+);
 
 -- ---------------------------------------------------------------------------
 -- Extra pre-primary placeholder outcomes (trainer bank later)

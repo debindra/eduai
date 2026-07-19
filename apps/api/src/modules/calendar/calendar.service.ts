@@ -1,15 +1,20 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { bsYearForAdDate } from '@eduai/bs-date';
+import { EcaCcaService } from '../eca-cca/eca-cca.service';
 import { NationalCalendarService } from '../platform/national-calendar.service';
 import { CalendarRepository } from './calendar.repository';
 import type { CalendarSetupDto } from './dto/calendar-setup.dto';
-import type { PatchFestivalTemplateDto } from './dto/calendar-response.dto';
+import type {
+  FestivalClosureDto,
+  PatchFestivalTemplateDto,
+} from './dto/calendar-response.dto';
 
 @Injectable()
 export class CalendarService {
   constructor(
     private readonly repository: CalendarRepository,
     private readonly nationalCalendar: NationalCalendarService,
+    private readonly ecaCca: EcaCcaService,
   ) {}
 
   async setupCalendar(schoolId: string, dto: CalendarSetupDto) {
@@ -152,15 +157,7 @@ export class CalendarService {
         source: 'national' as const,
         readOnly: true as const,
       })),
-      closures: schoolClosures.map((closure) => ({
-        id: closure.id,
-        name: closure.name,
-        startDate: closure.start_date,
-        endDate: closure.end_date,
-        source: closure.source as 'festival_template' | 'manual' | 'local',
-        category: closure.category as 'school_holiday' | 'eca' | 'cca',
-        readOnly: closuresReadOnly,
-      })),
+      closures: await this.mapSchoolClosures(schoolId, schoolClosures, closuresReadOnly),
     };
   }
 
@@ -177,7 +174,9 @@ export class CalendarService {
     }
     const updated = [];
     for (const closure of dto.closures) {
-      const row = await this.repository.upsertLocalClosure(calendar.id, closure);
+      const normalized = await this.normalizeClosureWithActivity(schoolId, closure);
+      const row = await this.repository.upsertLocalClosure(calendar.id, normalized);
+      const iconKey = await this.iconForActivity(schoolId, row.school_activity_id);
       updated.push({
         id: row.id,
         name: row.name,
@@ -185,6 +184,8 @@ export class CalendarService {
         endDate: row.end_date,
         source: row.source as 'festival_template' | 'manual' | 'local',
         category: row.category as 'school_holiday' | 'eca' | 'cca',
+        schoolActivityId: row.school_activity_id,
+        iconKey,
         readOnly: false as const,
       });
     }
@@ -304,15 +305,7 @@ export class CalendarService {
         source: 'national' as const,
         readOnly: true as const,
       })),
-      closures: schoolClosures.map((closure) => ({
-        id: closure.id,
-        name: closure.name,
-        startDate: closure.start_date,
-        endDate: closure.end_date,
-        source: closure.source as 'festival_template' | 'manual' | 'local',
-        category: closure.category as 'school_holiday' | 'eca' | 'cca',
-        readOnly: false as const,
-      })),
+      closures: await this.mapSchoolClosures(schoolId, schoolClosures, false),
       terminals: terminals.map((terminal) => ({
         id: terminal.id,
         name: terminal.name,
@@ -320,6 +313,73 @@ export class CalendarService {
         endDate: terminal.end_date,
       })),
     };
+  }
+
+  private async mapSchoolClosures(
+    schoolId: string,
+    schoolClosures: Array<{
+      id: string;
+      name: string;
+      start_date: string;
+      end_date: string;
+      source: string;
+      category: string;
+      school_activity_id: string | null;
+    }>,
+    readOnly: boolean,
+  ) {
+    const icons = await this.activityIconMap(schoolId);
+    return schoolClosures.map((closure) => ({
+      id: closure.id,
+      name: closure.name,
+      startDate: closure.start_date,
+      endDate: closure.end_date,
+      source: closure.source as 'festival_template' | 'manual' | 'local',
+      category: closure.category as 'school_holiday' | 'eca' | 'cca',
+      schoolActivityId: closure.school_activity_id,
+      iconKey: closure.school_activity_id
+        ? (icons.get(closure.school_activity_id) ?? null)
+        : null,
+      readOnly,
+    }));
+  }
+
+  private async normalizeClosureWithActivity(
+    schoolId: string,
+    closure: FestivalClosureDto,
+  ): Promise<FestivalClosureDto> {
+    if (closure.category === 'school_holiday' && closure.schoolActivityId) {
+      throw new BadRequestException(
+        'school_holiday closures cannot link to an ECA/CCA activity',
+      );
+    }
+    if (!closure.schoolActivityId) {
+      return { ...closure, schoolActivityId: null };
+    }
+    const item = await this.ecaCca.resolveActiveSchoolItem(
+      schoolId,
+      closure.schoolActivityId,
+    );
+    return {
+      ...closure,
+      name: closure.name?.trim() ? closure.name : item.name,
+      category: item.kind,
+      schoolActivityId: item.id,
+    };
+  }
+
+  private async activityIconMap(schoolId: string): Promise<Map<string, string>> {
+    const items = await this.ecaCca.listSchoolItems(schoolId);
+    return new Map(items.map((item) => [item.id, item.iconKey]));
+  }
+
+  private async iconForActivity(
+    schoolId: string,
+    activityId: string | null,
+  ): Promise<string | null> {
+    if (!activityId) return null;
+    const map = await this.activityIconMap(schoolId);
+    return map.get(activityId) ?? null;
   }
 
   private async requireDraftCalendar(schoolId: string) {

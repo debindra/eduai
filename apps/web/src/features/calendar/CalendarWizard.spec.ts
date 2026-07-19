@@ -15,6 +15,10 @@ vi.mock('./api', () => ({
   ensureCalendarDraft: vi.fn(),
 }));
 
+vi.mock('../manage/api', () => ({
+  getSchoolEcaCcaBundle: vi.fn().mockResolvedValue({ catalog: [], schoolItems: [] }),
+}));
+
 vi.mock('../shared/NepaliDatePicker.svelte', async () => {
   const { default: Mock } = await import('../shared/NepaliDatePickerMock.svelte');
   return { default: Mock };
@@ -197,6 +201,7 @@ describe('CalendarWizard', () => {
           startDate: '2025-10-01',
           endDate: '2025-10-10',
           category: 'eca',
+          schoolActivityId: null,
         },
       ],
     });
