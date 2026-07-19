@@ -1,25 +1,34 @@
 import { apiFetch } from '../../lib/shared/api/client';
+import {
+  getSelectedSubjectId,
+  requireBandId,
+  requireSectionId,
+} from '../../lib/shared/stores/teacher-context';
 
-const DEV_SECTION_ID = '66666666-6666-6666-6666-666666666666';
-const DEV_BAND_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-
+/** @deprecated Prefer requireSectionId from teacher-context store. */
 export function getTeacherSectionId(): string {
-  return DEV_SECTION_ID;
+  return requireSectionId();
 }
 
+/** @deprecated Prefer requireBandId from teacher-context store. */
 export function getTeacherBandId(): string {
-  return DEV_BAND_ID;
+  return requireBandId();
 }
 
-export async function proposeBatchSweep(items: Array<{
-  childId: string;
-  outcomeId: string;
-  ratingCode: string;
-  note?: string;
-}>) {
+export async function proposeBatchSweep(
+  items: Array<{
+    childId: string;
+    outcomeId: string;
+    ratingCode: string;
+    note?: string;
+  }>,
+) {
   return apiFetch<{ proposed: Array<{ id: string }> }>(
-    `/outcomes/${getTeacherSectionId()}/propose/batch-sweep`,
-    { method: 'POST', body: { items } },
+    `/outcomes/${requireSectionId()}/propose/batch-sweep`,
+    {
+      method: 'POST',
+      body: { items, subjectId: getSelectedSubjectId() },
+    },
   );
 }
 
@@ -31,7 +40,36 @@ export async function confirmOutcome(proposalId: string) {
 }
 
 export async function listProposed() {
-  return apiFetch<Array<{ id: string; childId: string; ratingCode: string; state: string }>>(
-    `/outcomes/${getTeacherSectionId()}/proposed`,
+  return apiFetch<
+    Array<{ id: string; childId: string; ratingCode: string; state: string }>
+  >(`/outcomes/${requireSectionId()}/proposed`);
+}
+
+export type SweepContextChild = {
+  childId: string;
+  name: string;
+  rollNumber: string;
+};
+
+export type SweepContextOutcome = {
+  outcomeId: string;
+  code: string;
+  statement: string;
+};
+
+export type SweepContextResponse = {
+  sectionId: string;
+  bandId: string;
+  subjectId: string | null;
+  children: SweepContextChild[];
+  outcomes: SweepContextOutcome[];
+};
+
+export async function getSweepContext() {
+  const sectionId = requireSectionId();
+  const subjectId = getSelectedSubjectId();
+  const q = subjectId ? `?subjectId=${encodeURIComponent(subjectId)}` : '';
+  return apiFetch<SweepContextResponse>(
+    `/outcomes/${sectionId}/sweep-context${q}`,
   );
 }

@@ -1,27 +1,38 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
+  import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
   import { getFestivalPlanner, getSettlingProgramme, getSubstitutePack } from './api';
   import { festivalHeadline, type FestivalPlannerShape, type SettlingProgrammeShape } from './manage-logic';
+
+  const loadGate = createAssignmentLoadGate();
 
   let plan = $state<FestivalPlannerShape | null>(null);
   let settling = $state<SettlingProgrammeShape | null>(null);
   let substituteNote = $state<string | null>(null);
   let error = $state<string | null>(null);
 
-  onMount(async () => {
-    try {
-      const [p, s, sub] = await Promise.all([
-        getFestivalPlanner(),
-        getSettlingProgramme(),
-        getSubstitutePack(),
-      ]);
-      plan = p;
-      settling = s;
-      substituteNote = sub.note;
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load manage views';
-    }
+  $effect(() => {
+    const key = $selectedAssignmentKey;
+    const token = loadGate.begin(key);
+    if (token === null) return;
+    void (async () => {
+      try {
+        const [p, s, sub] = await Promise.all([
+          getFestivalPlanner(),
+          getSettlingProgramme(),
+          getSubstitutePack(),
+        ]);
+        if (!loadGate.isCurrent(token)) return;
+        plan = p;
+        settling = s;
+        substituteNote = sub.note;
+        error = null;
+      } catch (err) {
+        if (!loadGate.isCurrent(token)) return;
+        error = err instanceof Error ? err.message : 'Failed to load manage views';
+      }
+    })();
   });
 </script>
 

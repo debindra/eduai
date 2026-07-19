@@ -1,4 +1,5 @@
-import { getAccessToken } from '../stores/session';
+import { push } from '@keenmate/svelte-spa-router';
+import { clearSession, getAccessToken } from '../stores/session';
 
 export class ApiError extends Error {
   constructor(
@@ -59,6 +60,14 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 401 && auth) {
+      clearSession();
+      // Dynamic import avoids static cycle: client ← teacher-context ← api ← client
+      void import('../stores/teacher-context').then(({ clearTeacherContext }) => {
+        clearTeacherContext();
+      });
+      void push('/login');
+    }
     const message =
       typeof parsed === 'object' &&
       parsed !== null &&

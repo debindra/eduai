@@ -1,5 +1,5 @@
 import { apiFetch } from '../../lib/shared/api/client';
-import { getTeacherSectionId } from '../outcomes/api';
+import { requireSectionId } from '../../lib/shared/stores/teacher-context';
 
 export interface WeeklyPlanDay {
   date: string;
@@ -18,12 +18,21 @@ export interface WeeklyPlanResponse {
 
 export async function getWeekly(weekStart?: string) {
   const q = weekStart ? `?weekStart=${weekStart}` : '';
-  return apiFetch<WeeklyPlanResponse>(`/planning/${getTeacherSectionId()}/weekly${q}`);
+  return apiFetch<WeeklyPlanResponse>(
+    `/planning/${requireSectionId()}/weekly${q}`,
+  );
 }
 
-export async function adjustWeekly(dayDate: string, themeOrChapter: string, notes?: string) {
-  return apiFetch<WeeklyPlanResponse>(`/planning/${getTeacherSectionId()}/weekly/adjust`, {
-    method: 'POST',
-    body: { dayDate, themeOrChapter, notes },
-  });
+export async function adjustWeekly(
+  dayDate: string,
+  themeOrChapter: string,
+  notes?: string,
+) {
+  return apiFetch<WeeklyPlanResponse>(
+    `/planning/${requireSectionId()}/weekly/adjust`,
+    {
+      method: 'POST',
+      body: { dayDate, themeOrChapter, notes },
+    },
+  );
 }

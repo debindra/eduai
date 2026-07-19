@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/svelte';
 import PacingPage from './PacingPage.svelte';
+import { seedTeacherContext } from '../../lib/shared/stores/teacher-context.test-helpers';
 
 vi.mock('@keenmate/svelte-spa-router', () => ({
   link: () => ({ destroy: () => {} }),
@@ -21,7 +22,10 @@ vi.mock('./api', () => ({
 import { getPacing } from './api';
 
 describe('PacingPage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    seedTeacherContext();
+  });
 
   it('shows three-state badge without outcome ratings', async () => {
     vi.mocked(getPacing).mockResolvedValue({

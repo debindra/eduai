@@ -1,9 +1,10 @@
 import { apiFetch } from '../../lib/shared/api/client';
-import { getTeacherSectionId } from '../outcomes/api';
 import { getAdminSchoolId } from '../admin/api';
+import {
+  requireBandId,
+  requireSectionId,
+} from '../../lib/shared/stores/teacher-context';
 import type { FestivalPlannerShape, SettlingProgrammeShape } from './manage-logic';
-
-const PRE_PRIMARY_BAND = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 
 export interface AdminFestivalPlannerShape {
   schoolId: string;
@@ -13,7 +14,9 @@ export interface AdminFestivalPlannerShape {
 }
 
 export async function getFestivalPlanner() {
-  return apiFetch<FestivalPlannerShape>(`/manage/${getTeacherSectionId()}/festival-planner`);
+  return apiFetch<FestivalPlannerShape>(
+    `/manage/${requireSectionId()}/festival-planner`,
+  );
 }
 
 /** Admin-only — school altitude, no teacher profile. */
@@ -23,12 +26,15 @@ export async function getAdminFestivalPlanner() {
   );
 }
 
-export async function getSettlingProgramme(bandId = PRE_PRIMARY_BAND) {
-  return apiFetch<SettlingProgrammeShape>(`/manage/settling-programme/${bandId}`);
+export async function getSettlingProgramme(bandId?: string) {
+  const resolvedBandId = bandId ?? requireBandId();
+  return apiFetch<SettlingProgrammeShape>(
+    `/manage/settling-programme/${resolvedBandId}`,
+  );
 }
 
 export async function getSubstitutePack() {
   return apiFetch<{ sectionId: string; day: string; roster: unknown[]; note: string }>(
-    `/manage/${getTeacherSectionId()}/substitute-pack`,
+    `/manage/${requireSectionId()}/substitute-pack`,
   );
 }

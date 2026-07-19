@@ -18,10 +18,11 @@ export async function loginAs(
 
 export async function loginAsAdmin(page: Page): Promise<void> {
   await loginAs(page, ADMIN_EMAIL);
-  await page.waitForURL('**/admin/calendar');
+  // await page.waitForURL((url) => url.pathname === '/admin/dashboard');
+  await page.waitForURL('**/admin/dashboard');
 }
 
 export async function loginAsTeacher(page: Page): Promise<void> {
   await loginAs(page, TEACHER_EMAIL);
-  await page.waitForURL((url) => url.pathname === '/' || url.pathname === '');
+  await page.waitForURL('**/teacher/sweep');
 }

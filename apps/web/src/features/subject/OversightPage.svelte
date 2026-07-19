@@ -1,18 +1,31 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
+  import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
   import { getClassTeacherOversight } from './api';
   import { oversightHeadline, type OversightShape } from './subject-logic';
+
+  const loadGate = createAssignmentLoadGate();
 
   let view = $state<OversightShape | null>(null);
   let error = $state<string | null>(null);
 
-  onMount(async () => {
-    try {
-      view = await getClassTeacherOversight();
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load oversight';
-    }
+  $effect(() => {
+    const key = $selectedAssignmentKey;
+    const token = loadGate.begin(key);
+    if (token === null) return;
+    void (async () => {
+      try {
+        const next = await getClassTeacherOversight();
+        if (!loadGate.isCurrent(token)) return;
+        view = next;
+        error = null;
+      } catch (err) {
+        if (!loadGate.isCurrent(token)) return;
+        error = err instanceof Error ? err.message : 'Failed to load oversight';
+        view = null;
+      }
+    })();
   });
 </script>
 

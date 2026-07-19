@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearSession, getSession } from '../../lib/shared/stores/session';
+import { clearTeacherContext } from '../../lib/shared/stores/teacher-context';
 
 vi.mock('../../lib/shared/api/client', () => ({
   apiFetch: vi.fn(),
@@ -13,21 +14,38 @@ const mockApiFetch = vi.mocked(apiFetch);
 describe('auth api', () => {
   beforeEach(() => {
     clearSession();
+    clearTeacherContext();
     vi.clearAllMocks();
   });
 
   it('login stores session from the response', async () => {
-    mockApiFetch.mockResolvedValue({
-      accessToken: 'token-1',
-      identity: {
-        id: 'identity-1',
-        email: 'teacher@schoolx.dev',
-        phone: null,
-        displayName: 'Jane',
-      },
-      memberType: 'teacher',
-      schoolId: 'school-1',
-    });
+    mockApiFetch
+      .mockResolvedValueOnce({
+        accessToken: 'token-1',
+        identity: {
+          id: 'identity-1',
+          email: 'teacher@schoolx.dev',
+          phone: null,
+          displayName: 'Jane',
+        },
+        memberType: 'teacher',
+        schoolId: 'school-1',
+      })
+      .mockResolvedValueOnce({
+        teacherId: 'teacher-1',
+        assignments: [
+          {
+            sectionId: 'sec-1',
+            sectionName: 'UKG A',
+            grade: 'UKG',
+            bandId: 'band-pp',
+            assessmentMode: 'three_state_narrative',
+            subjectId: null,
+            subjectName: null,
+            isClassTeacher: true,
+          },
+        ],
+      });
 
     const actual = await login({
       identifier: 'teacher@schoolx.dev',
@@ -39,6 +57,7 @@ describe('auth api', () => {
       body: { identifier: 'teacher@schoolx.dev', password: 'secret' },
       auth: false,
     });
+    expect(mockApiFetch).toHaveBeenCalledWith('/teacher/me/context');
     expect(actual.accessToken).toBe('token-1');
     expect(getSession()).toEqual({
       accessToken: 'token-1',

@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import { RequireSectionSubjectScope } from '../rbac/decorators/require-section-subject-scope.decorator';
+import { RequireSectionReadScope } from '../rbac/decorators/require-section-subject-scope.decorator';
 import { PacingService } from './pacing.service';
 
 @ApiTags('pacing')
@@ -12,7 +12,7 @@ export class PacingController {
   constructor(private readonly service: PacingService) {}
 
   @Get(':sectionId')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({
     summary: 'Planned vs actual coverage in teaching days (never joins student_outcomes)',
   })

@@ -16,6 +16,7 @@ import { RequireRoleGuard } from '../auth/guards/require-role.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import {
   BlocksSubstituteConfirmation,
+  RequireSectionReadScope,
   RequireSectionSubjectScope,
 } from '../rbac/decorators/require-section-subject-scope.decorator';
 import { RemedialService } from './remedial.service';
@@ -149,7 +150,7 @@ export class RemedialController {
   }
 
   @Get('section/:sectionId/plans')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({ summary: 'List remedial plans for section (teacher sees names)' })
   list(@Param('sectionId') sectionId: string) {
     return this.service.listForSection(sectionId, true);

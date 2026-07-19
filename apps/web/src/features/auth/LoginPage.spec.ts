@@ -41,7 +41,7 @@ describe('LoginPage', () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('redirects admin to calendar wizard after successful login', async () => {
+  it('redirects admin to dashboard after successful login', async () => {
     mockLogin.mockResolvedValue({
       accessToken: 'token-1',
       refreshToken: 'refresh-1',
@@ -64,7 +64,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/admin/calendar');
+      expect(mockPush).toHaveBeenCalledWith('/admin/dashboard');
     });
   });
 

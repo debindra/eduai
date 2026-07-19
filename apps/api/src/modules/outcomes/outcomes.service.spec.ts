@@ -143,3 +143,60 @@ describe('OutcomesService Propose/Confirm', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
+
+describe('OutcomesService getSweepContext', () => {
+  let service: OutcomesService;
+  let repository: {
+    findSectionBandId: ReturnType<typeof vi.fn>;
+    listChildren: ReturnType<typeof vi.fn>;
+    listOutcomesForBand: ReturnType<typeof vi.fn>;
+  };
+
+  beforeEach(() => {
+    repository = {
+      findSectionBandId: vi.fn(),
+      listChildren: vi.fn(),
+      listOutcomesForBand: vi.fn(),
+    };
+    service = new OutcomesService(
+      repository as unknown as OutcomesRepository,
+      { orchestrate: vi.fn() } as unknown as AiOrchestrationService,
+    );
+  });
+
+  it('returns active children and band-derived outcomes (no rating sort)', async () => {
+    repository.findSectionBandId.mockResolvedValue('band-pp');
+    repository.listChildren.mockResolvedValue([
+      { id: 'c2', name: 'Priya', rollNumber: '2' },
+      { id: 'c1', name: 'Aarav', rollNumber: '1' },
+    ]);
+    repository.listOutcomesForBand.mockResolvedValue([
+      { id: 'o1', code: 'PP-SELF-001', statement_en: 'Shows awareness of self' },
+    ]);
+
+    const result = await service.getSweepContext('sec-1', null);
+
+    expect(repository.listOutcomesForBand).toHaveBeenCalledWith('band-pp', null);
+    expect(result).toEqual({
+      sectionId: 'sec-1',
+      bandId: 'band-pp',
+      subjectId: null,
+      children: [
+        { childId: 'c1', name: 'Aarav', rollNumber: '1' },
+        { childId: 'c2', name: 'Priya', rollNumber: '2' },
+      ],
+      outcomes: [
+        { outcomeId: 'o1', code: 'PP-SELF-001', statement: 'Shows awareness of self' },
+      ],
+    });
+  });
+
+  it('passes subjectId through to outcome filter', async () => {
+    repository.findSectionBandId.mockResolvedValue('band-early');
+    repository.listChildren.mockResolvedValue([]);
+    repository.listOutcomesForBand.mockResolvedValue([]);
+
+    await service.getSweepContext('sec-g1', 'subj-math');
+    expect(repository.listOutcomesForBand).toHaveBeenCalledWith('band-early', 'subj-math');
+  });
+});

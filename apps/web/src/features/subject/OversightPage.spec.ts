@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/svelte';
 import OversightPage from './OversightPage.svelte';
+import { seedTeacherContext } from '../../lib/shared/stores/teacher-context.test-helpers';
 
 vi.mock('@keenmate/svelte-spa-router', () => ({
   link: () => ({ destroy: () => {} }),
@@ -18,7 +19,10 @@ vi.mock('./api', () => ({
 import { getClassTeacherOversight } from './api';
 
 describe('OversightPage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    seedTeacherContext();
+  });
 
   it('shows per-child letter grades without ranking', async () => {
     vi.mocked(getClassTeacherOversight).mockResolvedValue({

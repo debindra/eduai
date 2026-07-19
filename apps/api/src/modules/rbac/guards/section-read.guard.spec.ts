@@ -12,16 +12,16 @@ import {
 describe('SectionReadGuard', () => {
   const reflector = new Reflector();
   let guard: SectionReadGuard;
-  let maybeSingle: ReturnType<typeof vi.fn>;
+  let limit: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    maybeSingle = vi.fn();
+    limit = vi.fn();
     const supabase = {
       getClient: () => ({
         from: () => ({
           select: () => ({
             eq: () => ({
-              eq: () => ({ maybeSingle }),
+              eq: () => ({ limit }),
             }),
           }),
         }),
@@ -34,7 +34,7 @@ describe('SectionReadGuard', () => {
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
       sectionIdParam: 'sectionId',
     });
-    maybeSingle.mockResolvedValue({ data: { id: 'ts-1' }, error: null });
+    limit.mockResolvedValue({ data: [{ id: 'ts-1' }], error: null });
     const request = {
       user: getMockRequestUser({
         memberships: [getMockMembership({ teacherId: 'teacher-1' })],
@@ -51,11 +51,31 @@ describe('SectionReadGuard', () => {
     ]);
   });
 
+  it('allows read when teacher has multiple grains on the same section', async () => {
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
+      sectionIdParam: 'sectionId',
+    });
+    limit.mockResolvedValue({
+      data: [{ id: 'ts-class' }, { id: 'ts-math' }],
+      error: null,
+    });
+    const request = {
+      user: getMockRequestUser({
+        memberships: [getMockMembership({ teacherId: 'teacher-1' })],
+      }),
+      params: { sectionId: 'section-1' },
+      body: {},
+    };
+    await expect(
+      guard.canActivate(getMockExecutionContext(request) as never),
+    ).resolves.toBe(true);
+  });
+
   it('rejects when teacher has no assignment for the section', async () => {
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
       sectionIdParam: 'sectionId',
     });
-    maybeSingle.mockResolvedValue({ data: null, error: null });
+    limit.mockResolvedValue({ data: [], error: null });
     const request = {
       user: getMockRequestUser(),
       params: { sectionId: 'section-other' },

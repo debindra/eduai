@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
+  import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
   import { adjustWeekly, getWeekly, type WeeklyPlanDay } from './api';
+
+  const loadGate = createAssignmentLoadGate();
 
   let weekStart = $state<string | null>(null);
   let days = $state<WeeklyPlanDay[]>([]);
@@ -12,16 +15,25 @@
   let editTheme = $state('');
   let editNotes = $state('');
 
-  onMount(async () => {
-    try {
-      const weekly = await getWeekly();
-      weekStart = weekly.weekStart;
-      days = weekly.days;
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load weekly plan';
-    } finally {
-      loading = false;
-    }
+  $effect(() => {
+    const key = $selectedAssignmentKey;
+    const token = loadGate.begin(key);
+    if (token === null) return;
+    loading = true;
+    void (async () => {
+      try {
+        const weekly = await getWeekly();
+        if (!loadGate.isCurrent(token)) return;
+        weekStart = weekly.weekStart;
+        days = weekly.days;
+        error = null;
+      } catch (err) {
+        if (!loadGate.isCurrent(token)) return;
+        error = err instanceof Error ? err.message : 'Failed to load weekly plan';
+      } finally {
+        if (loadGate.isCurrent(token)) loading = false;
+      }
+    })();
   });
 
   const handleAdjust = async () => {

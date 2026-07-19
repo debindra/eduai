@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/svelte';
 import SubjectPage from './SubjectPage.svelte';
+import { seedTeacherContext } from '../../lib/shared/stores/teacher-context.test-helpers';
 
 vi.mock('@keenmate/svelte-spa-router', () => ({
   link: () => ({ destroy: () => {} }),
@@ -18,7 +19,18 @@ vi.mock('./api', () => ({
 import { getSubjectView } from './api';
 
 describe('SubjectPage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    seedTeacherContext({
+      sectionId: 's1',
+      subjectId: 'math',
+      subjectName: 'Mathematics',
+      isClassTeacher: false,
+      grade: 'Grade 1',
+      bandId: 'band-early',
+      assessmentMode: 'four_point_scale',
+    });
+  });
 
   it('shows subject outcomes and section roster', async () => {
     vi.mocked(getSubjectView).mockResolvedValue({

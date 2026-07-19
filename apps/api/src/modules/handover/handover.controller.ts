@@ -5,7 +5,7 @@ import type { Request } from 'express';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
 import { RequireRoleGuard } from '../auth/guards/require-role.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import { RequireSectionSubjectScope } from '../rbac/decorators/require-section-subject-scope.decorator';
+import { RequireSectionReadScope } from '../rbac/decorators/require-section-subject-scope.decorator';
 import { HandoverService } from './handover.service';
 
 class AssembleDto {
@@ -38,7 +38,7 @@ export class HandoverController {
   }
 
   @Get(':sectionId')
-  @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
+  @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({ summary: 'Read latest materialized handover pack' })
   get(@Param('sectionId') sectionId: string, @Req() _req: Request) {
     return this.service.getLatest(sectionId);

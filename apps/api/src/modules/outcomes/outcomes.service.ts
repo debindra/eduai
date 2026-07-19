@@ -121,6 +121,37 @@ export class OutcomesRepository {
     if (error) throw error;
     return data ?? [];
   }
+
+  async findSectionBandId(sectionId: string): Promise<string | null> {
+    const { data, error } = await this.client()
+      .from('sections')
+      .select('band_id')
+      .eq('id', sectionId)
+      .maybeSingle();
+    if (error) throw error;
+    return (data?.band_id as string | undefined) ?? null;
+  }
+
+  /**
+   * Active milestones/outcomes for a band. When subjectId is null (pre-primary),
+   * returns outcomes with subject_id IS NULL. When set, filters to that subject.
+   * Ordered by sort_order only — never by rating across children.
+   */
+  async listOutcomesForBand(bandId: string, subjectId: string | null) {
+    let query = this.client()
+      .from('outcomes')
+      .select('id, code, statement_en')
+      .eq('band_id', bandId)
+      .order('sort_order', { ascending: true });
+    if (subjectId === null) {
+      query = query.is('subject_id', null);
+    } else {
+      query = query.eq('subject_id', subjectId);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return data ?? [];
+  }
 }
 
 @Injectable()
@@ -385,6 +416,42 @@ export class OutcomesService {
         : null,
       stalledCount: rows.length,
       // Never expose child names to admin gravity surfaces
+    };
+  }
+
+  /**
+   * Sweep UI bootstrap: active children + band-derived outcomes.
+   * Band-as-data — reads band_id off the section; never branches on grade number.
+   * Children ordered by roll number only (roster order), never by rating.
+   */
+  async getSweepContext(sectionId: string, subjectId: string | null = null) {
+    const bandId = await this.repository.findSectionBandId(sectionId);
+    if (!bandId) throw new NotFoundException('Section not found');
+
+    const [children, outcomes] = await Promise.all([
+      this.repository.listChildren(sectionId),
+      this.repository.listOutcomesForBand(bandId, subjectId),
+    ]);
+
+    // Stable roster order by roll number — not a rating rank-order.
+    const sortedChildren = [...children].sort((a, b) =>
+      a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true }),
+    );
+
+    return {
+      sectionId,
+      bandId,
+      subjectId,
+      children: sortedChildren.map((c) => ({
+        childId: c.id,
+        name: c.name,
+        rollNumber: c.rollNumber,
+      })),
+      outcomes: outcomes.map((o) => ({
+        outcomeId: o.id as string,
+        code: o.code as string,
+        statement: o.statement_en as string,
+      })),
     };
   }
 }

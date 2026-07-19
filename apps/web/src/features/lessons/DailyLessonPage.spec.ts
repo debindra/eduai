@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import DailyLessonPage from './DailyLessonPage.svelte';
 import { ApiError } from '../../lib/shared/api/client';
+import { seedTeacherContext } from '../../lib/shared/stores/teacher-context.test-helpers';
 
 vi.mock('@keenmate/svelte-spa-router', () => ({
   link: () => ({ destroy: () => {} }),
@@ -31,6 +32,7 @@ const mockMarkLessonDone = vi.mocked(markLessonDone);
 describe('DailyLessonPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    seedTeacherContext();
     mockGetDaily.mockResolvedValue({
       date: '2025-04-14',
       themeOrChapter: 'Numbers 1-10',
