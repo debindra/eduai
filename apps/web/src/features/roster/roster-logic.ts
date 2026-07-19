@@ -88,6 +88,38 @@ export function validateRollNumber(roll: string): string | null {
   return null;
 }
 
+/** Active children not already in the target section — candidates to place. */
+export function childrenAvailableForSection(
+  children: ChildShape[],
+  sectionId: string,
+): ChildShape[] {
+  return children.filter(
+    (child) => child.status === 'active' && child.sectionId !== sectionId,
+  );
+}
+
+/** Name-only search (case-insensitive substring). Empty query → no matches. */
+export function filterChildrenByName(
+  children: ChildShape[],
+  query: string,
+): ChildShape[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return [];
+  return children.filter((child) => child.name.toLowerCase().includes(needle));
+}
+
+/** Teacher search over display name / email / phone. Empty query → no matches. */
+export function filterTeachersByQuery(
+  teachers: TeacherRosterShape[],
+  query: string,
+): TeacherRosterShape[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return [];
+  return teachers.filter((teacher) =>
+    teacherLabel(teacher).toLowerCase().includes(needle),
+  );
+}
+
 export function groupChildrenBySection(
   children: ChildShape[],
 ): Map<string, ChildShape[]> {

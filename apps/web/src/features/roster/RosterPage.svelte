@@ -3,6 +3,9 @@
   import AdminNav from '../shared/AdminNav.svelte';
   import {
     accountStatusLabel,
+    childrenAvailableForSection,
+    filterChildrenByName,
+    filterTeachersByQuery,
     subjectRequiredForBand,
     teacherLabel,
     validateRollNumber,
@@ -33,11 +36,13 @@
   let newSectionBandId = $state('');
   let newSectionGrade = $state('');
 
-  // Create child form
-  let newChildName = $state('');
-  let newChildRoll = $state('');
+  // Place existing child into section (name search — no free-text create)
+  let childSearchQuery = $state('');
+  let selectedChildId = $state<string | null>(null);
+  let placeChildRoll = $state('');
 
   // Assignment form
+  let teacherSearchQuery = $state('');
   let assignTeacherId = $state('');
   let assignSubjectId = $state('');
   let assignIsClassTeacher = $state(false);
@@ -60,6 +65,51 @@
   const sectionAssignments = $derived(
     assignments.filter((a) => a.sectionId === selectedSectionId),
   );
+  const childSearchMatches = $derived(
+    selectedSectionId
+      ? filterChildrenByName(
+          childrenAvailableForSection(children, selectedSectionId),
+          childSearchQuery,
+        )
+      : [],
+  );
+  const selectedPlaceChild = $derived(
+    selectedChildId
+      ? (children.find((c) => c.id === selectedChildId) ?? null)
+      : null,
+  );
+  const teacherSearchMatches = $derived(
+    filterTeachersByQuery(teachers, teacherSearchQuery),
+  );
+  const selectedAssignTeacher = $derived(
+    assignTeacherId
+      ? (teachers.find((t) => t.teacherId === assignTeacherId) ?? null)
+      : null,
+  );
+
+  const sectionName = (sectionId: string) =>
+    sections.find((s) => s.id === sectionId)?.name ?? sectionId.slice(0, 8);
+
+  const clearPlaceChildForm = () => {
+    childSearchQuery = '';
+    selectedChildId = null;
+    placeChildRoll = '';
+  };
+
+  const clearAssignTeacherForm = () => {
+    teacherSearchQuery = '';
+    assignTeacherId = '';
+  };
+
+  const selectSection = (sectionId: string) => {
+    if (selectedSectionId !== sectionId) {
+      clearPlaceChildForm();
+      clearAssignTeacherForm();
+      assignSubjectId = '';
+      assignIsClassTeacher = false;
+    }
+    selectedSectionId = sectionId;
+  };
 
   async function refreshAll() {
     const [secs, kids, assigns, teach, bandList] = await Promise.all([
@@ -129,19 +179,31 @@
       await refreshAll();
     });
 
-  const handleCreateChild = () =>
+  const handleSelectPlaceChild = (child: ChildShape) => {
+    selectedChildId = child.id;
+    childSearchQuery = child.name;
+    placeChildRoll = child.rollNumber ?? '';
+  };
+
+  const handlePlaceChild = () =>
     run(async () => {
       if (!selectedSectionId) throw new Error('Select a section first');
-      if (!newChildName.trim()) throw new Error('Child name is required');
-      const rollErr = validateRollNumber(newChildRoll);
+      if (!selectedChildId || !selectedPlaceChild) {
+        throw new Error('Search and select an existing child');
+      }
+      if (selectedPlaceChild.sectionId === selectedSectionId) {
+        throw new Error('Child is already in this section');
+      }
+      const rollErr = validateRollNumber(placeChildRoll);
       if (rollErr) throw new Error(rollErr);
-      await api.createChild({
+      const rollTrimmed = placeChildRoll.trim();
+      await api.updateChild(selectedChildId, {
         sectionId: selectedSectionId,
-        name: newChildName.trim(),
-        rollNumber: newChildRoll.trim() || undefined,
+        ...(rollTrimmed !== (selectedPlaceChild.rollNumber ?? '')
+          ? { rollNumber: rollTrimmed || undefined }
+          : {}),
       });
-      newChildName = '';
-      newChildRoll = '';
+      clearPlaceChildForm();
       await refreshAll();
     });
 
@@ -166,11 +228,16 @@
         subjectId,
         isClassTeacher: assignIsClassTeacher,
       });
-      assignTeacherId = '';
+      clearAssignTeacherForm();
       assignSubjectId = '';
       assignIsClassTeacher = false;
       await refreshAll();
     });
+
+  const handleSelectAssignTeacher = (teacher: TeacherRosterShape) => {
+    assignTeacherId = teacher.teacherId;
+    teacherSearchQuery = teacherLabel(teacher);
+  };
 
   const handleUnassign = (assignmentId: string) =>
     run(async () => {
@@ -236,7 +303,7 @@
                 section.id
                   ? 'bg-emerald-50 font-medium text-emerald-900'
                   : 'text-slate-700 hover:bg-slate-50'}"
-                onclick={() => (selectedSectionId = section.id)}
+                onclick={() => selectSection(section.id)}
               >
                 <span>{section.name}</span>
                 <span class="text-xs text-slate-400">{bandName(section.bandId)}</span>
@@ -345,31 +412,69 @@
               {/each}
             </ul>
             <form
-              class="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3"
+              class="mt-3 flex flex-wrap items-start gap-2 border-t border-slate-100 pt-3"
               onsubmit={(e) => {
                 e.preventDefault();
-                handleCreateChild();
+                handlePlaceChild();
               }}
             >
-              <input
-                class="min-w-[10rem] flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                placeholder="Child name"
-                bind:value={newChildName}
-                data-testid="child-name"
-              />
+              <div class="relative min-w-[10rem] flex-1">
+                <input
+                  class="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  placeholder="Search child name"
+                  bind:value={childSearchQuery}
+                  oninput={() => {
+                    if (
+                      selectedPlaceChild &&
+                      childSearchQuery.trim() !== selectedPlaceChild.name
+                    ) {
+                      selectedChildId = null;
+                    }
+                  }}
+                  autocomplete="off"
+                  data-testid="child-search"
+                />
+                {#if childSearchQuery.trim() && !selectedChildId}
+                  <ul
+                    class="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border border-slate-200 bg-white shadow-md"
+                    data-testid="child-search-results"
+                  >
+                    {#each childSearchMatches as match}
+                      <li>
+                        <button
+                          type="button"
+                          class="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-sm hover:bg-slate-50"
+                          disabled={busy}
+                          onclick={() => handleSelectPlaceChild(match)}
+                        >
+                          <span class="font-medium text-slate-900">{match.name}</span>
+                          <span class="shrink-0 text-xs text-slate-500">
+                            {sectionName(match.sectionId)}
+                            {#if match.rollNumber}
+                              · #{match.rollNumber}
+                            {/if}
+                          </span>
+                        </button>
+                      </li>
+                    {:else}
+                      <li class="px-2 py-2 text-sm text-slate-500">No matching children</li>
+                    {/each}
+                  </ul>
+                {/if}
+              </div>
               <input
                 class="w-24 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
                 placeholder="Roll #"
-                bind:value={newChildRoll}
+                bind:value={placeChildRoll}
                 data-testid="child-roll"
               />
               <button
                 type="submit"
                 class="rounded-md bg-emerald-700 px-3 py-1.5 text-sm text-white hover:bg-emerald-800 disabled:opacity-50"
-                disabled={busy}
-                data-testid="create-child"
+                disabled={busy || !selectedChildId}
+                data-testid="place-child"
               >
-                Add child
+                Add to section
               </button>
             </form>
           </div>
@@ -411,25 +516,56 @@
               {/each}
             </ul>
             <form
-              class="mt-3 grid gap-2 border-t border-slate-100 pt-3 sm:grid-cols-2"
+              class="mt-3 flex flex-wrap items-start gap-2 border-t border-slate-100 pt-3"
               onsubmit={(e) => {
                 e.preventDefault();
                 handleAssign();
               }}
             >
-              <select
-                class="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                bind:value={assignTeacherId}
-                data-testid="assign-teacher"
-              >
-                <option value="">Select teacher</option>
-                {#each teachers as t}
-                  <option value={t.teacherId}>{teacherLabel(t)}</option>
-                {/each}
-              </select>
+              <div class="relative min-w-[10rem] flex-1">
+                <input
+                  class="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  placeholder="Search teacher"
+                  bind:value={teacherSearchQuery}
+                  oninput={() => {
+                    if (
+                      selectedAssignTeacher &&
+                      teacherSearchQuery.trim() !== teacherLabel(selectedAssignTeacher)
+                    ) {
+                      assignTeacherId = '';
+                    }
+                  }}
+                  autocomplete="off"
+                  data-testid="assign-teacher"
+                />
+                {#if teacherSearchQuery.trim() && !assignTeacherId}
+                  <ul
+                    class="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border border-slate-200 bg-white shadow-md"
+                    data-testid="teacher-search-results"
+                  >
+                    {#each teacherSearchMatches as match}
+                      <li>
+                        <button
+                          type="button"
+                          class="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-sm hover:bg-slate-50"
+                          disabled={busy}
+                          onclick={() => handleSelectAssignTeacher(match)}
+                        >
+                          <span class="font-medium text-slate-900">{teacherLabel(match)}</span>
+                          <span class="shrink-0 text-xs text-slate-500"
+                            >{accountStatusLabel(match.accountStatus)}</span
+                          >
+                        </button>
+                      </li>
+                    {:else}
+                      <li class="px-2 py-2 text-sm text-slate-500">No matching teachers</li>
+                    {/each}
+                  </ul>
+                {/if}
+              </div>
               {#if subjectRequiredForBand(selectedBand)}
                 <select
-                  class="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  class="min-w-[8rem] rounded-md border border-slate-300 px-2 py-1.5 text-sm"
                   bind:value={assignSubjectId}
                   data-testid="assign-subject"
                 >
@@ -438,17 +574,15 @@
                     <option value={subj.id}>{subj.nameEn}</option>
                   {/each}
                 </select>
-              {:else}
-                <p class="text-xs text-slate-500 self-center">Subject not required for this band</p>
               {/if}
-              <label class="flex items-center gap-2 text-sm text-slate-700">
+              <label class="flex h-[34px] items-center gap-2 text-sm text-slate-700">
                 <input type="checkbox" bind:checked={assignIsClassTeacher} />
                 Class teacher
               </label>
               <button
                 type="submit"
                 class="rounded-md bg-emerald-700 px-3 py-1.5 text-sm text-white hover:bg-emerald-800 disabled:opacity-50"
-                disabled={busy}
+                disabled={busy || !assignTeacherId}
                 data-testid="create-assignment"
               >
                 Assign

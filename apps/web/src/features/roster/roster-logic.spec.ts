@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   accountStatusLabel,
+  childrenAvailableForSection,
+  filterChildrenByName,
+  filterTeachersByQuery,
   groupAssignmentsBySection,
   groupChildrenBySection,
   subjectRequiredForBand,
@@ -12,6 +15,20 @@ import {
   type TeacherRosterShape,
   type TeacherSectionShape,
 } from './roster-logic';
+
+function getMockChild(overrides?: Partial<ChildShape>): ChildShape {
+  return {
+    id: 'c1',
+    sectionId: 's1',
+    name: 'Aarav',
+    rollNumber: '1',
+    dob: null,
+    status: 'active',
+    reportLanguageOverride: null,
+    accessNote: null,
+    ...overrides,
+  };
+}
 
 const prePrimaryBand: BandShape = {
   id: 'band-pp',
@@ -68,6 +85,64 @@ describe('validateRollNumber', () => {
 
   it('rejects overly long rolls', () => {
     expect(validateRollNumber('x'.repeat(40))).toMatch(/too long/);
+  });
+});
+
+describe('childrenAvailableForSection', () => {
+  it('excludes children already in the section and non-active statuses', () => {
+    const children = [
+      getMockChild({ id: 'c1', sectionId: 's1', name: 'In section' }),
+      getMockChild({ id: 'c2', sectionId: 's2', name: 'Elsewhere' }),
+      getMockChild({
+        id: 'c3',
+        sectionId: 's2',
+        name: 'Exited',
+        status: 'exited',
+      }),
+    ];
+    expect(childrenAvailableForSection(children, 's1').map((c) => c.id)).toEqual([
+      'c2',
+    ]);
+  });
+});
+
+describe('filterChildrenByName', () => {
+  it('returns no matches for blank query', () => {
+    expect(filterChildrenByName([getMockChild()], '  ')).toEqual([]);
+  });
+
+  it('matches name substring case-insensitively', () => {
+    const children = [
+      getMockChild({ id: 'c1', name: 'Aarav Sharma' }),
+      getMockChild({ id: 'c2', name: 'Priya' }),
+    ];
+    expect(filterChildrenByName(children, 'aar').map((c) => c.id)).toEqual(['c1']);
+  });
+});
+
+describe('filterTeachersByQuery', () => {
+  it('matches display name case-insensitively', () => {
+    const teachers: TeacherRosterShape[] = [
+      {
+        teacherId: 't1',
+        identityId: 'i1',
+        displayName: 'Maya Thapa',
+        email: 'maya@schoolx.dev',
+        phone: null,
+        accountStatus: 'active',
+      },
+      {
+        teacherId: 't2',
+        identityId: 'i2',
+        displayName: 'Ravi',
+        email: null,
+        phone: null,
+        accountStatus: 'invited',
+      },
+    ];
+    expect(filterTeachersByQuery(teachers, 'may').map((t) => t.teacherId)).toEqual([
+      't1',
+    ]);
   });
 });
 
