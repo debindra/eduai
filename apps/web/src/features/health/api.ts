@@ -1,7 +1,16 @@
 import { apiFetch } from '../../lib/shared/api/client';
-import type { components } from '../../lib/shared/api/generated-types';
 
-export type HealthResponse = components['schemas']['HealthResponse'];
+/** Health endpoint has no Swagger response DTO — keep shape local. */
+export type HealthResponse = {
+  status: string;
+  dbPackage: string;
+  database: {
+    configured: boolean;
+    ok: boolean;
+    schoolCount: number | null;
+    error?: string;
+  };
+};
 
 export async function getHealth(): Promise<HealthResponse> {
   return apiFetch<HealthResponse>('/health', { auth: false });
