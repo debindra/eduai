@@ -32,10 +32,11 @@ interface ClosureRow {
   end_date: string;
   source: string;
   category: string;
+  school_activity_id: string | null;
 }
 
 const CLOSURE_SELECT =
-  'id, school_calendar_id, name, start_date, end_date, source, category';
+  'id, school_calendar_id, name, start_date, end_date, source, category, school_activity_id';
 
 interface TeachingDayRow {
   terminal_id: string;
@@ -230,16 +231,24 @@ export class CalendarRepository {
   ): Promise<ClosureRow> {
     const source = 'local';
     const category = closure.category;
+    const schoolActivityId =
+      closure.schoolActivityId === undefined
+        ? undefined
+        : closure.schoolActivityId;
     if (closure.id) {
+      const patch: Record<string, unknown> = {
+        name: closure.name,
+        start_date: closure.startDate,
+        end_date: closure.endDate,
+        source,
+        category,
+      };
+      if (schoolActivityId !== undefined) {
+        patch.school_activity_id = schoolActivityId;
+      }
       const { data, error } = await this.client()
         .from('calendar_closures')
-        .update({
-          name: closure.name,
-          start_date: closure.startDate,
-          end_date: closure.endDate,
-          source,
-          category,
-        })
+        .update(patch)
         .eq('id', closure.id)
         .eq('school_calendar_id', schoolCalendarId)
         .select(CLOSURE_SELECT)
@@ -258,6 +267,7 @@ export class CalendarRepository {
         end_date: closure.endDate,
         source,
         category,
+        school_activity_id: schoolActivityId ?? null,
       })
       .select(CLOSURE_SELECT)
       .single();
@@ -356,6 +366,7 @@ export class CalendarRepository {
       end_date: closure.end_date,
       source: closure.source,
       category: closure.category,
+      school_activity_id: closure.school_activity_id,
     }));
     const { data, error } = await this.client()
       .from('calendar_closures')

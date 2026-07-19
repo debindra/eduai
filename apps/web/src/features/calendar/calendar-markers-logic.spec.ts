@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildMarkedDates,
   closureCategoryLabel,
+  closureDisplayName,
   closureLegendItems,
   enumerateInclusiveDates,
   enumerateWeeklyOffDates,
@@ -153,6 +154,23 @@ describe('buildMarkedDates', () => {
       [{ name: 'ECA', startDate: '2025-10-02', endDate: '2025-10-02', category: 'eca' }],
     );
     expect(marked['2025-10-02']?.tone).toBe('red');
+  });
+
+  it('prefixes iconKey on ECA marker labels', () => {
+    expect(closureDisplayName('Sports Day', 'sports')).toBe('[sports] Sports Day');
+    const marked = buildMarkedDates(
+      [],
+      [
+        {
+          name: 'Sports Day',
+          startDate: '2025-06-01',
+          endDate: '2025-06-01',
+          category: 'eca',
+          iconKey: 'sports',
+        },
+      ],
+    );
+    expect(marked['2025-06-01']?.label).toBe('[sports] Sports Day');
   });
 });
 

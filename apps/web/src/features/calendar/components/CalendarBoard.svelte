@@ -16,6 +16,7 @@
     type NationalDialogDraft,
     type SchoolDialogDraft,
   } from './ClosureFormDialog.svelte';
+  import type { SchoolEcaCcaItem } from '../../eca-cca/eca-cca-logic';
   import type { LocalClosure } from '../calendar-wizard-logic';
 
   export type EditableNationalClosure = {
@@ -49,6 +50,8 @@
     sessionStart?: string | null;
     sessionEnd?: string | null;
     weeklyOffs?: number[];
+    /** Active school ECA/CCA items for the closure dialog picker. */
+    schoolActivities?: SchoolEcaCcaItem[];
   };
 
   let {
@@ -66,6 +69,7 @@
     sessionStart = null,
     sessionEnd = null,
     weeklyOffs = [],
+    schoolActivities = [],
   }: Props = $props();
 
   const markerNational = $derived(
@@ -112,6 +116,8 @@
           startDate: existing.startDate,
           endDate: existing.endDate,
           category: existing.category ?? 'school_holiday',
+          schoolActivityId: existing.schoolActivityId ?? null,
+          iconKey: existing.iconKey ?? null,
         }
       : {
           kind: 'school',
@@ -119,6 +125,8 @@
           startDate: adIso,
           endDate: adIso,
           category: 'school_holiday',
+          schoolActivityId: null,
+          iconKey: null,
         };
     dialogOpen = true;
   };
@@ -179,6 +187,8 @@
       startDate: draft.startDate,
       endDate: draft.endDate,
       category: draft.category,
+      schoolActivityId: draft.schoolActivityId ?? null,
+      iconKey: draft.iconKey ?? null,
     };
     if (editingIndex !== null && editingIndex >= 0) {
       closures = closures.map((c, i) => (i === editingIndex ? { ...c, ...next } : c));
@@ -365,6 +375,7 @@
 {#if dialogOpen && dialogDraft}
   <ClosureFormDialog
     draft={dialogDraft}
+    schoolActivities={schoolActivities}
     onSave={handleSave}
     onCancel={() => {
       dialogOpen = false;

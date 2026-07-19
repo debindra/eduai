@@ -29,6 +29,7 @@ Narrative roadmap: [`PROJECT_PLAN.md`](../../PROJECT_PLAN.md).
 | 5 — Cost / career | [phase-5-cost-career.md](tasks/phase-5-cost-career.md) | [phase-5.md](status/phase-5.md) |
 | 6 — Pilot / launch | [phase-6-pilot-launch.md](tasks/phase-6-pilot-launch.md) | [phase-6.md](status/phase-6.md) |
 | 7 — Platform / Super Admin + Nepali calendar | [phase-7-platform-super-admin.md](tasks/phase-7-platform-super-admin.md) | [phase-7.md](status/phase-7.md) |
+| 8 — ECA / CCA catalog + calendar | [phase-8-eca-cca.md](tasks/phase-8-eca-cca.md) | [phase-8.md](status/phase-8.md) |
 
 ## Status values
 

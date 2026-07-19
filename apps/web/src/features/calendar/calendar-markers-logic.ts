@@ -13,7 +13,16 @@ export type ClosureMarkerInput = {
   endDate: string;
   /** National or school category driving tone. */
   category?: string;
+  /** Optional ECA/CCA icon key — prefixed on the marker label when set. */
+  iconKey?: string | null;
 };
+
+/** Prefix activity icon label onto a closure display name. */
+export function closureDisplayName(name: string, iconKey?: string | null): string {
+  if (!iconKey) return name;
+  // Short bracket tag; glyph mapping lives in eca-cca-icons (avoid circular imports).
+  return `[${iconKey}] ${name}`;
+}
 
 /** ISO weekdays (1=Mon … 7=Sun) matching school_calendars.weekly_offs / teaching_days. */
 export type WeeklyOffMarkerInput = {
@@ -160,19 +169,20 @@ export function buildMarkedDates(
     for (const closure of closures) {
       if (!closure.name || !closure.startDate || !closure.endDate) continue;
       const tone = toneForCategory(closure.category);
+      const label = closureDisplayName(closure.name, closure.iconKey);
       for (const day of enumerateInclusiveDates(closure.startDate, closure.endDate)) {
         const existing = marked[day];
         if (!existing) {
-          marked[day] = { label: closure.name, tone };
+          marked[day] = { label, tone };
         } else if (existing.label === 'Weekly off') {
           // Named closure replaces the generic weekly-off label; keep dominant tone.
           marked[day] = {
-            label: closure.name,
+            label,
             tone: dominantTone(existing.tone, tone),
           };
         } else {
           marked[day] = {
-            label: `${existing.label}; ${closure.name}`,
+            label: `${existing.label}; ${label}`,
             tone: dominantTone(existing.tone, tone),
           };
         }

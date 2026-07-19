@@ -38,10 +38,19 @@ export class FestivalClosureDto {
   @ApiProperty({
     enum: SCHOOL_CLOSURE_CATEGORIES,
     description:
-      'school_holiday subtracts from teaching_days; eca/cca are the same event-marker type (ECA Extra Curricular / CCA Co-Curricular) and do not subtract',
+      'school_holiday subtracts from teaching_days; eca/cca are the same event-marker type (ECA Extra Curricular / CCA Co-Curricular) and do not subtract. When schoolActivityId is set, category is taken from the activity kind.',
   })
   @IsEnum(SCHOOL_CLOSURE_CATEGORIES)
   category!: SchoolClosureCategory;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description:
+      'Optional school_eca_cca_items id. When set, category must be eca/cca (or is overwritten from the item).',
+  })
+  @IsOptional()
+  @IsUUID('loose')
+  schoolActivityId?: string | null;
 }
 
 export class PatchFestivalTemplateDto {
@@ -79,6 +88,16 @@ export class FestivalClosureResponseDto {
     description: 'School category or national overlay category',
   })
   category?: SchoolClosureCategory | 'govt_holiday' | 'festival' | 'day_off';
+
+  @ApiPropertyOptional({ format: 'uuid', nullable: true, type: String })
+  schoolActivityId?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Icon key from linked school ECA/CCA item',
+    nullable: true,
+    type: String,
+  })
+  iconKey?: string | null;
 }
 
 export class FestivalTemplateResponseDto {

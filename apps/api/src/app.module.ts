@@ -12,6 +12,7 @@ import { CalendarModule } from './modules/calendar/calendar.module';
 import { CertificationModule } from './modules/certification/certification.module';
 import { CoachModule } from './modules/coach/coach.module';
 import { CommunityModule } from './modules/community/community.module';
+import { EcaCcaModule } from './modules/eca-cca/eca-cca.module';
 import { ExitModule } from './modules/exit/exit.module';
 import { HandoverModule } from './modules/handover/handover.module';
 import { LessonModule } from './modules/lessons/lesson.module';
@@ -40,6 +41,7 @@ import { YearlyMapModule } from './modules/yearly-map/yearly-map.module';
     AuthModule,
     RbacModule,
     PlatformModule,
+    EcaCcaModule,
     BandConfigModule,
     CalendarModule,
     RosterModule,

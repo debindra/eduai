@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CalendarService } from './calendar.service';
 import type { CalendarRepository } from './calendar.repository';
 import type { CalendarSetupDto } from './dto/calendar-setup.dto';
+import type { EcaCcaService } from '../eca-cca/eca-cca.service';
 import type { NationalCalendarService } from '../platform/national-calendar.service';
 
 function getMockSetupDto(overrides?: Partial<CalendarSetupDto>): CalendarSetupDto {
@@ -50,6 +51,10 @@ describe('CalendarService', () => {
     listPublishedClosuresForBsYear: ReturnType<typeof vi.fn>;
     getPublishedWeeklyOffs: ReturnType<typeof vi.fn>;
   };
+  let ecaCca: {
+    listSchoolItems: ReturnType<typeof vi.fn>;
+    resolveActiveSchoolItem: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     repository = {
@@ -84,9 +89,14 @@ describe('CalendarService', () => {
       ]),
       getPublishedWeeklyOffs: vi.fn().mockResolvedValue([6]),
     };
+    ecaCca = {
+      listSchoolItems: vi.fn().mockResolvedValue([]),
+      resolveActiveSchoolItem: vi.fn(),
+    };
     service = new CalendarService(
       repository as unknown as CalendarRepository,
       nationalCalendar as unknown as NationalCalendarService,
+      ecaCca as unknown as EcaCcaService,
     );
   });
 
@@ -256,6 +266,7 @@ describe('CalendarService', () => {
           end_date: '2025-06-01',
           source: 'local',
           category: 'school_holiday',
+          school_activity_id: null,
         },
       ]);
       const actual = await service.getFestivalTemplate('school-1');
@@ -295,6 +306,7 @@ describe('CalendarService', () => {
           end_date: '2025-06-01',
           source: 'local',
           category: 'school_holiday',
+          school_activity_id: null,
         },
       ]);
       const actual = await service.getFestivalTemplate('school-1');
@@ -319,6 +331,7 @@ describe('CalendarService', () => {
           end_date: '2025-05-01',
           source: 'local',
           category: 'school_holiday',
+          school_activity_id: null,
         },
       ]);
       repository.upsertLocalClosure.mockResolvedValue({
@@ -328,6 +341,7 @@ describe('CalendarService', () => {
         end_date: '2025-06-01',
         source: 'local',
         category: 'eca',
+        school_activity_id: null,
       });
       const actual = await service.patchFestivalTemplate('school-1', {
         closures: [
@@ -345,12 +359,87 @@ describe('CalendarService', () => {
         startDate: '2025-06-01',
         endDate: '2025-06-01',
         category: 'eca',
+        schoolActivityId: null,
       });
       expect(actual.closures[0]).toMatchObject({
         id: 'new-1',
         category: 'eca',
         source: 'local',
+        schoolActivityId: null,
+        iconKey: null,
       });
+    });
+
+    it('resolves schoolActivityId and sets category from activity kind', async () => {
+      repository.findDraftCalendar.mockResolvedValue({
+        id: 'cal-1',
+        session_start: '2025-04-14',
+      });
+      repository.listSchoolClosures.mockResolvedValue([]);
+      ecaCca.resolveActiveSchoolItem.mockResolvedValue({
+        id: 'act-1',
+        name: 'Sports Day',
+        kind: 'eca',
+        iconKey: 'sports',
+        isActive: true,
+      });
+      ecaCca.listSchoolItems.mockResolvedValue([
+        { id: 'act-1', iconKey: 'sports' },
+      ]);
+      repository.upsertLocalClosure.mockResolvedValue({
+        id: 'new-1',
+        name: 'Sports Day',
+        start_date: '2025-06-01',
+        end_date: '2025-06-01',
+        source: 'local',
+        category: 'eca',
+        school_activity_id: 'act-1',
+      });
+      const actual = await service.patchFestivalTemplate('school-1', {
+        closures: [
+          {
+            name: '',
+            startDate: '2025-06-01',
+            endDate: '2025-06-01',
+            category: 'cca',
+            schoolActivityId: 'act-1',
+          },
+        ],
+      });
+      expect(ecaCca.resolveActiveSchoolItem).toHaveBeenCalledWith('school-1', 'act-1');
+      expect(repository.upsertLocalClosure).toHaveBeenCalledWith('cal-1', {
+        name: 'Sports Day',
+        startDate: '2025-06-01',
+        endDate: '2025-06-01',
+        category: 'eca',
+        schoolActivityId: 'act-1',
+      });
+      expect(actual.closures[0]).toMatchObject({
+        schoolActivityId: 'act-1',
+        iconKey: 'sports',
+        category: 'eca',
+      });
+    });
+
+    it('rejects school_holiday with schoolActivityId', async () => {
+      repository.findDraftCalendar.mockResolvedValue({
+        id: 'cal-1',
+        session_start: '2025-04-14',
+      });
+      repository.listSchoolClosures.mockResolvedValue([]);
+      await expect(
+        service.patchFestivalTemplate('school-1', {
+          closures: [
+            {
+              name: 'Holiday',
+              startDate: '2025-06-01',
+              endDate: '2025-06-01',
+              category: 'school_holiday',
+              schoolActivityId: 'act-1',
+            },
+          ],
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 
@@ -443,6 +532,7 @@ describe('CalendarService', () => {
           end_date: '2025-06-01',
           source: 'local',
           category: 'eca',
+          school_activity_id: null,
         },
       ]);
       repository.listTerminals.mockResolvedValue([

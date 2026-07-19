@@ -12,10 +12,11 @@ Updated: 2026-07-19
 | [5 Cost / career](phase-5.md) | 5 / 5 | Met (engineering) | Cache/metrics/WhatsApp stubbed; cost-validation waits on pilot traffic |
 | [6 Pilot / launch](phase-6.md) | 0 / 7 | Open | |
 | [7 Platform / Super Admin](phase-7.md) | 18 / 18 | Met (wired) | Super admin + national calendar + NepaliCalendar; festival-owner open |
+| [8 ECA / CCA catalog](phase-8.md) | 13 / 13 | Met (wired) | Platform catalog + school enable/school-only + calendar icons |
 
-**Active phase:** Phase 7 engineering complete (platform identity, support
-sessions, national calendar → `teaching_days`, `@eduai/bs-date`, platform SPA).
-Phase 6 (pilot hardening/launch) remains open. Deferred Phase 7 tickets:
-school provisioning, band/AI/licensing UIs, audit console.
+**Active phase:** Phase 8 engineering complete (ECA/CCA catalog, school
+items, calendar activity link). Phase 7 complete. Phase 6 (pilot
+hardening/launch) remains open. Deferred Phase 7 tickets: school
+provisioning, band/AI/licensing UIs, audit console.
 
 **Counts rule:** update this table when marking IDs `done` in per-phase status files.

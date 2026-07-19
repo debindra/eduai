@@ -28,3 +28,11 @@ export function adminFestivalHeadline(plan: AdminFestivalPlannerShape): string {
   }
   return `${plan.festivals.length} festival(s) · ${plan.sectionsBehindCount}/${plan.sectionsTotal} sections behind`;
 }
+
+/** Prefer pre-primary (settling is first-month); else first licensed band. */
+export function pickDefaultSettlingBandId(
+  bands: Array<{ id: string; code: string }>,
+): string | null {
+  if (bands.length === 0) return null;
+  return bands.find((b) => b.code === 'pre_primary')?.id ?? bands[0]?.id ?? null;
+}

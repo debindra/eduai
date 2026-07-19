@@ -11,6 +11,7 @@
   const links = [
     { href: '/platform/schools', label: 'Tenants' },
     { href: '/platform/national-calendar', label: 'National calendar' },
+    { href: '/platform/eca-cca', label: 'ECA / CCA' },
     { href: '/platform/support-sessions', label: 'Support sessions' },
   ] as const;
 

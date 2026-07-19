@@ -3,7 +3,10 @@
   import Alert from '../shared/Alert.svelte';
   import { toErrorMessage } from '../../lib/shared/errors';
   import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
-  import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
+  import {
+    requireBandId,
+    selectedAssignmentKey,
+  } from '../../lib/shared/stores/teacher-context';
   import { getFestivalPlanner, getSettlingProgramme, getSubstitutePack } from './api';
   import { festivalHeadline, type FestivalPlannerShape, type SettlingProgrammeShape } from './manage-logic';
 
@@ -22,7 +25,7 @@
       try {
         const [p, s, sub] = await Promise.all([
           getFestivalPlanner(),
-          getSettlingProgramme(),
+          getSettlingProgramme(requireBandId()),
           getSubstitutePack(),
         ]);
         if (!loadGate.isCurrent(token)) return;

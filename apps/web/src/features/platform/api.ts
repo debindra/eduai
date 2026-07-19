@@ -233,3 +233,52 @@ export async function patchNationalWeeklyOffs(
 export async function publishNationalCalendar(id: string): Promise<NationalCalendar> {
   return apiFetch(`/platform/national-calendars/${id}/publish`, { method: 'POST' });
 }
+
+export type EcaCcaCatalogItem = {
+  id: string;
+  name: string;
+  kind: 'eca' | 'cca';
+  iconKey: string;
+  sortOrder: number;
+  isActive: boolean;
+};
+
+export async function listEcaCcaCatalog(includeInactive = true) {
+  const q = includeInactive ? '?includeInactive=true' : '';
+  return apiFetch<{ items: EcaCcaCatalogItem[] }>(`/platform/eca-cca-catalog${q}`);
+}
+
+export async function createEcaCcaCatalogItem(body: {
+  name: string;
+  kind: 'eca' | 'cca';
+  iconKey: string;
+  sortOrder?: number;
+  isActive?: boolean;
+}) {
+  return apiFetch<EcaCcaCatalogItem>('/platform/eca-cca-catalog', {
+    method: 'POST',
+    body,
+  });
+}
+
+export async function updateEcaCcaCatalogItem(
+  id: string,
+  body: Partial<{
+    name: string;
+    kind: 'eca' | 'cca';
+    iconKey: string;
+    sortOrder: number;
+    isActive: boolean;
+  }>,
+) {
+  return apiFetch<EcaCcaCatalogItem>(`/platform/eca-cca-catalog/${id}`, {
+    method: 'PATCH',
+    body,
+  });
+}
+
+export async function deleteEcaCcaCatalogItem(id: string) {
+  return apiFetch<{ id: string; deleted: boolean }>(`/platform/eca-cca-catalog/${id}`, {
+    method: 'DELETE',
+  });
+}
