@@ -21,6 +21,7 @@ import { MethodsToolkitModule } from './modules/methods-toolkit/methods-toolkit.
 import { OutcomesModule } from './modules/outcomes/outcomes.module';
 import { PacingModule } from './modules/pacing/pacing.module';
 import { PlanningCascadeModule } from './modules/planning-cascade/planning-cascade.module';
+import { PlatformModule } from './modules/platform/platform.module';
 import { RbacModule } from './modules/rbac/rbac.module';
 import { RemedialModule } from './modules/remedial/remedial.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -38,6 +39,7 @@ import { YearlyMapModule } from './modules/yearly-map/yearly-map.module';
     DatabaseModule,
     AuthModule,
     RbacModule,
+    PlatformModule,
     BandConfigModule,
     CalendarModule,
     RosterModule,

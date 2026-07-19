@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsNotEmpty,
   IsOptional,
@@ -32,9 +33,9 @@ export class FestivalClosureDto {
 }
 
 export class PatchFestivalTemplateDto {
-  @ApiProperty({ type: [FestivalClosureDto] })
+  @ApiProperty({ type: [FestivalClosureDto], description: 'Local/manual school closures only' })
   @IsArray()
-  @ArrayMinSize(1)
+  @ArrayMinSize(0)
   @ValidateNested({ each: true })
   @Type(() => FestivalClosureDto)
   closures!: FestivalClosureDto[];
@@ -53,13 +54,30 @@ export class FestivalClosureResponseDto {
   @ApiProperty()
   endDate!: string;
 
-  @ApiProperty({ enum: ['festival_template'] })
-  source!: 'festival_template';
+  @ApiProperty({ enum: ['festival_template', 'manual', 'local', 'national'] })
+  source!: 'festival_template' | 'manual' | 'local' | 'national';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  readOnly?: boolean;
+
+  @ApiPropertyOptional({ enum: ['govt_holiday', 'festival', 'day_off'] })
+  category?: 'govt_holiday' | 'festival' | 'day_off';
 }
 
 export class FestivalTemplateResponseDto {
   @ApiProperty({ format: 'uuid' })
   schoolCalendarId!: string;
+
+  @ApiPropertyOptional({ description: 'BS year derived from session_start' })
+  bsYear?: number;
+
+  @ApiPropertyOptional({
+    type: [FestivalClosureResponseDto],
+    description: 'Published national closures (read-only overlay)',
+  })
+  nationalClosures?: FestivalClosureResponseDto[];
 
   @ApiProperty({ type: [FestivalClosureResponseDto] })
   closures!: FestivalClosureResponseDto[];
@@ -115,4 +133,51 @@ export class TeachingDaysResponseDto {
 
   @ApiProperty({ type: [TeachingDaysTerminalCountDto] })
   terminals!: TeachingDaysTerminalCountDto[];
+}
+
+export class CalendarViewTerminalDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  startDate!: string;
+
+  @ApiProperty()
+  endDate!: string;
+}
+
+/** Shared read model for admin / teacher / platform (support session) calendar board. */
+export class CalendarViewResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  schoolId!: string;
+
+  @ApiProperty({ enum: ['none', 'draft', 'approved'] })
+  approvalStatus!: 'none' | 'draft' | 'approved';
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  schoolCalendarId?: string;
+
+  @ApiPropertyOptional()
+  academicYearLabel?: string;
+
+  @ApiPropertyOptional({ description: 'BS year derived from session_start' })
+  bsYear?: number;
+
+  @ApiPropertyOptional()
+  sessionStart?: string;
+
+  @ApiPropertyOptional()
+  sessionEnd?: string;
+
+  @ApiProperty({ type: [FestivalClosureResponseDto] })
+  nationalClosures!: FestivalClosureResponseDto[];
+
+  @ApiProperty({ type: [FestivalClosureResponseDto] })
+  closures!: FestivalClosureResponseDto[];
+
+  @ApiProperty({ type: [CalendarViewTerminalDto] })
+  terminals!: CalendarViewTerminalDto[];
 }

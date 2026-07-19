@@ -120,6 +120,130 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/platform/schools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all tenants (gravity-safe aggregates)
+         * @description Per-school counts/shapes only. No child names, band/rating distributions, or rank-order.
+         */
+        get: operations["PlatformController_listSchools"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform/support-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List support sessions for the current platform admin */
+        get: operations["PlatformController_listSupportSessions"];
+        put?: never;
+        /** Open a time-boxed support session for one school */
+        post: operations["PlatformController_createSupportSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform/support-sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke an active support session */
+        delete: operations["PlatformController_revokeSupportSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform/national-calendars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List national calendars (all statuses) */
+        get: operations["NationalCalendarController_list"];
+        put?: never;
+        /** Create a draft national calendar for a BS year */
+        post: operations["NationalCalendarController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform/national-calendars/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one national calendar with closures */
+        get: operations["NationalCalendarController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform/national-calendars/{id}/closures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Upsert closures on a draft national calendar */
+        patch: operations["NationalCalendarController_patchClosures"];
+        trace?: never;
+    };
+    "/platform/national-calendars/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a national calendar (makes closures visible to teaching_days) */
+        post: operations["NationalCalendarController_publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bands": {
         parameters: {
             query?: never;
@@ -1515,15 +1639,29 @@ export interface components {
             phone?: string | null;
             displayName?: string | null;
         };
+        AuthMembershipSummaryDto: {
+            /** Format: uuid */
+            schoolId: string;
+            /** @enum {string} */
+            memberType: "admin" | "teacher";
+        };
         AuthSessionResponseDto: {
             accessToken: string;
             refreshToken: string;
             expiresIn: number;
             identity: components["schemas"]["AuthIdentityDto"];
-            /** @enum {string} */
-            memberType: "admin" | "teacher";
-            /** Format: uuid */
-            schoolId: string;
+            /**
+             * @description super_admin is a platform identity (no school membership). schoolId is null for that path.
+             * @enum {string}
+             */
+            memberType: "admin" | "teacher" | "super_admin";
+            /**
+             * Format: uuid
+             * @description Selected school for admin/teacher. Null for super_admin. When multiple memberships exist, the first is chosen deterministically by (member_type admin-first, school_id ASC); full list is in memberships.
+             */
+            schoolId?: string | null;
+            /** @description All active admin/teacher memberships (empty for super_admin). */
+            memberships?: components["schemas"]["AuthMembershipSummaryDto"][];
         };
         InviteDto: {
             /** Format: uuid */
@@ -1563,6 +1701,98 @@ export interface components {
             identifier: string;
             otp: string;
             newPassword: string;
+        };
+        PlatformSchoolDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            region?: string | null;
+            tier?: string | null;
+            licensedBandRange?: string | null;
+            exitStatus?: string | null;
+            /** @description Total sections in the school */
+            sectionsTotal: number;
+            /** @description Sections with no approved calendar or zero teaching days — shape only, no names */
+            sectionsBehind: number;
+        };
+        PlatformSchoolsResponseDto: {
+            schools: components["schemas"]["PlatformSchoolDto"][];
+        };
+        CreateSupportSessionDto: {
+            /** Format: uuid */
+            schoolId: string;
+            reason: string;
+            /** @description Who granted consent (name or note) */
+            grantedBy?: string;
+            /**
+             * @description Hours until expiry (default 4, max 72)
+             * @default 4
+             */
+            expiresInHours: number;
+        };
+        SupportSessionDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            schoolId: string;
+            schoolName?: string | null;
+            reason: string;
+            grantedBy?: string | null;
+            startsAt: string;
+            expiresAt: string;
+            /** @enum {string} */
+            status: "pending" | "active" | "expired" | "revoked";
+        };
+        SupportSessionsResponseDto: {
+            sessions: components["schemas"]["SupportSessionDto"][];
+        };
+        NationalClosureDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @enum {string} */
+            category: "govt_holiday" | "festival" | "day_off";
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            bsLabel?: string | null;
+            movable: boolean;
+        };
+        NationalCalendarDto: {
+            /** Format: uuid */
+            id: string;
+            bsYear: number;
+            /** @enum {string} */
+            status: "draft" | "published";
+            closures: components["schemas"]["NationalClosureDto"][];
+        };
+        NationalCalendarsResponseDto: {
+            calendars: components["schemas"]["NationalCalendarDto"][];
+        };
+        CreateNationalCalendarDto: {
+            /** @description Bikram Sambat year, e.g. 2082 */
+            bsYear: number;
+        };
+        UpsertNationalClosureDto: {
+            /**
+             * Format: uuid
+             * @description Omit to insert
+             */
+            id?: string;
+            name: string;
+            /** @enum {string} */
+            category: "govt_holiday" | "festival" | "day_off";
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            bsLabel?: string | null;
+            /** @default false */
+            movable: boolean;
+        };
+        PatchNationalClosuresDto: {
+            closures: components["schemas"]["UpsertNationalClosureDto"][];
         };
         GradeScaleResponseDto: {
             /** Format: uuid */
@@ -1643,11 +1873,18 @@ export interface components {
             startDate: string;
             endDate: string;
             /** @enum {string} */
-            source: "festival_template";
+            source: "festival_template" | "manual" | "local" | "national";
+            readOnly?: boolean;
+            /** @enum {string} */
+            category?: "govt_holiday" | "festival" | "day_off";
         };
         FestivalTemplateResponseDto: {
             /** Format: uuid */
             schoolCalendarId: string;
+            /** @description BS year derived from session_start */
+            bsYear?: number;
+            /** @description Published national closures (read-only overlay) */
+            nationalClosures?: components["schemas"]["FestivalClosureResponseDto"][];
             closures: components["schemas"]["FestivalClosureResponseDto"][];
         };
         FestivalClosureDto: {
@@ -1663,6 +1900,7 @@ export interface components {
             endDate: string;
         };
         PatchFestivalTemplateDto: {
+            /** @description Local/manual school closures only */
             closures: components["schemas"]["FestivalClosureDto"][];
         };
         ApproveCalendarResponseDto: {
@@ -2120,6 +2358,197 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    PlatformController_listSchools: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformSchoolsResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformController_listSupportSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportSessionsResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformController_createSupportSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSupportSessionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportSessionDto"];
+                };
+            };
+        };
+    };
+    PlatformController_revokeSupportSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportSessionDto"];
+                };
+            };
+        };
+    };
+    NationalCalendarController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NationalCalendarsResponseDto"];
+                };
+            };
+        };
+    };
+    NationalCalendarController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateNationalCalendarDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NationalCalendarDto"];
+                };
+            };
+        };
+    };
+    NationalCalendarController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NationalCalendarDto"];
+                };
+            };
+        };
+    };
+    NationalCalendarController_patchClosures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchNationalClosuresDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NationalCalendarDto"];
+                };
+            };
+        };
+    };
+    NationalCalendarController_publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NationalCalendarDto"];
+                };
             };
         };
     };

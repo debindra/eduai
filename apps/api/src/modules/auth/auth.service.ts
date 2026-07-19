@@ -77,8 +77,9 @@ export class AuthService {
       phone: string | null;
       displayName: string | null;
     };
-    memberType: 'admin' | 'teacher';
-    schoolId: string;
+    memberType: 'admin' | 'teacher' | 'super_admin';
+    schoolId: string | null;
+    memberships: Array<{ schoolId: string; memberType: 'admin' | 'teacher' }>;
   }> {
     const email = this.resolveIdentifierToEmail(identifier);
     let session: AuthSession;
@@ -100,17 +101,45 @@ export class AuthService {
     if (identity.account_status !== 'active') {
       throw new UnauthorizedException('Account is not active');
     }
-    const { data: membership, error: membershipError } = await client
+
+    // Platform path is separate from school_memberships (school_id NOT NULL).
+    const { data: platformAdmin } = await client
+      .from('platform_admins')
+      .select('id, display_name, status')
+      .eq('identity_id', identity.id)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (platformAdmin) {
+      return {
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        expiresIn: session.expiresIn,
+        identity: {
+          id: identity.id,
+          email: identity.email,
+          phone: identity.phone,
+          displayName: platformAdmin.display_name ?? null,
+        },
+        memberType: 'super_admin',
+        schoolId: null,
+        memberships: [],
+      };
+    }
+
+    const { data: membershipRows, error: membershipError } = await client
       .from('school_memberships')
       .select('id, school_id, member_type, status')
       .eq('identity_id', identity.id)
       .eq('status', 'active')
       .in('member_type', ['admin', 'teacher'])
-      .limit(1)
-      .maybeSingle();
-    if (membershipError || !membership) {
+      .order('member_type', { ascending: true })
+      .order('school_id', { ascending: true });
+    if (membershipError || !membershipRows || membershipRows.length === 0) {
       throw new UnauthorizedException('No active school membership');
     }
+    // Deterministic selection: admin before teacher (lexicographic), then school_id ASC.
+    // Full list returned in memberships so multi-school users are not ambiguous.
+    const membership = membershipRows[0]!;
     if (membership.member_type !== 'admin' && membership.member_type !== 'teacher') {
       throw new UnauthorizedException('Web login is only for admin and teacher accounts');
     }
@@ -130,6 +159,15 @@ export class AuthService {
         .maybeSingle();
       displayName = admin?.display_name ?? null;
     }
+    const memberships = membershipRows
+      .filter(
+        (row): row is typeof row & { member_type: 'admin' | 'teacher' } =>
+          row.member_type === 'admin' || row.member_type === 'teacher',
+      )
+      .map((row) => ({
+        schoolId: row.school_id as string,
+        memberType: row.member_type,
+      }));
     return {
       accessToken: session.accessToken,
       refreshToken: session.refreshToken,
@@ -142,6 +180,7 @@ export class AuthService {
       },
       memberType: membership.member_type,
       schoolId: membership.school_id,
+      memberships,
     };
   }
 

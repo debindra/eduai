@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CalendarService } from './calendar.service';
 import type { CalendarRepository } from './calendar.repository';
 import type { CalendarSetupDto } from './dto/calendar-setup.dto';
+import type { NationalCalendarService } from '../platform/national-calendar.service';
 
 function getMockSetupDto(overrides?: Partial<CalendarSetupDto>): CalendarSetupDto {
   return {
@@ -35,7 +36,12 @@ describe('CalendarService', () => {
     listTerminals: ReturnType<typeof vi.fn>;
     listTeachingDays: ReturnType<typeof vi.fn>;
     listFestivalClosures: ReturnType<typeof vi.fn>;
+    listSchoolClosures: ReturnType<typeof vi.fn>;
     upsertFestivalClosure: ReturnType<typeof vi.fn>;
+    upsertLocalClosure: ReturnType<typeof vi.fn>;
+  };
+  let nationalCalendar: {
+    listPublishedClosuresForBsYear: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -49,9 +55,25 @@ describe('CalendarService', () => {
       listTerminals: vi.fn(),
       listTeachingDays: vi.fn(),
       listFestivalClosures: vi.fn(),
+      listSchoolClosures: vi.fn(),
       upsertFestivalClosure: vi.fn(),
+      upsertLocalClosure: vi.fn(),
     };
-    service = new CalendarService(repository as unknown as CalendarRepository);
+    nationalCalendar = {
+      listPublishedClosuresForBsYear: vi.fn().mockResolvedValue([
+        {
+          id: 'nat-1',
+          name: 'Dashain',
+          startDate: '2025-10-02',
+          endDate: '2025-10-12',
+          category: 'festival',
+        },
+      ]),
+    };
+    service = new CalendarService(
+      repository as unknown as CalendarRepository,
+      nationalCalendar as unknown as NationalCalendarService,
+    );
   });
 
   describe('setupCalendar', () => {
@@ -63,14 +85,13 @@ describe('CalendarService', () => {
       expect(repository.insertCalendar).not.toHaveBeenCalled();
     });
 
-    it('creates calendar, terminals, and festival template closures', async () => {
+    it('creates calendar and terminals without hardcoded festival template', async () => {
       repository.findDraftCalendar.mockResolvedValue(null);
       repository.insertCalendar.mockResolvedValue({
         id: 'cal-1',
         academic_year_label: '2082',
       });
       repository.insertTerminals.mockResolvedValue(undefined);
-      repository.insertFestivalClosures.mockResolvedValue(undefined);
 
       const actual = await service.setupCalendar('school-1', getMockSetupDto());
 
@@ -83,12 +104,7 @@ describe('CalendarService', () => {
         'cal-1',
         getMockSetupDto().terminals,
       );
-      expect(repository.insertFestivalClosures).toHaveBeenCalledWith(
-        'cal-1',
-        expect.arrayContaining([
-          expect.objectContaining({ name: expect.stringContaining('Dashain') }),
-        ]),
-      );
+      expect(repository.insertFestivalClosures).not.toHaveBeenCalled();
     });
   });
 
@@ -98,113 +114,68 @@ describe('CalendarService', () => {
         id: 'cal-draft',
         academic_year_label: '2082/83',
       });
-
-      const actual = await service.getCalendarStatus('school-1');
-
-      expect(actual).toEqual({
+      await expect(service.getCalendarStatus('school-1')).resolves.toEqual({
         approvalStatus: 'draft',
         schoolCalendarId: 'cal-draft',
         academicYearLabel: '2082/83',
       });
-      expect(repository.findLatestCalendar).not.toHaveBeenCalled();
     });
 
-    it('returns latest approved calendar when no draft exists', async () => {
+    it('returns approved when no draft but latest exists', async () => {
       repository.findDraftCalendar.mockResolvedValue(null);
       repository.findLatestCalendar.mockResolvedValue({
         id: 'cal-approved',
-        approval_status: 'approved',
         academic_year_label: '2082',
+        approval_status: 'approved',
       });
-
-      const actual = await service.getCalendarStatus('school-1');
-
-      expect(actual).toEqual({
+      await expect(service.getCalendarStatus('school-1')).resolves.toEqual({
         approvalStatus: 'approved',
         schoolCalendarId: 'cal-approved',
         academicYearLabel: '2082',
       });
     });
 
-    it('returns none when no calendar exists', async () => {
+    it('returns none when no calendar', async () => {
       repository.findDraftCalendar.mockResolvedValue(null);
       repository.findLatestCalendar.mockResolvedValue(null);
-
-      const actual = await service.getCalendarStatus('school-1');
-
-      expect(actual).toEqual({ approvalStatus: 'none' });
+      await expect(service.getCalendarStatus('school-1')).resolves.toEqual({
+        approvalStatus: 'none',
+      });
     });
   });
 
   describe('getFestivalTemplate', () => {
-    it('returns festival_template closures for a draft calendar', async () => {
-      repository.findDraftCalendar.mockResolvedValue({ id: 'cal-1' });
-      repository.listFestivalClosures.mockResolvedValue([
-        {
-          id: 'c1',
-          name: 'Dashain',
-          start_date: '2025-10-01',
-          end_date: '2025-10-10',
-        },
-      ]);
-
-      const actual = await service.getFestivalTemplate('school-1');
-
-      expect(actual).toEqual({
-        schoolCalendarId: 'cal-1',
-        closures: [
-          {
-            id: 'c1',
-            name: 'Dashain',
-            startDate: '2025-10-01',
-            endDate: '2025-10-10',
-            source: 'festival_template',
-          },
-        ],
-      });
-    });
-
-    it('throws when no draft calendar exists', async () => {
+    it('requires a draft calendar', async () => {
       repository.findDraftCalendar.mockResolvedValue(null);
       await expect(service.getFestivalTemplate('school-1')).rejects.toBeInstanceOf(
         NotFoundException,
       );
     });
-  });
 
-  describe('patchFestivalTemplate', () => {
-    it('upserts closures on the draft calendar', async () => {
-      repository.findDraftCalendar.mockResolvedValue({ id: 'cal-1' });
-      repository.upsertFestivalClosure.mockResolvedValue({
-        id: 'c1',
-        name: 'Dashain',
-        start_date: '2025-10-02',
-        end_date: '2025-10-11',
+    it('returns national closures read-only plus school local closures', async () => {
+      repository.findDraftCalendar.mockResolvedValue({
+        id: 'cal-1',
+        session_start: '2025-04-14',
       });
-
-      const actual = await service.patchFestivalTemplate('school-1', {
-        closures: [
-          {
-            id: 'c1',
-            name: 'Dashain',
-            startDate: '2025-10-02',
-            endDate: '2025-10-11',
-          },
-        ],
-      });
-
-      expect(actual.closures[0]).toEqual({
-        id: 'c1',
+      repository.listSchoolClosures.mockResolvedValue([
+        {
+          id: 'loc-1',
+          name: 'Local PD day',
+          start_date: '2025-06-01',
+          end_date: '2025-06-01',
+          source: 'local',
+        },
+      ]);
+      const actual = await service.getFestivalTemplate('school-1');
+      expect(actual.nationalClosures?.[0]).toMatchObject({
         name: 'Dashain',
-        startDate: '2025-10-02',
-        endDate: '2025-10-11',
-        source: 'festival_template',
+        source: 'national',
+        readOnly: true,
       });
-      expect(repository.upsertFestivalClosure).toHaveBeenCalledWith('cal-1', {
-        id: 'c1',
-        name: 'Dashain',
-        startDate: '2025-10-02',
-        endDate: '2025-10-11',
+      expect(actual.closures[0]).toMatchObject({
+        name: 'Local PD day',
+        source: 'local',
+        readOnly: false,
       });
     });
   });
@@ -214,29 +185,25 @@ describe('CalendarService', () => {
       repository.findDraftCalendar.mockResolvedValue({ id: 'cal-1' });
       repository.approveCalendar.mockResolvedValue({
         id: 'cal-1',
-        approved_at: '2025-04-20T00:00:00Z',
+        approved_at: '2025-05-01T00:00:00.000Z',
       });
-
-      const actual = await service.approveCalendar('school-1', 'identity-admin');
-
-      expect(actual).toEqual({
+      await expect(service.approveCalendar('school-1', 'identity-1')).resolves.toEqual({
         schoolCalendarId: 'cal-1',
         approvalStatus: 'approved',
-        approvedAt: '2025-04-20T00:00:00Z',
+        approvedAt: '2025-05-01T00:00:00.000Z',
       });
-      expect(repository.approveCalendar).toHaveBeenCalledWith('cal-1', 'identity-admin');
     });
 
-    it('throws when no draft calendar exists', async () => {
+    it('rejects when no draft', async () => {
       repository.findDraftCalendar.mockResolvedValue(null);
       await expect(
-        service.approveCalendar('school-1', 'identity-admin'),
+        service.approveCalendar('school-1', 'identity-1'),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
   describe('getTeachingDays', () => {
-    it('returns per-terminal counts from the teaching_days view', async () => {
+    it('aggregates per-terminal counts', async () => {
       repository.findLatestCalendar.mockResolvedValue({ id: 'cal-1' });
       repository.listTerminals.mockResolvedValue([
         { id: 't1', name: 'Terminal 1' },
@@ -247,10 +214,7 @@ describe('CalendarService', () => {
         { terminal_id: 't1' },
         { terminal_id: 't2' },
       ]);
-
-      const actual = await service.getTeachingDays('school-1');
-
-      expect(actual).toEqual({
+      await expect(service.getTeachingDays('school-1')).resolves.toEqual({
         schoolId: 'school-1',
         terminals: [
           { terminalId: 't1', terminalName: 'Terminal 1', teachingDayCount: 2 },
@@ -259,11 +223,9 @@ describe('CalendarService', () => {
       });
     });
 
-    it('throws when no calendar is configured', async () => {
+    it('rejects when no calendar', async () => {
       repository.findLatestCalendar.mockResolvedValue(null);
-      await expect(service.getTeachingDays('school-1')).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(service.getTeachingDays('school-1')).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

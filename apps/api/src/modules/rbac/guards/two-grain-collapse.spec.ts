@@ -32,6 +32,7 @@ describe('two-grain collapse (P3-API-RBAC-01)', () => {
         adminId: null,
       },
     ],
+    platformAdmin: null,
   };
 
   beforeEach(() => {

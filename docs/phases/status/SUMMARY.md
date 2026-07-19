@@ -11,10 +11,11 @@ Updated: 2026-07-19
 | [4 Grades 4–5](phase-4.md) | 5 / 5 | Met (engineering) | Content bank + final NG–A+/subjects still gated |
 | [5 Cost / career](phase-5.md) | 5 / 5 | Met (engineering) | Cache/metrics/WhatsApp stubbed; cost-validation waits on pilot traffic |
 | [6 Pilot / launch](phase-6.md) | 0 / 7 | Open | |
-| [7 Platform / Super Admin](phase-7.md) | 0 / 18 | Open | Spec only; BS↔AD + festival-owner open items |
+| [7 Platform / Super Admin](phase-7.md) | 18 / 18 | Met (wired) | Super admin + national calendar + NepaliCalendar; festival-owner open |
 
-**Active phase:** Phase 5 engineering complete (cache monitoring, out-of-segment
-log, certification, community). Phase 6 (pilot hardening/launch) next.
-Phase 7 (platform super admin + Nepali calendar) documented, not started.
+**Active phase:** Phase 7 engineering complete (platform identity, support
+sessions, national calendar → `teaching_days`, `@eduai/bs-date`, platform SPA).
+Phase 6 (pilot hardening/launch) remains open. Deferred Phase 7 tickets:
+school provisioning, band/AI/licensing UIs, audit console.
 
 **Counts rule:** update this table when marking IDs `done` in per-phase status files.

@@ -7,20 +7,28 @@ import {
   getMockMembership,
   getMockRequestUser,
 } from '../../../test-utils/factories';
+import type { SupportSessionAccessService } from '../../platform/support-session-access.service';
 import { RequireSchoolAdminGuard } from './require-school-admin.guard';
 
 describe('RequireSchoolAdminGuard', () => {
   const reflector = new Reflector();
   let guard: RequireSchoolAdminGuard;
+  let supportSessions: { authorizeAndAudit: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    guard = new RequireSchoolAdminGuard(reflector);
+    supportSessions = { authorizeAndAudit: vi.fn().mockResolvedValue(false) };
+    guard = new RequireSchoolAdminGuard(
+      reflector,
+      supportSessions as unknown as SupportSessionAccessService,
+    );
   });
 
-  it('allows admin whose membership matches the route schoolId param', () => {
+  it('allows admin whose membership matches the route schoolId param', async () => {
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ schoolIdParam: 'schoolId' });
     const request = {
       params: { schoolId: 'school-1' },
+      method: 'GET',
+      path: '/calendar/school-1/status',
       user: getMockRequestUser({
         memberships: [
           getMockMembership({
@@ -32,17 +40,21 @@ describe('RequireSchoolAdminGuard', () => {
         ],
       }),
     };
-    expect(guard.canActivate(getMockExecutionContext(request) as never)).toBe(true);
+    await expect(guard.canActivate(getMockExecutionContext(request) as never)).resolves.toBe(
+      true,
+    );
     expect(reflector.getAllAndOverride).toHaveBeenCalledWith(REQUIRE_SCHOOL_ADMIN_KEY, [
       expect.anything(),
       expect.anything(),
     ]);
   });
 
-  it('allows admin whose membership matches schoolId in the request body', () => {
+  it('allows admin whose membership matches schoolId in the request body', async () => {
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ schoolIdBody: 'schoolId' });
     const request = {
       body: { schoolId: 'school-1', memberType: 'teacher' },
+      method: 'POST',
+      path: '/auth/invite',
       user: getMockRequestUser({
         memberships: [
           getMockMembership({
@@ -54,13 +66,17 @@ describe('RequireSchoolAdminGuard', () => {
         ],
       }),
     };
-    expect(guard.canActivate(getMockExecutionContext(request) as never)).toBe(true);
+    await expect(guard.canActivate(getMockExecutionContext(request) as never)).resolves.toBe(
+      true,
+    );
   });
 
-  it('rejects admin from a different school', () => {
+  it('rejects admin from a different school', async () => {
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ schoolIdParam: 'schoolId' });
     const request = {
       params: { schoolId: 'school-2' },
+      method: 'GET',
+      path: '/calendar/school-2/status',
       user: getMockRequestUser({
         memberships: [
           getMockMembership({
@@ -72,21 +88,61 @@ describe('RequireSchoolAdminGuard', () => {
         ],
       }),
     };
-    expect(() => guard.canActivate(getMockExecutionContext(request) as never)).toThrow(
+    await expect(guard.canActivate(getMockExecutionContext(request) as never)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
   });
 
-  it('rejects when no authenticated user is present', () => {
+  it('allows platform admin with an active support session', async () => {
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ schoolIdParam: 'schoolId' });
-    const request = { params: { schoolId: 'school-1' } };
-    expect(() => guard.canActivate(getMockExecutionContext(request) as never)).toThrow(
+    supportSessions.authorizeAndAudit.mockResolvedValue(true);
+    const request = {
+      params: { schoolId: 'school-1' },
+      method: 'GET',
+      path: '/calendar/school-1/status',
+      user: getMockRequestUser({
+        memberships: [],
+        platformAdmin: { id: 'pa-1', displayName: 'Platform' },
+      }),
+    };
+    await expect(guard.canActivate(getMockExecutionContext(request) as never)).resolves.toBe(
+      true,
+    );
+    expect(supportSessions.authorizeAndAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        platformAdminId: 'pa-1',
+        schoolId: 'school-1',
+      }),
+    );
+  });
+
+  it('rejects platform admin without an active support session', async () => {
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ schoolIdParam: 'schoolId' });
+    supportSessions.authorizeAndAudit.mockResolvedValue(false);
+    const request = {
+      params: { schoolId: 'school-1' },
+      method: 'GET',
+      path: '/calendar/school-1/status',
+      user: getMockRequestUser({
+        memberships: [],
+        platformAdmin: { id: 'pa-1', displayName: 'Platform' },
+      }),
+    };
+    await expect(guard.canActivate(getMockExecutionContext(request) as never)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
   });
 
-  it('passes through when no school-admin metadata is set', () => {
+  it('rejects when no authenticated user is present', async () => {
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ schoolIdParam: 'schoolId' });
+    const request = { params: { schoolId: 'school-1' }, method: 'GET', path: '/' };
+    await expect(guard.canActivate(getMockExecutionContext(request) as never)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+  });
+
+  it('passes through when no school-admin metadata is set', async () => {
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
-    expect(guard.canActivate(getMockExecutionContext({}) as never)).toBe(true);
+    await expect(guard.canActivate(getMockExecutionContext({}) as never)).resolves.toBe(true);
   });
 });

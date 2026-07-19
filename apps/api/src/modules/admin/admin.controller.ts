@@ -3,7 +3,9 @@ import { ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags 
 import { IsOptional, IsString } from 'class-validator';
 import type { Request } from 'express';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
+import { RequireSchoolAdmin } from '../auth/decorators/require-school-admin.decorator';
 import { RequireRoleGuard } from '../auth/guards/require-role.guard';
+import { RequireSchoolAdminGuard } from '../auth/guards/require-school-admin.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import { AdminGravityRuleInterceptor } from '../rbac/interceptors/admin-gravity-rule.interceptor';
 import { AdminService } from './admin.service';
@@ -26,7 +28,7 @@ class DashboardQueryDto {
 
 @ApiTags('admin')
 @ApiBearerAuth()
-@UseGuards(SupabaseAuthGuard, RequireRoleGuard)
+@UseGuards(SupabaseAuthGuard, RequireRoleGuard, RequireSchoolAdminGuard)
 @RequireRole('admin')
 @UseInterceptors(AdminGravityRuleInterceptor)
 @Controller('admin')
@@ -34,6 +36,7 @@ export class AdminController {
   constructor(private readonly service: AdminService) {}
 
   @Get('dashboard')
+  @RequireSchoolAdmin({ schoolIdQuery: 'schoolId' })
   @ApiOperation({
     summary: 'Gravity-shaped compliance dashboard',
     description:
@@ -59,6 +62,7 @@ export class AdminController {
   }
 
   @Get('out-of-segment')
+  @RequireSchoolAdmin({ schoolIdQuery: 'schoolId' })
   @ApiOperation({
     summary: 'Out-of-segment demand signal (P5-API-02)',
     description:

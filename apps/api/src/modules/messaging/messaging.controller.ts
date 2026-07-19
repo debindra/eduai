@@ -2,7 +2,9 @@ import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/co
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
+import { RequireSchoolAdmin } from '../auth/decorators/require-school-admin.decorator';
 import { RequireRoleGuard } from '../auth/guards/require-role.guard';
+import { RequireSchoolAdminGuard } from '../auth/guards/require-school-admin.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import { MessagingService } from './messaging.service';
 
@@ -75,8 +77,9 @@ export class MessagingController {
   }
 
   @Get('admin/queue')
-  @UseGuards(RequireRoleGuard)
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
   @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdQuery: 'schoolId' })
   @ApiOperation({ summary: 'Admin fees/complaints queue' })
   adminQueue(@Query('schoolId') schoolId: string) {
     return this.service.getAdminQueue(schoolId);

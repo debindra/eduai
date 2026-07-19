@@ -1,3 +1,27 @@
+export type ReportingType = 'formative' | 'summative' | 'transition';
+
+export type TerminalDraft = {
+  name: string;
+  startDate: string;
+  endDate: string;
+  reportingType: ReportingType;
+};
+
+export type LocalClosure = {
+  id?: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+};
+
+export type NationalClosure = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  category?: string;
+};
+
 /** Convert JS getDay() (0=Sun) to ISO weekday (1=Mon … 7=Sun). */
 export function toIsoWeekday(jsDay: number): number {
   return jsDay === 0 ? 7 : jsDay;

@@ -9,11 +9,13 @@ describe('SupabaseAuthGuard', () => {
   let identityMaybeSingle: ReturnType<typeof vi.fn>;
   let membershipsEq: ReturnType<typeof vi.fn>;
   let profileMaybeSingle: ReturnType<typeof vi.fn>;
+  let platformAdminMaybeSingle: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     getUserFromToken = vi.fn();
     identityMaybeSingle = vi.fn();
     profileMaybeSingle = vi.fn();
+    platformAdminMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
     membershipsEq = vi.fn().mockReturnValue({
       eq: vi.fn().mockResolvedValue({
         data: [
@@ -41,6 +43,15 @@ describe('SupabaseAuthGuard', () => {
           return {
             select: () => ({
               eq: membershipsEq,
+            }),
+          };
+        }
+        if (table === 'platform_admins') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({ maybeSingle: platformAdminMaybeSingle }),
+              }),
             }),
           };
         }
@@ -130,6 +141,7 @@ describe('SupabaseAuthGuard', () => {
           adminId: 'admin-1',
         },
       ],
+      platformAdmin: null,
     });
   });
 });

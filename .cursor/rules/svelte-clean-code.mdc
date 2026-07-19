@@ -1,0 +1,79 @@
+---
+description: Svelte 5 clean-code conventions for apps/web (runes, feature slices, small components, focused stores)
+globs: ["apps/web/**/*.svelte", "apps/web/**/*.ts"]
+alwaysApply: false
+---
+
+# Svelte clean code (apps/web)
+
+Stack reality first: this is a **Svelte 5 SPA on Vite** — **not SvelteKit**.
+There is no `src/routes/`, no `$lib`, no `load` functions, no form actions, no
+SSR. State uses **runes** (`$state`, `$derived`, `$effect`), not the legacy
+`$:` label or `export let`. Structural rules (feature folders, `api.ts`
+isolation, `lib/shared` vs `features/shared`, client-side-only permission
+checks) live in `frontend-architecture.mdc` and `ARCHITECTURE.md` Part 2 —
+this rule is only about writing clean code within that structure.
+
+## Components
+
+- Keep components small and single-responsibility. When a component grows past
+  a few hundred lines or juggles several unrelated concerns (e.g. a multi-step
+  wizard), split the sub-parts into child components under the owning feature's
+  `components/` folder and let the parent hold orchestration + state.
+- Pass state to children with `$bindable()` props or explicit callback props —
+  don't reach into a child's internals.
+- Presentational, cross-feature primitives (Alert/banner, form field, button)
+  belong in `features/shared/` (that is where the existing shared components
+  live); domain-specific components stay in their owning feature.
+
+## Keep complex logic out of the markup layer
+
+- Pure, testable logic (payload shaping, parsing, branching decisions, error
+  classification) goes in a colocated `*-logic.ts` next to the component, not
+  inline in the `<script>`. Follow the existing pattern, e.g.
+  `features/calendar/calendar-wizard-logic.ts`.
+- The component's job is: hold `$state`, call `api.ts`, call logic helpers,
+  render. If a handler is doing real computation, extract it.
+
+## Reactivity
+
+- Prefer `$derived` for values computed from other state — never recompute
+  manually or mirror state into a second `$state` you keep in sync by hand.
+- Use `$effect` only for genuine side effects (not for deriving values). Don't
+  add reactivity that isn't needed.
+
+## Naming
+
+- Descriptive names; no single letters except loop indices.
+- Prefix event handlers with `handle` (`handleSubmit`, `handleAddClosure`).
+- Boolean-returning helpers/vars use `is`/`has`/`can` (`isDraftNotFoundError`).
+
+## State / stores
+
+- Keep stores focused and single-purpose — one concern per store (as already
+  done: `session`, `teacher-context`, `school-scope`, `support-session`,
+  `assignment-load-gate`). Never grow one god-store holding unrelated slices;
+  it forces needless re-renders and hurts readability.
+
+## Don't repeat yourself
+
+- Repeated boilerplate (e.g. `err instanceof Error ? err.message : 'fallback'`)
+  belongs in a shared helper (`lib/shared/errors.ts` → `toErrorMessage`), not
+  copy-pasted into every handler.
+
+## Testing (definition of done)
+
+- Behavior changes need Vitest coverage: unit tests for pure `*-logic.ts`
+  helpers and stores, component tests for interactive UI with branching. Mock
+  the feature's `api.ts` — never hit the real API. Test observable behavior,
+  not mock call counts. Run `pnpm --filter @eduai/web test` before claiming
+  done. See `testing.mdc`.
+
+## Do NOT
+
+- Do not introduce SvelteKit conventions (`+page.svelte`, `load`, `$lib`,
+  server routes) — wrong framework for this app.
+- Do not adopt a flat `components/ stores/ services/` split at the app root;
+  this app is organized as vertical feature slices (see
+  `frontend-architecture.mdc`).
+- Do not use `$:` reactive labels or `export let` in new code — use runes.

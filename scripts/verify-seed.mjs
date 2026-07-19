@@ -85,11 +85,18 @@ const EXPECTED = {
   outcomes: { min: 24, note: '12 PP + 5 G1–3 + 7 G4–5 placeholders' },
   subjects: { min: 7, note: '5 core + health_pe + local_subject' },
   band_subjects: { min: 12, note: '5 early + 7 upper' },
-  identities: { min: 31, note: 'admin + 27 teachers + 2 guardians + 1 substitute' },
+  identities: {
+    min: 32,
+    note: 'admin + 27 teachers + 2 guardians + 1 substitute + 1 platform',
+  },
   school_memberships: { min: 30, note: 'admin + 27 teachers + 2 guardians' },
   school_admins: { min: 1 },
   teachers: { min: 27, note: '15 class + 5 early subject + 7 upper subject' },
   guardians: { min: 2 },
+  platform_admins: { min: 1, note: 'Phase 7 — cross-tenant super admin' },
+  support_sessions: { min: 0, max: 0, note: 'intentional empty' },
+  national_calendars: { min: 1, note: 'Phase 7 — published BS 2082' },
+  national_closures: { min: 3, note: 'Dashain + Tihar + fixed govt holiday' },
   children: { min: 120, note: 'Full school ~120 children' },
   guardian_child_links: { min: 4 },
   teacher_sections: { min: 59, note: '15 class + 30 early subject + 14 upper subject' },
@@ -197,19 +204,24 @@ async function main() {
   }
 
   const requireAuth = process.env.VERIFY_SEED_REQUIRE_AUTH === '1';
+  const authEmails = ['admin@schoolx.dev', 'teacher@schoolx.dev', 'platform@eduai.dev'];
   const { data: activeIdentities, error: activeError } = await client
     .from('identities')
     .select('email, account_status, auth_user_id')
-    .in('email', ['admin@schoolx.dev', 'teacher@schoolx.dev']);
+    .in('email', authEmails);
   if (activeError) {
     failures.push(`active identities: ${activeError.message}`);
   } else {
     const linked = (activeIdentities ?? []).filter(
       (i) => i.account_status === 'active' && i.auth_user_id,
     );
-    console.log(`  …  auth-linked identities    ${linked.length}/2 (run pnpm seed:dev-auth)`);
-    if (requireAuth && linked.length < 2) {
-      failures.push('VERIFY_SEED_REQUIRE_AUTH=1 but admin/teacher not active with auth_user_id');
+    console.log(
+      `  …  auth-linked identities    ${linked.length}/${authEmails.length} (run pnpm seed:dev-auth)`,
+    );
+    if (requireAuth && linked.length < authEmails.length) {
+      failures.push(
+        'VERIFY_SEED_REQUIRE_AUTH=1 but admin/teacher/platform not active with auth_user_id',
+      );
     }
   }
 

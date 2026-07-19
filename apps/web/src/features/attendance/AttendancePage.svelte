@@ -1,5 +1,7 @@
 <script lang="ts">
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
   import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
   import { listAttendanceChildren, oneTapAttendance, type AttendanceChild } from './api';
@@ -29,7 +31,7 @@
       );
     } catch (err) {
       if (!loadGate.isCurrent(token)) return;
-      error = err instanceof Error ? err.message : 'Failed to load children';
+      error = toErrorMessage(err, 'Failed to load children');
       children = [];
     } finally {
       if (loadGate.isCurrent(token)) loading = false;
@@ -56,7 +58,7 @@
       );
       message = 'Attendance saved — guardians notified.';
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Attendance failed';
+      error = toErrorMessage(err, 'Attendance failed');
     } finally {
       saving = false;
     }
@@ -108,6 +110,6 @@
     </button>
   {/if}
 
-  {#if message}<p class="mt-3 text-sm text-emerald-800">{message}</p>{/if}
-  {#if error}<p class="mt-3 text-sm text-red-700" role="alert">{error}</p>{/if}
+  <Alert variant="success" message={message} class="mt-3" />
+  <Alert message={error} class="mt-3" />
 </main>

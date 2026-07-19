@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import AdminNav from '../shared/AdminNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { getAdminFestivalPlanner, getSettlingProgramme } from './api';
   import {
     adminFestivalHeadline,
@@ -16,7 +18,7 @@
     try {
       [plan, settling] = await Promise.all([getAdminFestivalPlanner(), getSettlingProgramme()]);
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load';
+      error = toErrorMessage(err, 'Failed to load');
     }
   });
 </script>
@@ -39,7 +41,5 @@
       {settling.steps.length} settling weeks configured
     </p>
   {/if}
-  {#if error}
-    <p class="mt-4 text-sm text-red-700" role="alert">{error}</p>
-  {/if}
+  <Alert message={error} class="mt-4" />
 </main>

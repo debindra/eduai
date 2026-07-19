@@ -11,12 +11,20 @@ import {
   type RequireSchoolAdminOptions,
 } from '../decorators/require-school-admin.decorator';
 import type { RequestUser } from '../types/request-user.types';
+import { SupportSessionAccessService } from '../../platform/support-session-access.service';
 
+/**
+ * Allows school admins for the target school, OR a platform super admin with an
+ * active support_session for that school (audited).
+ */
 @Injectable()
 export class RequireSchoolAdminGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly supportSessions: SupportSessionAccessService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const options = this.reflector.getAllAndOverride<RequireSchoolAdminOptions | undefined>(
       REQUIRE_SCHOOL_ADMIN_KEY,
       [context.getHandler(), context.getClass()],
@@ -39,10 +47,24 @@ export class RequireSchoolAdminGuard implements CanActivate {
         membership.memberType === 'admin' &&
         membership.schoolId === schoolId,
     );
-    if (!isSchoolAdmin) {
-      throw new ForbiddenException('Admin membership required for this school');
+    if (isSchoolAdmin) {
+      return true;
     }
-    return true;
+    if (user.platformAdmin) {
+      const allowed = await this.supportSessions.authorizeAndAudit({
+        platformAdminId: user.platformAdmin.id,
+        identityId: user.identityId,
+        schoolId,
+        resourcePath: `${request.method} ${request.path}`,
+      });
+      if (allowed) {
+        return true;
+      }
+      throw new ForbiddenException(
+        'Active support session required for platform drill-down into this school',
+      );
+    }
+    throw new ForbiddenException('Admin membership required for this school');
   }
 
   private resolveSchoolId(
@@ -58,6 +80,12 @@ export class RequireSchoolAdminGuard implements CanActivate {
     if (options.schoolIdBody && request.body && typeof request.body === 'object') {
       const body = request.body as Record<string, unknown>;
       const value = body[options.schoolIdBody];
+      if (typeof value === 'string' && value.length > 0) {
+        return value;
+      }
+    }
+    if (options.schoolIdQuery) {
+      const value = request.query[options.schoolIdQuery];
       if (typeof value === 'string' && value.length > 0) {
         return value;
       }

@@ -27,7 +27,7 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
       displayName: response.identity.displayName ?? null,
     },
     memberType: response.memberType as MemberType,
-    schoolId: response.schoolId,
+    schoolId: response.schoolId ?? null,
   });
   if (response.memberType === 'teacher') {
     await loadTeacherContext();

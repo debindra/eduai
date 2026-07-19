@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { approveDraft, listTeacherDrafts } from './api';
   import { isDraftPending, type MessageRow } from './messaging-logic';
 
@@ -12,7 +14,7 @@
     try {
       drafts = await listTeacherDrafts();
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load inbox';
+      error = toErrorMessage(err, 'Failed to load inbox');
     }
   });
 
@@ -22,7 +24,7 @@
       await approveDraft(id);
       drafts = drafts.filter((d) => d.id !== id);
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Approve failed';
+      error = toErrorMessage(err, 'Approve failed');
     } finally {
       busyId = null;
     }
@@ -54,7 +56,5 @@
       <li class="text-sm text-slate-500">No drafts waiting.</li>
     {/each}
   </ul>
-  {#if error}
-    <p class="mt-4 text-sm text-red-700" role="alert">{error}</p>
-  {/if}
+  <Alert message={error} class="mt-4" />
 </main>

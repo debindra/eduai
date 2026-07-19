@@ -26,6 +26,11 @@ const USERS = [
     email: 'teacher@schoolx.dev',
     role: 'teacher',
   },
+  {
+    identityId: '22222222-2222-2222-2222-222222222260',
+    email: 'platform@eduai.dev',
+    role: 'platform',
+  },
 ];
 
 function loadDotEnv() {
@@ -140,8 +145,9 @@ async function main() {
     console.log(`  ${user.role.padEnd(8)} ${user.email}  →  auth_user_id=${authUserId}`);
   }
   console.log('\nLocal login credentials (dev only):');
-  console.log(`  admin:   admin@schoolx.dev / ${DEV_PASSWORD}`);
-  console.log(`  teacher: teacher@schoolx.dev / ${DEV_PASSWORD}`);
+  console.log(`  admin:    admin@schoolx.dev / ${DEV_PASSWORD}`);
+  console.log(`  teacher:  teacher@schoolx.dev / ${DEV_PASSWORD}`);
+  console.log(`  platform: platform@eduai.dev / ${DEV_PASSWORD}`);
   console.log('\nGuardians remain WhatsApp-only (no auth_user_id).');
 }
 

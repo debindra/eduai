@@ -53,6 +53,7 @@ describe('SectionSubjectWriteGuard', () => {
             adminId: null,
           },
         ],
+        platformAdmin: null,
       } satisfies RequestUser,
       params: {
         sectionId: 'section-1',
@@ -95,6 +96,7 @@ describe('SectionSubjectWriteGuard', () => {
             adminId: null,
           },
         ],
+        platformAdmin: null,
       } satisfies RequestUser,
       params: { sectionId: 'section-1' },
       body: { subjectId: null },

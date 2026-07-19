@@ -25,6 +25,7 @@ describe('AdminGravityRuleInterceptor', () => {
             adminId: 'admin-1',
           },
         ],
+        platformAdmin: null,
       } satisfies RequestUser,
     };
     const context = {
@@ -50,6 +51,36 @@ describe('AdminGravityRuleInterceptor', () => {
       nested: {
         shape: { planned: 12, done: 8 },
       },
+    });
+  });
+
+  it('strips forbidden keys for platform super admins', async () => {
+    const request = {
+      user: {
+        identityId: 'identity-p',
+        authUserId: 'auth-p',
+        accountStatus: 'active',
+        email: 'platform@eduai.dev',
+        phone: null,
+        memberships: [],
+        platformAdmin: { id: 'pa-1', displayName: 'Platform' },
+      } satisfies RequestUser,
+    };
+    const context = {
+      switchToHttp: () => ({ getRequest: () => request }),
+    } as ExecutionContext;
+    const payload = {
+      schools: [{ id: 's1', sectionsTotal: 2 }],
+      bandDistributions: { emerging: 9 },
+      childNames: ['ShouldStrip'],
+    };
+    const actual = await lastValueFrom(
+      interceptor.intercept(context, {
+        handle: () => of(payload),
+      }),
+    );
+    expect(actual).toEqual({
+      schools: [{ id: 's1', sectionsTotal: 2 }],
     });
   });
 });

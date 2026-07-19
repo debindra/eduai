@@ -86,6 +86,24 @@ export class CalendarRepository {
     return (data as SchoolCalendarRow | null) ?? null;
   }
 
+  /** Latest approved calendar for the school (preferred for shared view). */
+  async findApprovedCalendar(schoolId: string): Promise<SchoolCalendarRow | null> {
+    const { data, error } = await this.client()
+      .from('school_calendars')
+      .select(
+        'id, school_id, academic_year_label, session_start, session_end, weekly_offs, approval_status, approved_at',
+      )
+      .eq('school_id', schoolId)
+      .eq('approval_status', 'approved')
+      .order('approved_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      throw new Error(error.message);
+    }
+    return (data as SchoolCalendarRow | null) ?? null;
+  }
+
   async insertCalendar(
     schoolId: string,
     dto: CalendarSetupDto,
@@ -166,10 +184,32 @@ export class CalendarRepository {
     return (data as ClosureRow[]) ?? [];
   }
 
+  /** All school-scoped closures (local / manual / legacy festival_template). */
+  async listSchoolClosures(schoolCalendarId: string): Promise<ClosureRow[]> {
+    const { data, error } = await this.client()
+      .from('calendar_closures')
+      .select('id, school_calendar_id, name, start_date, end_date, source')
+      .eq('school_calendar_id', schoolCalendarId)
+      .order('start_date', { ascending: true });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return (data as ClosureRow[]) ?? [];
+  }
+
   async upsertFestivalClosure(
     schoolCalendarId: string,
     closure: FestivalClosureDto,
   ): Promise<ClosureRow> {
+    return this.upsertLocalClosure(schoolCalendarId, closure);
+  }
+
+  /** Upsert a school local/manual closure — never writes national rows. */
+  async upsertLocalClosure(
+    schoolCalendarId: string,
+    closure: FestivalClosureDto,
+  ): Promise<ClosureRow> {
+    const source = 'local';
     if (closure.id) {
       const { data, error } = await this.client()
         .from('calendar_closures')
@@ -177,14 +217,14 @@ export class CalendarRepository {
           name: closure.name,
           start_date: closure.startDate,
           end_date: closure.endDate,
-          source: 'festival_template',
+          source,
         })
         .eq('id', closure.id)
         .eq('school_calendar_id', schoolCalendarId)
         .select('id, school_calendar_id, name, start_date, end_date, source')
         .single();
       if (error || !data) {
-        throw new Error(error?.message ?? 'Failed to update festival closure');
+        throw new Error(error?.message ?? 'Failed to update local closure');
       }
       return data as ClosureRow;
     }
@@ -195,12 +235,12 @@ export class CalendarRepository {
         name: closure.name,
         start_date: closure.startDate,
         end_date: closure.endDate,
-        source: 'festival_template',
+        source,
       })
       .select('id, school_calendar_id, name, start_date, end_date, source')
       .single();
     if (error || !data) {
-      throw new Error(error?.message ?? 'Failed to create festival closure');
+      throw new Error(error?.message ?? 'Failed to create local closure');
     }
     return data as ClosureRow;
   }

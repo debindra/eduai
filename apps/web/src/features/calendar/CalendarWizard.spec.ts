@@ -12,6 +12,11 @@ vi.mock('./api', () => ({
   getTeachingDays: vi.fn(),
 }));
 
+vi.mock('../shared/NepaliDatePicker.svelte', async () => {
+  const { default: Mock } = await import('../shared/NepaliDatePickerMock.svelte');
+  return { default: Mock };
+});
+
 import {
   approveCalendar,
   getCalendarStatus,
@@ -54,14 +59,34 @@ describe('CalendarWizard', () => {
     });
     mockGetFestivalTemplate.mockResolvedValue({
       schoolCalendarId: 'cal-1',
-      closures: [{ id: 'c1', name: 'Dashain', startDate: '2025-10-01', endDate: '2025-10-10' }],
+      bsYear: 2082,
+      nationalClosures: [
+        {
+          id: 'n1',
+          name: 'Dashain',
+          startDate: '2025-10-01',
+          endDate: '2025-10-10',
+          source: 'national',
+          readOnly: true,
+        },
+      ],
+      closures: [
+        {
+          id: 'c1',
+          name: 'Local PD day',
+          startDate: '2025-06-01',
+          endDate: '2025-06-01',
+          source: 'local',
+        },
+      ],
     });
 
     render(CalendarWizard);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Dashain')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Local PD day')).toBeInTheDocument();
     });
+    expect(screen.getByText('Dashain')).toBeInTheDocument();
     expect(mockGetFestivalTemplate).toHaveBeenCalledTimes(1);
   });
 
@@ -108,10 +133,10 @@ describe('CalendarWizard', () => {
     await user.type(screen.getByLabelText(/academic year label/i), '2082/83');
     await user.type(screen.getByLabelText(/session start/i), '2025-04-14');
     await user.type(screen.getByLabelText(/session end/i), '2026-04-13');
-    await user.type(screen.getByLabelText(/terminal name/i), 'Terminal 1');
-    await user.type(screen.getByLabelText(/terminal start/i), '2025-04-14');
-    await user.type(screen.getByLabelText(/terminal end/i), '2025-07-14');
-    await user.click(screen.getByRole('button', { name: /continue to festivals/i }));
+    await user.type(screen.getByLabelText(/terminal 1 name/i), 'Terminal 1');
+    await user.type(screen.getByLabelText(/^terminal start$/i), '2025-04-14');
+    await user.type(screen.getByLabelText(/^terminal end$/i), '2025-07-14');
+    await user.click(screen.getByRole('button', { name: /continue to closures/i }));
 
     await waitFor(() => expect(mockSetupCalendar).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByDisplayValue('Dashain')).toBeInTheDocument());
@@ -142,10 +167,10 @@ describe('CalendarWizard', () => {
     await user.type(screen.getByLabelText(/academic year label/i), '2082/83');
     await user.type(screen.getByLabelText(/session start/i), '2025-04-14');
     await user.type(screen.getByLabelText(/session end/i), '2026-04-13');
-    await user.type(screen.getByLabelText(/terminal name/i), 'Terminal 1');
-    await user.type(screen.getByLabelText(/terminal start/i), '2025-04-14');
-    await user.type(screen.getByLabelText(/terminal end/i), '2025-07-14');
-    await user.click(screen.getByRole('button', { name: /continue to festivals/i }));
+    await user.type(screen.getByLabelText(/terminal 1 name/i), 'Terminal 1');
+    await user.type(screen.getByLabelText(/^terminal start$/i), '2025-04-14');
+    await user.type(screen.getByLabelText(/^terminal end$/i), '2025-07-14');
+    await user.click(screen.getByRole('button', { name: /continue to closures/i }));
 
     await waitFor(() => expect(mockGetFestivalTemplate).toHaveBeenCalledTimes(1));
     expect(screen.queryByText('A draft calendar already exists')).not.toBeInTheDocument();

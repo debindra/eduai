@@ -26,7 +26,8 @@ export class AdminGravityRuleInterceptor implements NestInterceptor {
     const isAdmin = user?.memberships.some(
       (membership) => membership.memberType === 'admin' && membership.status === 'active',
     );
-    if (!isAdmin) {
+    const isPlatformAdmin = user?.platformAdmin !== null && user?.platformAdmin !== undefined;
+    if (!isAdmin && !isPlatformAdmin) {
       return next.handle();
     }
     return next.handle().pipe(map((data: unknown) => this.stripForbiddenKeys(data)));

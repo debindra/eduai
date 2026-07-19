@@ -12,7 +12,9 @@ import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagg
 import { IsOptional, IsString } from 'class-validator';
 import type { Request } from 'express';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
+import { RequireSchoolAdmin } from '../auth/decorators/require-school-admin.decorator';
 import { RequireRoleGuard } from '../auth/guards/require-role.guard';
+import { RequireSchoolAdminGuard } from '../auth/guards/require-school-admin.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import {
   BlocksSubstituteConfirmation,
@@ -157,8 +159,9 @@ export class RemedialController {
   }
 
   @Get('admin/open-loop-counts')
-  @UseGuards(RequireRoleGuard)
+  @UseGuards(RequireRoleGuard, RequireSchoolAdminGuard)
   @RequireRole('admin')
+  @RequireSchoolAdmin({ schoolIdQuery: 'schoolId' })
   @ApiOperation({
     summary: 'Admin open-loop counts (gravity)',
     description: 'Counts/shapes only — never child names or rating distributions.',

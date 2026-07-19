@@ -1,5 +1,7 @@
 <script lang="ts">
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
   import {
     getSelectedSubjectId,
@@ -32,7 +34,7 @@
       view = next;
     } catch (err) {
       if (!loadGate.isCurrent(token)) return;
-      error = err instanceof Error ? err.message : 'Failed to load subject view';
+      error = toErrorMessage(err, 'Failed to load subject view');
       view = null;
     } finally {
       if (loadGate.isCurrent(token)) loading = false;
@@ -71,7 +73,5 @@
       </ul>
     </section>
   {/if}
-  {#if error}
-    <p class="mt-4 text-sm text-red-700" role="alert">{error}</p>
-  {/if}
+  <Alert message={error} class="mt-4" />
 </main>

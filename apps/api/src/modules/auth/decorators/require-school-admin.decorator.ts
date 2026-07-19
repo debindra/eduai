@@ -5,6 +5,7 @@ export const REQUIRE_SCHOOL_ADMIN_KEY = 'requireSchoolAdmin';
 export interface RequireSchoolAdminOptions {
   schoolIdParam?: string;
   schoolIdBody?: string;
+  schoolIdQuery?: string;
 }
 
 export const RequireSchoolAdmin = (options: RequireSchoolAdminOptions) =>

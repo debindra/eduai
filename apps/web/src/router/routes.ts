@@ -22,6 +22,9 @@ import AdminRemedialPage from '../features/remedial/AdminRemedialPage.svelte';
 import CertificationPage from '../features/certification/CertificationPage.svelte';
 import CommunityPage from '../features/community/CommunityPage.svelte';
 import RosterPage from '../features/roster/RosterPage.svelte';
+import TenantBoardPage from '../features/platform/TenantBoardPage.svelte';
+import NationalCalendarPage from '../features/platform/NationalCalendarPage.svelte';
+import SupportSessionsPage from '../features/platform/SupportSessionsPage.svelte';
 import { routePermissions } from './permissions';
 
 export const routes = {
@@ -29,6 +32,18 @@ export const routes = {
   '/health': Health,
   '/login': LoginPage,
   '/login/recovery': RecoveryPage,
+  '/platform/schools': createProtectedRoute({
+    component: async () => TenantBoardPage,
+    permissions: routePermissions.platform,
+  }),
+  '/platform/national-calendar': createProtectedRoute({
+    component: async () => NationalCalendarPage,
+    permissions: routePermissions.platform,
+  }),
+  '/platform/support-sessions': createProtectedRoute({
+    component: async () => SupportSessionsPage,
+    permissions: routePermissions.platform,
+  }),
   '/admin/calendar': createProtectedRoute({
     component: async () => CalendarWizard,
     permissions: routePermissions.admin,

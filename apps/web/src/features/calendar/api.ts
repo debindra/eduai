@@ -1,5 +1,5 @@
 import { apiFetch } from '../../lib/shared/api/client';
-import { getSession } from '../../lib/shared/stores/session';
+import { requireResolvedSchoolId } from '../../lib/shared/stores/school-scope';
 import type { components } from '../../lib/shared/api/generated-types';
 
 type CalendarSetupRequest = components['schemas']['CalendarSetupDto'];
@@ -10,16 +10,8 @@ type FestivalTemplatePatch = components['schemas']['PatchFestivalTemplateDto'];
 type CalendarApproveResponse = components['schemas']['ApproveCalendarResponseDto'];
 type TeachingDaysResponse = components['schemas']['TeachingDaysResponseDto'];
 
-function requireSchoolId(): string {
-  const schoolId = getSession()?.schoolId;
-  if (!schoolId) {
-    throw new Error('Not signed in — school context missing');
-  }
-  return schoolId;
-}
-
 function calendarPath(suffix: string): string {
-  return `/calendar/${requireSchoolId()}${suffix}`;
+  return `/calendar/${requireResolvedSchoolId()}${suffix}`;
 }
 
 export async function setupCalendar(

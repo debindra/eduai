@@ -1,16 +1,16 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { bsYearForAdDate } from '@eduai/bs-date';
+import { NationalCalendarService } from '../platform/national-calendar.service';
 import { CalendarRepository } from './calendar.repository';
 import type { CalendarSetupDto } from './dto/calendar-setup.dto';
 import type { PatchFestivalTemplateDto } from './dto/calendar-response.dto';
 
-const DEFAULT_FESTIVAL_TEMPLATE = [
-  { name: 'Dashain (template — adjust dates)', startDate: '2025-10-01', endDate: '2025-10-10' },
-  { name: 'Tihar (template — adjust dates)', startDate: '2025-10-20', endDate: '2025-10-24' },
-];
-
 @Injectable()
 export class CalendarService {
-  constructor(private readonly repository: CalendarRepository) {}
+  constructor(
+    private readonly repository: CalendarRepository,
+    private readonly nationalCalendar: NationalCalendarService,
+  ) {}
 
   async setupCalendar(schoolId: string, dto: CalendarSetupDto) {
     const existingDraft = await this.repository.findDraftCalendar(schoolId);
@@ -19,7 +19,7 @@ export class CalendarService {
     }
     const calendar = await this.repository.insertCalendar(schoolId, dto);
     await this.repository.insertTerminals(calendar.id, dto.terminals);
-    await this.repository.insertFestivalClosures(calendar.id, DEFAULT_FESTIVAL_TEMPLATE);
+    // National closures apply via teaching_days VIEW — do not copy into calendar_closures.
     return {
       schoolCalendarId: calendar.id,
       academicYearLabel: calendar.academic_year_label,
@@ -49,15 +49,30 @@ export class CalendarService {
 
   async getFestivalTemplate(schoolId: string) {
     const calendar = await this.requireDraftCalendar(schoolId);
-    const closures = await this.repository.listFestivalClosures(calendar.id);
+    const bsYear = bsYearForAdDate(calendar.session_start);
+    const [national, schoolClosures] = await Promise.all([
+      this.nationalCalendar.listPublishedClosuresForBsYear(bsYear),
+      this.repository.listSchoolClosures(calendar.id),
+    ]);
     return {
       schoolCalendarId: calendar.id,
-      closures: closures.map((closure) => ({
+      bsYear,
+      nationalClosures: national.map((c) => ({
+        id: c.id,
+        name: c.name,
+        startDate: c.startDate,
+        endDate: c.endDate,
+        category: c.category,
+        source: 'national' as const,
+        readOnly: true as const,
+      })),
+      closures: schoolClosures.map((closure) => ({
         id: closure.id,
         name: closure.name,
         startDate: closure.start_date,
         endDate: closure.end_date,
-        source: 'festival_template' as const,
+        source: closure.source as 'festival_template' | 'manual' | 'local',
+        readOnly: false as const,
       })),
     };
   }
@@ -66,17 +81,30 @@ export class CalendarService {
     const calendar = await this.requireDraftCalendar(schoolId);
     const updated = [];
     for (const closure of dto.closures) {
-      const row = await this.repository.upsertFestivalClosure(calendar.id, closure);
+      const row = await this.repository.upsertLocalClosure(calendar.id, closure);
       updated.push({
         id: row.id,
         name: row.name,
         startDate: row.start_date,
         endDate: row.end_date,
-        source: 'festival_template' as const,
+        source: row.source as 'festival_template' | 'manual' | 'local',
+        readOnly: false as const,
       });
     }
+    const bsYear = bsYearForAdDate(calendar.session_start);
+    const national = await this.nationalCalendar.listPublishedClosuresForBsYear(bsYear);
     return {
       schoolCalendarId: calendar.id,
+      bsYear,
+      nationalClosures: national.map((c) => ({
+        id: c.id,
+        name: c.name,
+        startDate: c.startDate,
+        endDate: c.endDate,
+        category: c.category,
+        source: 'national' as const,
+        readOnly: true as const,
+      })),
       closures: updated,
     };
   }
@@ -113,6 +141,62 @@ export class CalendarService {
         terminalId: terminal.id,
         terminalName: terminal.name,
         teachingDayCount: counts.get(terminal.id) ?? 0,
+      })),
+    };
+  }
+
+  /**
+   * Shared calendar board payload: prefer approved, else draft.
+   * National closures are read-only overlay; school closures are local/manual.
+   */
+  async getCalendarView(schoolId: string) {
+    const approved = await this.repository.findApprovedCalendar(schoolId);
+    const calendar = approved ?? (await this.repository.findDraftCalendar(schoolId));
+    if (!calendar) {
+      return {
+        schoolId,
+        approvalStatus: 'none' as const,
+        nationalClosures: [],
+        closures: [],
+        terminals: [],
+      };
+    }
+    const bsYear = bsYearForAdDate(calendar.session_start);
+    const [national, schoolClosures, terminals] = await Promise.all([
+      this.nationalCalendar.listPublishedClosuresForBsYear(bsYear),
+      this.repository.listSchoolClosures(calendar.id),
+      this.repository.listTerminals(calendar.id),
+    ]);
+    return {
+      schoolId,
+      schoolCalendarId: calendar.id,
+      academicYearLabel: calendar.academic_year_label,
+      approvalStatus: calendar.approval_status as 'draft' | 'approved',
+      bsYear,
+      sessionStart: calendar.session_start,
+      sessionEnd: calendar.session_end,
+      nationalClosures: national.map((c) => ({
+        id: c.id,
+        name: c.name,
+        startDate: c.startDate,
+        endDate: c.endDate,
+        category: c.category,
+        source: 'national' as const,
+        readOnly: true as const,
+      })),
+      closures: schoolClosures.map((closure) => ({
+        id: closure.id,
+        name: closure.name,
+        startDate: closure.start_date,
+        endDate: closure.end_date,
+        source: closure.source as 'festival_template' | 'manual' | 'local',
+        readOnly: false as const,
+      })),
+      terminals: terminals.map((terminal) => ({
+        id: terminal.id,
+        name: terminal.name,
+        startDate: terminal.start_date,
+        endDate: terminal.end_date,
       })),
     };
   }

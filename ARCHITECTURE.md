@@ -434,6 +434,16 @@ response shape in a feature's `types.ts`. A feature's `types.ts` should
 only contain types genuinely local to that feature (view-model shapes,
 form state), not redeclarations of what the backend already returns.
 
+**8. Clean-code conventions within a slice** live in
+`.cursor/rules/svelte-clean-code.mdc`: keep components small and split
+multi-concern ones into child components (e.g.
+`features/calendar/components/{SetupStep,ClosuresStep,ApproveStep}.svelte`);
+keep computation out of the markup layer by extracting pure helpers into a
+colocated `*-logic.ts` (e.g. `calendar-wizard-logic.ts`,
+`national-calendar-logic.ts`); prefer `$derived` over hand-synced state;
+keep stores single-purpose; and pull repeated boilerplate into shared
+helpers (`lib/shared/errors.ts` `toErrorMessage`, `features/shared/Alert.svelte`).
+
 ---
 
 ## Part 3 — Testing & definition of done

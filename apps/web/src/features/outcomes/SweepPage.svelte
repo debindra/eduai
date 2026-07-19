@@ -1,5 +1,7 @@
 <script lang="ts">
   import TeacherNav from '../shared/TeacherNav.svelte';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import { createAssignmentLoadGate } from '../../lib/shared/stores/assignment-load-gate';
   import { selectedAssignmentKey } from '../../lib/shared/stores/teacher-context';
   import {
@@ -44,7 +46,7 @@
       }));
     } catch (err) {
       if (!loadGate.isCurrent(token)) return;
-      error = err instanceof Error ? err.message : 'Failed to load sweep context';
+      error = toErrorMessage(err, 'Failed to load sweep context');
       rows = [];
       outcomes = [];
     } finally {
@@ -72,7 +74,7 @@
       currentSweepProposalIds = result.proposed.map((p) => p.id);
       message = `Proposed ${result.proposed.length} milestones — review and confirm.`;
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Propose failed';
+      error = toErrorMessage(err, 'Propose failed');
     } finally {
       busy = false;
     }
@@ -92,7 +94,7 @@
       message = `Confirmed ${currentSweepProposalIds.length} milestones from this sweep.`;
       currentSweepProposalIds = [];
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Confirm failed';
+      error = toErrorMessage(err, 'Confirm failed');
     } finally {
       busy = false;
     }
@@ -174,10 +176,6 @@
     {/if}
   {/if}
 
-  {#if message}
-    <p class="mt-4 text-sm text-emerald-800">{message}</p>
-  {/if}
-  {#if error}
-    <p class="mt-4 text-sm text-red-700" role="alert">{error}</p>
-  {/if}
+  <Alert variant="success" message={message} class="mt-4" />
+  <Alert message={error} class="mt-4" />
 </main>

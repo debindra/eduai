@@ -15,6 +15,7 @@
     "generate:api-types": "openapi-typescript ${VITE_API_URL:-http://localhost:3000}/api/docs-json -o src/lib/shared/api/generated-types.ts"
   },
   "dependencies": {
+    "@eduai/bs-date": "workspace:*",
     "@keenmate/svelte-spa-router": "^5.3.0"
   },
   "devDependencies": {

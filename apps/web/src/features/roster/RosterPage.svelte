@@ -15,6 +15,8 @@
     type TeacherSectionShape,
   } from './roster-logic';
   import * as api from './api';
+  import Alert from '../shared/Alert.svelte';
+  import { toErrorMessage } from '../../lib/shared/errors';
 
   let sections = $state<SectionShape[]>([]);
   let children = $state<ChildShape[]>([]);
@@ -87,7 +89,7 @@
     try {
       await refreshAll();
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load roster';
+      error = toErrorMessage(err, 'Failed to load roster');
     } finally {
       loading = false;
     }
@@ -100,7 +102,7 @@
     try {
       await fn();
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Request failed';
+      error = toErrorMessage(err, 'Request failed');
     } finally {
       busy = false;
     }
@@ -218,16 +220,8 @@
   {#if loading}
     <p class="mt-6 text-sm text-slate-500">Loading…</p>
   {:else}
-    {#if error}
-      <p class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
-        {error}
-      </p>
-    {/if}
-    {#if inviteMessage}
-      <p class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800" data-testid="invite-ok">
-        {inviteMessage}
-      </p>
-    {/if}
+    <Alert message={error} class="mt-4" />
+    <Alert variant="success" message={inviteMessage} class="mt-4" testId="invite-ok" />
 
     <div class="mt-8 grid gap-8 lg:grid-cols-3">
       <!-- Sections column -->

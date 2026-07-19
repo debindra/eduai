@@ -4,6 +4,7 @@
   import active from '@keenmate/svelte-spa-router/active';
   import { push } from '@keenmate/svelte-spa-router/utils';
   import { clearSession, session } from '../../lib/shared/stores/session';
+  import { toErrorMessage } from '../../lib/shared/errors';
   import {
     assignmentLabel,
     assignmentOptionKey,
@@ -34,7 +35,7 @@
   onMount(() => {
     if ($session?.memberType === 'teacher' && !$teacherContext) {
       void loadTeacherContext().catch((err: unknown) => {
-        contextError = err instanceof Error ? err.message : 'Failed to load teaching context';
+        contextError = toErrorMessage(err, 'Failed to load teaching context');
       });
     }
   });

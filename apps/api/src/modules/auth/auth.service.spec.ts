@@ -22,6 +22,7 @@ function createThenableResult<T>(result: T) {
     update: vi.fn(() => builder),
     eq: vi.fn(() => builder),
     in: vi.fn(() => builder),
+    order: vi.fn(() => builder),
     limit: vi.fn(() => builder),
     maybeSingle: vi.fn(async () => result),
     single: vi.fn(async () => result),
@@ -116,14 +117,19 @@ describe('AuthService invite accept and recovery', () => {
             error: null,
           });
         }
+        if (table === 'platform_admins') {
+          return createThenableResult({ data: null, error: null });
+        }
         if (table === 'school_memberships') {
           return createThenableResult({
-            data: {
-              id: 'mem-1',
-              school_id: 'school-1',
-              member_type: 'admin',
-              status: 'active',
-            },
+            data: [
+              {
+                id: 'mem-1',
+                school_id: 'school-1',
+                member_type: 'admin',
+                status: 'active',
+              },
+            ],
             error: null,
           });
         }
@@ -150,6 +156,7 @@ describe('AuthService invite accept and recovery', () => {
         },
         memberType: 'admin',
         schoolId: 'school-1',
+        memberships: [{ schoolId: 'school-1', memberType: 'admin' }],
       });
     });
 
@@ -202,11 +209,60 @@ describe('AuthService invite accept and recovery', () => {
             error: null,
           });
         }
+        if (table === 'platform_admins') {
+          return createThenableResult({ data: null, error: null });
+        }
+        if (table === 'school_memberships') {
+          return createThenableResult({ data: [], error: null });
+        }
         return createThenableResult({ data: null, error: null });
       });
       await expect(
         service.login('admin@schoolx.dev', 'DevPassword123!'),
       ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('returns super_admin with null schoolId for platform admins', async () => {
+      authProvider.signInWithPassword.mockResolvedValue({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        expiresIn: 3600,
+        user: { id: 'auth-p' },
+      });
+      from.mockImplementation((table: string) => {
+        if (table === 'identities') {
+          return createThenableResult({
+            data: {
+              id: 'id-p',
+              email: 'platform@eduai.dev',
+              phone: null,
+              account_status: 'active',
+            },
+            error: null,
+          });
+        }
+        if (table === 'platform_admins') {
+          return createThenableResult({
+            data: { id: 'pa-1', display_name: 'Platform Admin (dev)', status: 'active' },
+            error: null,
+          });
+        }
+        throw new Error(`unexpected ${table}`);
+      });
+      await expect(service.login('platform@eduai.dev', 'DevPassword123!')).resolves.toEqual({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        expiresIn: 3600,
+        identity: {
+          id: 'id-p',
+          email: 'platform@eduai.dev',
+          phone: null,
+          displayName: 'Platform Admin (dev)',
+        },
+        memberType: 'super_admin',
+        schoolId: null,
+        memberships: [],
+      });
     });
   });
 
