@@ -87,4 +87,17 @@ export class NationalCalendarController {
   publish(@Param('id', ParseUUIDPipe) id: string): Promise<NationalCalendarDto> {
     return this.service.publish(id);
   }
+
+  @Post(':id/unpublish')
+  @ApiOperation({
+    summary: 'Return a published national calendar to draft for editing',
+    description:
+      'While draft, closures are not applied in teaching_days. Republish when edits are done.',
+  })
+  @ApiResponse({ status: 200, type: NationalCalendarDto })
+  unpublish(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<NationalCalendarDto> {
+    return this.service.unpublish(id);
+  }
 }

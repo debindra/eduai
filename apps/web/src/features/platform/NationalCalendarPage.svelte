@@ -13,6 +13,7 @@
     patchNationalClosures,
     patchNationalWeeklyOffs,
     publishNationalCalendar,
+    unpublishNationalCalendar,
     type NationalCalendar,
     type NationalClosure,
   } from './api';
@@ -161,6 +162,19 @@
       error = toErrorMessage(err, 'Publish failed');
     }
   };
+
+  const handleUnpublish = async () => {
+    if (!selected) return;
+    error = null;
+    try {
+      await unpublishNationalCalendar(selected.id);
+      await reload();
+      message =
+        'Returned to draft — edit closures or weekly offs, then publish again. Schools will not see these national closures until republished.';
+    } catch (err) {
+      error = toErrorMessage(err, 'Unpublish failed');
+    }
+  };
 </script>
 
 <PlatformNav />
@@ -224,14 +238,27 @@
       {/each}
     </ul>
     {#if selected}
-      <button
-        type="button"
-        class="mt-4 rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-        disabled={selected.status === 'published'}
-        onclick={handlePublish}
-      >
-        Publish
-      </button>
+      <div class="mt-4 flex flex-wrap gap-2">
+        {#if selected.status === 'draft'}
+          <button
+            type="button"
+            class="rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white"
+            onclick={handlePublish}
+            data-testid="national-calendar-publish"
+          >
+            Publish
+          </button>
+        {:else}
+          <button
+            type="button"
+            class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+            onclick={handleUnpublish}
+            data-testid="national-calendar-unpublish"
+          >
+            Edit again (unpublish)
+          </button>
+        {/if}
+      </div>
     {/if}
   </section>
 

@@ -162,6 +162,28 @@ export class NationalCalendarService {
     return this.mapCalendar(data, await this.listClosures(data.id as string));
   }
 
+  /**
+   * Return a published calendar to draft so closures / weekly offs can be edited.
+   * While draft, its closures are excluded from teaching_days until republished.
+   */
+  async unpublish(calendarId: string) {
+    const calendar = await this.getCalendar(calendarId);
+    if (calendar.status === 'draft') {
+      return calendar;
+    }
+    const client = this.requireClient();
+    const { data, error } = await client
+      .from('national_calendars')
+      .update({ status: 'draft' })
+      .eq('id', calendarId)
+      .select('id, bs_year, status, weekly_offs')
+      .single();
+    if (error || !data) {
+      throw new BadRequestException(error?.message ?? 'Failed to unpublish');
+    }
+    return this.mapCalendar(data, calendar.closures);
+  }
+
   /** Published closures for a BS year — used by school calendar setup. */
   async listPublishedClosuresForBsYear(bsYear: number) {
     const client = this.requireClient();
