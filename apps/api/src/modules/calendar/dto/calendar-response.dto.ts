@@ -100,6 +100,23 @@ export class FestivalClosureResponseDto {
   iconKey?: string | null;
 }
 
+export class CalendarViewTerminalDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  startDate!: string;
+
+  @ApiProperty()
+  endDate!: string;
+
+  @ApiPropertyOptional({ enum: ['formative', 'summative', 'transition'] })
+  reportingType?: 'formative' | 'summative' | 'transition';
+}
+
 export class FestivalTemplateResponseDto {
   @ApiProperty({ format: 'uuid' })
   schoolCalendarId!: string;
@@ -139,6 +156,12 @@ export class FestivalTemplateResponseDto {
 
   @ApiProperty({ type: [FestivalClosureResponseDto] })
   closures!: FestivalClosureResponseDto[];
+
+  @ApiPropertyOptional({
+    type: [CalendarViewTerminalDto],
+    description: 'Terminals on the school calendar (for draft setup re-edit)',
+  })
+  terminals?: CalendarViewTerminalDto[];
 }
 
 export class CalendarSetupResponseDto {
@@ -221,20 +244,6 @@ export class WeeklyOffPresetResponseDto {
 
   @ApiProperty({ description: 'True when values came from a published national calendar' })
   fromNational!: boolean;
-}
-
-export class CalendarViewTerminalDto {
-  @ApiProperty({ format: 'uuid' })
-  id!: string;
-
-  @ApiProperty()
-  name!: string;
-
-  @ApiProperty()
-  startDate!: string;
-
-  @ApiProperty()
-  endDate!: string;
 }
 
 /** Shared read model for admin / teacher / platform (support session) calendar board. */

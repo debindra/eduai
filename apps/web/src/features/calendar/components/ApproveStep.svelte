@@ -6,11 +6,22 @@
   import SchoolCalendarBoard from '../SchoolCalendarBoard.svelte';
   import { isConfiguredCalendarView } from '../school-calendar-view-logic';
 
+  type TeachingDaysPayload = {
+    schoolId: string;
+    terminals: Array<{
+      terminalId: string;
+      terminalName: string;
+      teachingDayCount: number;
+    }>;
+  };
+
   type Props = {
     approvedYearLabel: string | null;
     loading: boolean;
     onApprove: () => void;
     onEdit?: () => void;
+    /** Navigate back to closures before approve (draft flow). */
+    onBack?: () => void;
     /** True when a draft is being published over a live approved calendar. */
     hasLiveApproved?: boolean;
     /** Prefer this when present — same board as teacher / platform support. */
@@ -21,6 +32,7 @@
     sessionStart?: string;
     sessionEnd?: string;
     weeklyOffs?: number[];
+    loadTeachingDays?: () => Promise<TeachingDaysPayload>;
   };
 
   let {
@@ -28,6 +40,7 @@
     loading,
     onApprove,
     onEdit,
+    onBack,
     hasLiveApproved = false,
     configuredView = null,
     bsYear = null,
@@ -36,6 +49,7 @@
     sessionStart = '',
     sessionEnd = '',
     weeklyOffs = [],
+    loadTeachingDays,
   }: Props = $props();
 
   const useSharedBoard = $derived(isConfiguredCalendarView(configuredView));
@@ -73,6 +87,17 @@
         {loading ? 'Opening draft…' : 'Edit calendar'}
       </button>
     {:else if !isApproved}
+      {#if onBack}
+        <button
+          type="button"
+          disabled={loading}
+          onclick={onBack}
+          class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+          data-testid="approve-back"
+        >
+          Back to closures
+        </button>
+      {/if}
       <button
         type="button"
         disabled={loading}
@@ -84,5 +109,5 @@
       </button>
     {/if}
   </div>
-  <TeachingDays />
+  <TeachingDays {loadTeachingDays} />
 </div>

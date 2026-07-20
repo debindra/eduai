@@ -64,4 +64,18 @@ describe('NepaliCalendar', () => {
     expect(marked).not.toBeNull();
     expect(marked?.textContent).toContain('Holiday');
   });
+
+  it('highlights days inside an inclusive range', () => {
+    render(NepaliCalendar, {
+      props: {
+        bsYear: 2082,
+        bsMonth: 1,
+        initialView: 'month',
+        rangeStart: '2025-04-14',
+        rangeEnd: '2025-04-16',
+      },
+    });
+    const inRange = document.querySelectorAll('[data-in-range="true"]');
+    expect(inRange.length).toBeGreaterThanOrEqual(2);
+  });
 });

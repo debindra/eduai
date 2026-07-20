@@ -193,6 +193,38 @@ export function formatAdDateRangeSecondary(startAdIso: string, endAdIso: string)
   return `AD ${start} → ${formatAdSecondary(endAdIso)}`;
 }
 
+/** Lexicographic compare of AD ISO dates (YYYY-MM-DD). */
+export function compareAdIso(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
+/** Inclusive range check for AD ISO dates. */
+export function isAdDateInInclusiveRange(
+  dayAdIso: string,
+  startAdIso: string,
+  endAdIso: string,
+): boolean {
+  if (!dayAdIso || !startAdIso || !endAdIso) return false;
+  const [lo, hi] =
+    compareAdIso(startAdIso, endAdIso) <= 0
+      ? [startAdIso, endAdIso]
+      : [endAdIso, startAdIso];
+  return compareAdIso(dayAdIso, lo) >= 0 && compareAdIso(dayAdIso, hi) <= 0;
+}
+
+/** Ensure start ≤ end for a picked AD range. */
+export function normalizeDateRange(
+  startAdIso: string,
+  endAdIso: string,
+): { startDate: string; endDate: string } {
+  if (!endAdIso) return { startDate: startAdIso, endDate: startAdIso };
+  if (compareAdIso(startAdIso, endAdIso) <= 0) {
+    return { startDate: startAdIso, endDate: endAdIso };
+  }
+  return { startDate: endAdIso, endDate: startAdIso };
+}
+
 export function partsFromAdIso(adIso: string) {
   return adToBs(adIso);
 }

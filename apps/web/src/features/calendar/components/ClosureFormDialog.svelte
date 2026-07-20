@@ -1,5 +1,5 @@
 <script lang="ts">
-  import NepaliDatePicker from '../../shared/NepaliDatePicker.svelte';
+  import NepaliDateRangePicker from '../../shared/NepaliDateRangePicker.svelte';
   import { iconGlyph } from '../../eca-cca/eca-cca-icons';
   import type { SchoolEcaCcaItem } from '../../eca-cca/eca-cca-logic';
   import { draftFromActivity } from '../../eca-cca/eca-cca-logic';
@@ -185,8 +185,17 @@
       />
     </label>
 
-    <NepaliDatePicker label="Start" value={startDate} onChange={(v) => (startDate = v)} />
-    <NepaliDatePicker label="End" value={endDate} onChange={(v) => (endDate = v)} />
+    <NepaliDateRangePicker
+      label="Dates"
+      startDate={startDate}
+      endDate={endDate}
+      startAriaLabel="Start"
+      endAriaLabel="End"
+      onChange={(range) => {
+        startDate = range.startDate;
+        endDate = range.endDate;
+      }}
+    />
 
     {#if draft.kind === 'national'}
       <label class="flex items-center gap-2 text-sm text-slate-700">

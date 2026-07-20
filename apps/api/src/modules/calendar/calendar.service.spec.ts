@@ -109,6 +109,17 @@ describe('CalendarService', () => {
       expect(repository.insertCalendar).not.toHaveBeenCalled();
     });
 
+    it('rejects when session start BS year mismatches academic label', async () => {
+      repository.findDraftCalendar.mockResolvedValue(null);
+      await expect(
+        service.setupCalendar(
+          'school-1',
+          getMockSetupDto({ academicYearLabel: '2082/83', sessionStart: '2024-01-01' }),
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(repository.insertCalendar).not.toHaveBeenCalled();
+    });
+
     it('creates calendar and terminals without hardcoded festival template', async () => {
       repository.findDraftCalendar.mockResolvedValue(null);
       repository.findApprovedCalendar.mockResolvedValue(null);
@@ -258,6 +269,15 @@ describe('CalendarService', () => {
         session_end: '2026-04-13',
         weekly_offs: [6, 7],
       });
+      repository.listTerminals.mockResolvedValue([
+        {
+          id: 't1',
+          name: 'Terminal 1',
+          start_date: '2025-04-14',
+          end_date: '2025-08-31',
+          reporting_type: 'formative',
+        },
+      ]);
       repository.listSchoolClosures.mockResolvedValue([
         {
           id: 'loc-1',
@@ -275,6 +295,15 @@ describe('CalendarService', () => {
       expect(actual.sessionStart).toBe('2025-04-14');
       expect(actual.sessionEnd).toBe('2026-04-13');
       expect(actual.weeklyOffs).toEqual([6, 7]);
+      expect(actual.terminals).toEqual([
+        {
+          id: 't1',
+          name: 'Terminal 1',
+          startDate: '2025-04-14',
+          endDate: '2025-08-31',
+          reportingType: 'formative',
+        },
+      ]);
       expect(actual.nationalClosures?.[0]).toMatchObject({
         name: 'Dashain',
         source: 'national',
@@ -298,6 +327,7 @@ describe('CalendarService', () => {
         session_end: '2026-04-13',
         weekly_offs: [6],
       });
+      repository.listTerminals.mockResolvedValue([]);
       repository.listSchoolClosures.mockResolvedValue([
         {
           id: 'loc-1',
@@ -475,16 +505,17 @@ describe('CalendarService', () => {
   });
 
   describe('getTeachingDays', () => {
-    it('aggregates per-terminal counts for approved calendar only', async () => {
+    it('aggregates per-terminal counts preferring draft over approved', async () => {
+      repository.findDraftCalendar.mockResolvedValue({ id: 'cal-draft' });
       repository.findApprovedCalendar.mockResolvedValue({ id: 'cal-1' });
       repository.listTerminals.mockResolvedValue([
         { id: 't1', name: 'Terminal 1' },
         { id: 't2', name: 'Terminal 2' },
       ]);
       repository.listTeachingDays.mockResolvedValue([
-        { terminal_id: 't1', school_calendar_id: 'cal-1' },
-        { terminal_id: 't1', school_calendar_id: 'cal-1' },
-        { terminal_id: 't2', school_calendar_id: 'cal-1' },
+        { terminal_id: 't1', school_calendar_id: 'cal-draft' },
+        { terminal_id: 't1', school_calendar_id: 'cal-draft' },
+        { terminal_id: 't2', school_calendar_id: 'cal-draft' },
         { terminal_id: 't-old', school_calendar_id: 'cal-old' },
       ]);
       await expect(service.getTeachingDays('school-1')).resolves.toEqual({
@@ -494,9 +525,24 @@ describe('CalendarService', () => {
           { terminalId: 't2', terminalName: 'Terminal 2', teachingDayCount: 1 },
         ],
       });
+      expect(repository.listTerminals).toHaveBeenCalledWith('cal-draft');
     });
 
-    it('rejects when no approved calendar', async () => {
+    it('falls back to approved when no draft', async () => {
+      repository.findDraftCalendar.mockResolvedValue(null);
+      repository.findApprovedCalendar.mockResolvedValue({ id: 'cal-1' });
+      repository.listTerminals.mockResolvedValue([{ id: 't1', name: 'Terminal 1' }]);
+      repository.listTeachingDays.mockResolvedValue([
+        { terminal_id: 't1', school_calendar_id: 'cal-1' },
+      ]);
+      await expect(service.getTeachingDays('school-1')).resolves.toEqual({
+        schoolId: 'school-1',
+        terminals: [{ terminalId: 't1', terminalName: 'Terminal 1', teachingDayCount: 1 }],
+      });
+    });
+
+    it('rejects when no draft or approved calendar', async () => {
+      repository.findDraftCalendar.mockResolvedValue(null);
       repository.findApprovedCalendar.mockResolvedValue(null);
       await expect(service.getTeachingDays('school-1')).rejects.toBeInstanceOf(NotFoundException);
     });

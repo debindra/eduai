@@ -11,6 +11,8 @@ import {
   formatBsDateRangePrimary,
   formatBsDayDevanagari,
   formatBsPrimary,
+  isAdDateInInclusiveRange,
+  normalizeDateRange,
   shiftMonthInYear,
 } from './nepali-calendar-logic';
 
@@ -68,6 +70,15 @@ describe('nepali-calendar-logic', () => {
     expect(formatAdDateRangeSecondary('2025-10-01', '2025-10-07')).toBe(
       'AD 1/10/2025 → 7/10/2025',
     );
+  });
+
+  it('normalizes and detects inclusive AD ranges', () => {
+    expect(normalizeDateRange('2025-10-07', '2025-10-01')).toEqual({
+      startDate: '2025-10-01',
+      endDate: '2025-10-07',
+    });
+    expect(isAdDateInInclusiveRange('2025-10-03', '2025-10-01', '2025-10-07')).toBe(true);
+    expect(isAdDateInInclusiveRange('2025-10-08', '2025-10-01', '2025-10-07')).toBe(false);
   });
 
   it('formats AD day only in Western digits', () => {

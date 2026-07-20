@@ -19,6 +19,8 @@
     onSaveDraft?: () => void;
     continueLabel?: string;
     onContinue: () => void;
+    /** Navigate back to setup (draft re-edit). */
+    onBackToSetup?: () => void;
   };
 
   let {
@@ -35,6 +37,7 @@
     onSaveDraft,
     continueLabel = 'Continue to approve',
     onContinue,
+    onBackToSetup,
   }: Props = $props();
 </script>
 
@@ -59,6 +62,17 @@
 
   {#if !readOnly}
     <div class="flex flex-wrap gap-2">
+      {#if onBackToSetup}
+        <button
+          type="button"
+          disabled={loading}
+          onclick={onBackToSetup}
+          data-testid="closures-back-setup"
+          class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+        >
+          Back to setup
+        </button>
+      {/if}
       {#if onSaveDraft}
         <button
           type="button"
