@@ -1,5 +1,6 @@
 <script lang="ts">
   import NepaliCalendar from '../../shared/NepaliCalendar.svelte';
+  import { confirmDelete } from '../../../lib/shared/confirm';
   import {
     formatAdDateRangeSecondary,
     formatBsDateRangePrimary,
@@ -225,8 +226,15 @@
     editableNationalClosures = [...editableNationalClosures, next];
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!dialogDraft) return;
+    const name = dialogDraft.name?.trim() || 'this closure';
+    const ok = await confirmDelete({
+      title: 'Remove closure?',
+      message: `Remove “${name}”?`,
+      confirmLabel: 'Remove',
+    });
+    if (!ok) return;
     if (dialogDraft.kind === 'school') {
       if (editingIndex !== null && editingIndex >= 0) {
         closures = closures.filter((_, i) => i !== editingIndex);

@@ -19,6 +19,7 @@
   } from './roster-logic';
   import * as api from './api';
   import Alert from '../shared/Alert.svelte';
+  import { confirmDelete } from '../../lib/shared/confirm';
   import { toErrorMessage } from '../../lib/shared/errors';
 
   let sections = $state<SectionShape[]>([]);
@@ -175,6 +176,13 @@
 
   const handleDeleteSection = (sectionId: string) =>
     run(async () => {
+      const section = sections.find((s) => s.id === sectionId);
+      const name = section?.name ?? 'this section';
+      const ok = await confirmDelete({
+        title: 'Delete section?',
+        message: `Delete “${name}”? This fails if the section still has children.`,
+      });
+      if (!ok) return;
       await api.deleteSection(sectionId);
       await refreshAll();
     });
@@ -241,6 +249,15 @@
 
   const handleUnassign = (assignmentId: string) =>
     run(async () => {
+      const row = assignments.find((a) => a.id === assignmentId);
+      const teacher = teachers.find((t) => t.teacherId === row?.teacherId);
+      const label = teacher ? teacherLabel(teacher) : 'this teacher';
+      const ok = await confirmDelete({
+        title: 'Unassign teacher?',
+        message: `Unassign ${label} from this section?`,
+        confirmLabel: 'Unassign',
+      });
+      if (!ok) return;
       await api.deleteTeacherSection(assignmentId);
       await refreshAll();
     });
