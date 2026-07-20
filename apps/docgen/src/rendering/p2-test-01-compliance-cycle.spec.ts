@@ -57,7 +57,7 @@ describe('P2-TEST-01 Curriculum-2077 compliance cycle', () => {
     storedHashes = [];
     documentRenders = [];
     storage = {
-      putObject: vi.fn(async (key: string, body: Buffer) => {
+      putObject: vi.fn(async (key: string, _body: Buffer) => {
         return `file:///${key}`;
       }),
       getSignedUrl: vi.fn(async (key: string) => `file:///${key}`),

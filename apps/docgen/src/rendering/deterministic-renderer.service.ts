@@ -158,7 +158,7 @@ export class DeterministicRendererService {
    */
   async renderAnnex2(childId: string, terminalId?: string): Promise<RenderResult> {
     const child = await this.loadChild(childId);
-    let query = this.client()
+    const query = this.client()
       .from('student_outcomes')
       .select('id, outcome_id, rating_code, state, confirmed_at, evidence_note, attempt, subject_id')
       .eq('child_id', childId)
