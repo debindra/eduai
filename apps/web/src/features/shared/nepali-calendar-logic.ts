@@ -107,6 +107,57 @@ export function formatAdSecondary(adIso: string): string {
   return `${Number(d)}/${Number(m)}/${y}`;
 }
 
+/** AD day only in Western/Arabic digits — for month-grid secondary line. */
+export function formatAdDayOnly(adIso: string): string {
+  if (!adIso) return '';
+  const day = adIso.split('-')[2];
+  return day ? String(Number(day)) : '';
+}
+
+const AD_MONTH_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
+
+function parseAdParts(adIso: string): { year: number; month: number } | null {
+  if (!adIso) return null;
+  const [y, m] = adIso.split('-');
+  const year = Number(y);
+  const month = Number(m);
+  if (!year || !month || month < 1 || month > 12) return null;
+  return { year, month };
+}
+
+/**
+ * AD month span covered by a BS month — e.g. "Apr–May 2025" or "Apr 2025".
+ * Cross-year (rare): "Dec 2025–Jan 2026".
+ */
+export function formatAdMonthSpanForBsMonth(bsYear: number, bsMonth: number): string {
+  const length = bsMonthLength(bsYear, bsMonth);
+  const start = parseAdParts(bsToAd(bsYear, bsMonth, 1));
+  const end = parseAdParts(bsToAd(bsYear, bsMonth, length));
+  if (!start || !end) return '';
+  const startLabel = AD_MONTH_SHORT[start.month - 1]!;
+  const endLabel = AD_MONTH_SHORT[end.month - 1]!;
+  if (start.year === end.year && start.month === end.month) {
+    return `${startLabel} ${start.year}`;
+  }
+  if (start.year === end.year) {
+    return `${startLabel}–${endLabel} ${start.year}`;
+  }
+  return `${startLabel} ${start.year}–${endLabel} ${end.year}`;
+}
+
 /** Humanized BS date for list/labels — e.g. "Jestha 15, 2082". */
 export function formatBsPrimary(adIso: string): string {
   if (!adIso) return '';

@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   adToBs,
   buildMonthGrid,
+  bsMonthLength,
+  bsToAd,
   clampMonth,
   formatAdDateRangeSecondary,
+  formatAdDayOnly,
+  formatAdMonthSpanForBsMonth,
   formatBsDateRangePrimary,
   formatBsDayDevanagari,
   formatBsPrimary,
@@ -64,5 +68,25 @@ describe('nepali-calendar-logic', () => {
     expect(formatAdDateRangeSecondary('2025-10-01', '2025-10-07')).toBe(
       'AD 1/10/2025 → 7/10/2025',
     );
+  });
+
+  it('formats AD day only in Western digits', () => {
+    expect(formatAdDayOnly('2025-04-14')).toBe('14');
+    expect(formatAdDayOnly('2025-10-01')).toBe('1');
+    expect(formatAdDayOnly('')).toBe('');
+  });
+
+  it('formats AD month span for a BS month', () => {
+    const start = bsToAd(2082, 1, 1);
+    const end = bsToAd(2082, 1, bsMonthLength(2082, 1));
+    const startMonth = Number(start.split('-')[1]);
+    const endMonth = Number(end.split('-')[1]);
+    const span = formatAdMonthSpanForBsMonth(2082, 1);
+    expect(span).toMatch(/2025/);
+    if (startMonth === endMonth) {
+      expect(span).toBe('Apr 2025');
+    } else {
+      expect(span).toBe('Apr–May 2025');
+    }
   });
 });

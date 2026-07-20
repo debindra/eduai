@@ -2,7 +2,11 @@ import { render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import NepaliCalendar from './NepaliCalendar.svelte';
-import { formatBsHeading, todayBsParts } from './nepali-calendar-logic';
+import {
+  formatAdMonthSpanForBsMonth,
+  formatBsHeading,
+  todayBsParts,
+} from './nepali-calendar-logic';
 
 describe('NepaliCalendar', () => {
   it('opens on the current BS month by default', () => {
@@ -13,6 +17,17 @@ describe('NepaliCalendar', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Previous month/i })).toBeInTheDocument();
     expect(screen.queryByText(/12-month overview/i)).not.toBeInTheDocument();
+  });
+
+  it('shows AD month span in the header and day-only AD on the grid', () => {
+    render(NepaliCalendar, {
+      props: { bsYear: 2082, bsMonth: 1, initialView: 'month' },
+    });
+    expect(screen.getByText(formatAdMonthSpanForBsMonth(2082, 1))).toBeInTheDocument();
+    const dayButtons = screen.getAllByRole('button', { name: /Select \d{4}-\d{2}-\d{2}/i });
+    expect(dayButtons.length).toBeGreaterThan(0);
+    expect(dayButtons[0]!.textContent).not.toMatch(/\d+\/\d+\/\d{4}/);
+    expect(dayButtons[0]!.textContent).toMatch(/\d/);
   });
 
   it('shows 12-month overview when initialView is year and drills into a month', async () => {

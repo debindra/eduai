@@ -2,7 +2,8 @@
   import {
     WEEKDAY_LABELS_SHORT,
     buildMonthGrid,
-    formatAdSecondary,
+    formatAdDayOnly,
+    formatAdMonthSpanForBsMonth,
     formatBsDayDevanagari,
     formatBsHeading,
     shiftMonthInYear,
@@ -57,6 +58,7 @@
 
   const monthGrid = $derived(buildMonthGrid(bsYear, bsMonth));
   const heading = $derived(formatBsHeading(bsYear, bsMonth));
+  const adMonthSpan = $derived(formatAdMonthSpanForBsMonth(bsYear, bsMonth));
 
   const resolveMarker = (raw: DateMarker | string | undefined): DateMarker | null => {
     if (!raw) return null;
@@ -145,7 +147,7 @@
       </button>
       <div class="text-center">
         <div class="text-lg font-semibold text-slate-900">{heading}</div>
-        <div class="text-xs text-slate-500">AD dates shown secondary</div>
+        <div class="text-xs text-slate-500">{adMonthSpan}</div>
       </div>
       <div class="flex gap-1">
         <button
@@ -195,7 +197,7 @@
               {formatBsDayDevanagari(cell.bsDay)}
             </div>
             <div class="text-[10px] leading-tight text-slate-500">
-              {formatAdSecondary(cell.adIso)}
+              {formatAdDayOnly(cell.adIso)}
             </div>
             {#if marker}
               <div class={`mt-0.5 truncate text-[9px] ${labelClass(marker.tone)}`}>
