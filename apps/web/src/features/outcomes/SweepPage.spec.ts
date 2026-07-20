@@ -83,7 +83,7 @@ describe('SweepPage', () => {
 
     await user.click(screen.getByRole('button', { name: /propose sweep/i }));
     await waitFor(() => expect(proposeBatchSweep).toHaveBeenCalled());
-    expect(proposeBatchSweep.mock.calls[0][0]).toEqual(
+    expect(vi.mocked(proposeBatchSweep).mock.calls[0][0]).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ childId: 'c1', outcomeId: 'o1' }),
       ]),
