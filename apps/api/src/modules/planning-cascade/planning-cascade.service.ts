@@ -67,7 +67,7 @@ export class PlanningCascadeService {
   ) {}
 
   async getMonthly(sectionId: string, year: number, month: number) {
-    const map = await this.yearlyMap.getMap(sectionId);
+    const map = await this.yearlyMap.ensureMap(sectionId);
     const start = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = new Date(Date.UTC(year, month, 0));
     const end = endDate.toISOString().slice(0, 10);
@@ -97,7 +97,7 @@ export class PlanningCascadeService {
     endDate.setUTCDate(endDate.getUTCDate() + 6);
     const end = endDate.toISOString().slice(0, 10);
 
-    const map = await this.yearlyMap.getMap(sectionId);
+    const map = await this.yearlyMap.ensureMap(sectionId);
     const days = await this.repository.listTeachingDaysInRange(map.schoolCalendarId, start, end);
     const overrides = await this.repository.listOverrides(sectionId, start);
     const overrideByDate = new Map(

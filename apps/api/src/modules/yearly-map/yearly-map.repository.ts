@@ -24,6 +24,28 @@ export class YearlyMapRepository {
     return data;
   }
 
+  /** Latest approved school calendar for the section's school (teachers plan against live calendars only). */
+  async findApprovedCalendarIdForSection(sectionId: string): Promise<string | null> {
+    const { data: section, error: sectionError } = await this.client()
+      .from('sections')
+      .select('school_id')
+      .eq('id', sectionId)
+      .maybeSingle();
+    if (sectionError) throw sectionError;
+    if (!section) return null;
+
+    const { data: calendar, error: calendarError } = await this.client()
+      .from('school_calendars')
+      .select('id')
+      .eq('school_id', section.school_id as string)
+      .eq('approval_status', 'approved')
+      .order('approved_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (calendarError) throw calendarError;
+    return (calendar?.id as string | undefined) ?? null;
+  }
+
   async listTeachingDays(schoolCalendarId: string) {
     const { data, error } = await this.client()
       .from('teaching_days')

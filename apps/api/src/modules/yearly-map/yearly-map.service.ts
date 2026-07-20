@@ -12,27 +12,27 @@ export class YearlyMapService {
   async getMap(sectionId: string) {
     const map = await this.repository.findMapForSection(sectionId);
     if (!map) throw new NotFoundException('No yearly map for section');
-    const slices = await this.repository.listSlices(map.id);
-    return {
-      id: map.id as string,
-      status: map.status as string,
-      schoolCalendarId: map.school_calendar_id as string,
-      sectionId: map.section_id as string,
-      slices: slices.map((s) => ({
-        id: s.id as string,
-        terminalId: s.terminal_id as string,
-        teachingDayIndex: s.teaching_day_index as number,
-        themeOrChapter: s.theme_or_chapter as string | null,
-        outcomeRefs: (s.outcome_refs as string[]) ?? [],
-      })),
-    };
+    return this.toMapResponse(map);
+  }
+
+  /**
+   * Planning cascade entry: return the section map, creating a draft and
+   * deterministically placing slices when none exists yet.
+   */
+  async ensureMap(sectionId: string) {
+    const existing = await this.repository.findMapForSection(sectionId);
+    if (existing) {
+      return this.toMapResponse(existing);
+    }
+    await this.createDraftForSection(sectionId);
+    return this.regenerate(sectionId);
   }
 
   /** Regenerate slices from live teaching_days — deterministic, no AI. */
   async regenerate(sectionId: string) {
-    const map = await this.repository.findMapForSection(sectionId);
+    let map = await this.repository.findMapForSection(sectionId);
     if (!map) {
-      throw new NotFoundException('No yearly map for section — create a draft first');
+      map = await this.createDraftForSection(sectionId);
     }
 
     const calendarId = map.school_calendar_id as string;
@@ -91,6 +91,38 @@ export class YearlyMapService {
     return {
       id: approved.id as string,
       status: approved.status as string,
+    };
+  }
+
+  private async createDraftForSection(sectionId: string) {
+    const calendarId = await this.repository.findApprovedCalendarIdForSection(sectionId);
+    if (!calendarId) {
+      throw new NotFoundException(
+        'No approved school calendar for section — approve a calendar before planning',
+      );
+    }
+    return this.repository.createDraftMap(calendarId, sectionId);
+  }
+
+  private async toMapResponse(map: {
+    id: unknown;
+    status: unknown;
+    school_calendar_id: unknown;
+    section_id: unknown;
+  }) {
+    const slices = await this.repository.listSlices(map.id as string);
+    return {
+      id: map.id as string,
+      status: map.status as string,
+      schoolCalendarId: map.school_calendar_id as string,
+      sectionId: map.section_id as string,
+      slices: slices.map((s) => ({
+        id: s.id as string,
+        terminalId: s.terminal_id as string,
+        teachingDayIndex: s.teaching_day_index as number,
+        themeOrChapter: s.theme_or_chapter as string | null,
+        outcomeRefs: (s.outcome_refs as string[]) ?? [],
+      })),
     };
   }
 }
