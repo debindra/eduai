@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import AdminNav from '../shared/AdminNav.svelte';
   import Alert from '../shared/Alert.svelte';
+  import { confirmDelete } from '../../lib/shared/confirm';
   import { toErrorMessage } from '../../lib/shared/errors';
   import {
     ECA_CCA_ICON_KEYS,
@@ -84,7 +85,12 @@
   };
 
   const handleDelete = async (item: SchoolEcaCcaItem) => {
-    if (!confirm(`Remove “${item.name}” from this school?`)) return;
+    const ok = await confirmDelete({
+      title: 'Remove from school?',
+      message: `Remove “${item.name}” from this school?`,
+      confirmLabel: 'Remove',
+    });
+    if (!ok) return;
     try {
       await deleteSchoolEcaCcaItem(item.id);
       await reloadEca();

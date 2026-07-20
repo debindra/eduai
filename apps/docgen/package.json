@@ -8,7 +8,7 @@
     "start": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "pnpm --filter @eduai/db build && pnpm --filter @eduai/ai build && tsc --noEmit"
   },
   "dependencies": {
     "@eduai/ai": "workspace:*",

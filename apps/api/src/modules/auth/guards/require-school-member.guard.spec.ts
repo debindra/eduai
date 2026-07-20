@@ -2,7 +2,6 @@ import { ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getMockExecutionContext, getMockRequestUser } from '../../../test-utils/factories';
-import { REQUIRE_SCHOOL_MEMBER_KEY } from '../decorators/require-school-member.decorator';
 import { RequireSchoolMemberGuard } from './require-school-member.guard';
 
 describe('RequireSchoolMemberGuard', () => {

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import PlatformNav from '../shared/PlatformNav.svelte';
   import Alert from '../shared/Alert.svelte';
+  import { confirmDelete } from '../../lib/shared/confirm';
   import { toErrorMessage } from '../../lib/shared/errors';
   import {
     ECA_CCA_ICON_KEYS,
@@ -92,7 +93,11 @@
   };
 
   const handleDelete = async (item: EcaCcaCatalogItem) => {
-    if (!confirm(`Soft-delete “${item.name}”?`)) return;
+    const ok = await confirmDelete({
+      title: 'Soft-delete catalog item?',
+      message: `Soft-delete “${item.name}”?`,
+    });
+    if (!ok) return;
     try {
       await deleteEcaCcaCatalogItem(item.id);
       if (editingId === item.id) resetForm();

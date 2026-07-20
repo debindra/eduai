@@ -3,6 +3,7 @@
   import { push } from '@keenmate/svelte-spa-router';
   import PlatformNav from '../shared/PlatformNav.svelte';
   import Alert from '../shared/Alert.svelte';
+  import { confirmDelete } from '../../lib/shared/confirm';
   import { toErrorMessage } from '../../lib/shared/errors';
   import { setSupportSession } from '../../lib/shared/stores/support-session';
   import { ECA_CCA_LABEL } from '../calendar/calendar-markers-logic';
@@ -72,10 +73,17 @@
     push(`/admin/calendar`);
   };
 
-  const handleRevoke = async (id: string) => {
+  const handleRevoke = async (session: SupportSession) => {
+    const school = session.schoolName ?? session.schoolId;
+    const ok = await confirmDelete({
+      title: 'Revoke support session?',
+      message: `Revoke the active session for “${school}”?`,
+      confirmLabel: 'Revoke',
+    });
+    if (!ok) return;
     error = null;
     try {
-      await revokeSupportSession(id);
+      await revokeSupportSession(session.id);
       await reload();
     } catch (err) {
       error = toErrorMessage(err, 'Revoke failed');
@@ -156,7 +164,7 @@
               <button
                 type="button"
                 class="rounded-lg border border-slate-300 px-3 py-1.5"
-                onclick={() => handleRevoke(session.id)}
+                onclick={() => handleRevoke(session)}
               >
                 Revoke
               </button>

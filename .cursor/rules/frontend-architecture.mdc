@@ -39,6 +39,13 @@ type-based split (`components/`, `stores/`, `utils/` as flat catch-alls).
   `components/` folder even if it looks reusable — it doesn't move to
   `shared/` on that basis alone.
 
+- **Destructive actions require the shared confirm dialog.** Before calling
+  `api.ts` for delete / remove / revoke / unassign of persisted data, await
+  `confirmDelete` (or use `DeleteButton`) from `lib/shared`. Do not use
+  `window.confirm`. Draft/form-row removals that are not yet persisted do
+  not require this. Mount `ConfirmDialogHost` once at the app root
+  (`App.svelte`).
+
 - **All data fetching is client-side — no `load` functions exist in this
   stack.** Call a feature's `api.ts` from `onMount` or a reactive
   `$effect`; hold results in that feature's rune-based store

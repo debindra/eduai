@@ -45,3 +45,70 @@ jobs:
 
       - name: Seed verification (skips if local Supabase unavailable)
         run: pnpm verify:seed
+
+  notify-discord:
+    needs: verify
+    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          STATUS: ${{ needs.verify.result }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          ACTOR: ${{ github.actor }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "DISCORD_WEBHOOK_URL secret is not set; skipping notification"
+            exit 0
+          fi
+
+          if [ "$STATUS" = "success" ]; then
+            COLOR=5764801
+          else
+            COLOR=15548997
+          fi
+
+          escape_json() {
+            printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read())[1:-1])'
+          }
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            if [ "$STATUS" = "success" ]; then
+              TITLE="PR CI passed"
+            else
+              TITLE="PR CI failed"
+            fi
+            SUBJECT_NAME="PR"
+            SUBJECT_VALUE="[$(escape_json "$PR_TITLE")](${PR_URL})"
+          else
+            if [ "$STATUS" = "success" ]; then
+              TITLE="Merged to main — CI passed"
+            else
+              TITLE="Merged to main — CI failed"
+            fi
+            # First line of commit message only
+            COMMIT_SUBJECT=$(printf '%s' "$COMMIT_MSG" | head -n 1)
+            SUBJECT_NAME="Commit"
+            SUBJECT_VALUE="[$(escape_json "$COMMIT_SUBJECT")](${COMMIT_URL})"
+          fi
+
+          curl -sS -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"${TITLE}\",
+                \"color\": ${COLOR},
+                \"fields\": [
+                  {\"name\": \"${SUBJECT_NAME}\", \"value\": \"${SUBJECT_VALUE}\"},
+                  {\"name\": \"Author\", \"value\": \"${ACTOR}\", \"inline\": true},
+                  {\"name\": \"Result\", \"value\": \"${STATUS}\", \"inline\": true},
+                  {\"name\": \"Run\", \"value\": \"[Open CI](${RUN_URL})\"}
+                ]
+              }]
+            }" \
+            "$WEBHOOK"

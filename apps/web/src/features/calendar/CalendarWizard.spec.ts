@@ -55,7 +55,6 @@ describe('CalendarWizard', () => {
     vi.clearAllMocks();
     mockGetCalendarStatus.mockResolvedValue({
       approvalStatus: 'none',
-      schoolCalendarId: null,
     });
     mockGetTeachingDays.mockResolvedValue({ schoolId: 'school-1', terminals: [] });
     mockGetWeeklyOffPreset.mockResolvedValue({
