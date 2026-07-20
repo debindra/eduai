@@ -19,14 +19,21 @@ vi.mock('../shared/NepaliDatePicker.svelte', async () => {
   return { default: Mock };
 });
 
+vi.mock('../shared/NepaliDateRangePicker.svelte', async () => {
+  const { default: Mock } = await import('../shared/NepaliDateRangePickerMock.svelte');
+  return { default: Mock };
+});
+
 vi.mock('./api', () => ({
   listPlatformSchools: vi.fn(),
   listNationalCalendars: vi.fn(),
   setupPlatformSchoolCalendar: vi.fn(),
+  updatePlatformSchoolCalendarSetup: vi.fn(),
   ensurePlatformSchoolCalendarDraft: vi.fn(),
   getPlatformSchoolCalendarClosures: vi.fn(),
   patchPlatformSchoolCalendarClosures: vi.fn(),
   approvePlatformSchoolCalendar: vi.fn(),
+  getPlatformSchoolTeachingDays: vi.fn(),
 }));
 
 import TenantCalendarPage from './TenantCalendarPage.svelte';
@@ -34,9 +41,11 @@ import {
   approvePlatformSchoolCalendar,
   ensurePlatformSchoolCalendarDraft,
   getPlatformSchoolCalendarClosures,
+  getPlatformSchoolTeachingDays,
   listNationalCalendars,
   listPlatformSchools,
   patchPlatformSchoolCalendarClosures,
+  updatePlatformSchoolCalendarSetup,
 } from './api';
 
 const mockList = vi.mocked(listPlatformSchools);
@@ -45,6 +54,23 @@ const mockGetClosures = vi.mocked(getPlatformSchoolCalendarClosures);
 const mockEnsureDraft = vi.mocked(ensurePlatformSchoolCalendarDraft);
 const mockPatchClosures = vi.mocked(patchPlatformSchoolCalendarClosures);
 const mockApprove = vi.mocked(approvePlatformSchoolCalendar);
+const mockUpdateSetup = vi.mocked(updatePlatformSchoolCalendarSetup);
+const mockTeachingDays = vi.mocked(getPlatformSchoolTeachingDays);
+
+const draftSchool = {
+  id: 'school-1',
+  name: 'School X',
+  region: null,
+  tier: null,
+  licensedBandRange: null,
+  exitStatus: null,
+  calendarStatus: 'draft' as const,
+  sectionsTotal: 0,
+  sectionsBehind: 0,
+  teachersTotal: 0,
+  studentsTotal: 0,
+  subjectsTotal: 0,
+};
 
 describe('TenantCalendarPage', () => {
   beforeEach(() => {
@@ -72,26 +98,15 @@ describe('TenantCalendarPage', () => {
         },
       ],
     });
+    mockTeachingDays.mockResolvedValue({
+      schoolId: 'school-1',
+      terminals: [{ terminalId: 't1', terminalName: 'Terminal 1', teachingDayCount: 40 }],
+    });
   });
 
   it('shows setup step when school has no calendar', async () => {
     mockList.mockResolvedValue({
-      schools: [
-        {
-          id: 'school-1',
-          name: 'School X',
-          region: null,
-          tier: null,
-          licensedBandRange: null,
-          exitStatus: null,
-          calendarStatus: 'none',
-          sectionsTotal: 0,
-          sectionsBehind: 0,
-          teachersTotal: 0,
-          studentsTotal: 0,
-          subjectsTotal: 0,
-        },
-      ],
+      schools: [{ ...draftSchool, calendarStatus: 'none' }],
     });
 
     render(TenantCalendarPage, { props: { routeParams: { schoolId: 'school-1' } } });
@@ -99,28 +114,12 @@ describe('TenantCalendarPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('tenant-calendar-page')).toBeInTheDocument();
       expect(screen.getByText('Draft calendar')).toBeInTheDocument();
+      expect(screen.getByTestId('setup-national-match')).toBeInTheDocument();
     });
   });
 
   it('loads closures step when draft exists', async () => {
-    mockList.mockResolvedValue({
-      schools: [
-        {
-          id: 'school-1',
-          name: 'School X',
-          region: null,
-          tier: null,
-          licensedBandRange: null,
-          exitStatus: null,
-          calendarStatus: 'draft',
-          sectionsTotal: 0,
-          sectionsBehind: 0,
-          teachersTotal: 0,
-          studentsTotal: 0,
-          subjectsTotal: 0,
-        },
-      ],
-    });
+    mockList.mockResolvedValue({ schools: [draftSchool] });
     mockEnsureDraft.mockResolvedValue({
       schoolCalendarId: 'cal-1',
       academicYearLabel: '2082/83',
@@ -130,9 +129,22 @@ describe('TenantCalendarPage', () => {
     mockGetClosures.mockResolvedValue({
       schoolCalendarId: 'cal-1',
       approvalStatus: 'draft',
+      academicYearLabel: '2082/83',
       bsYear: 2082,
+      sessionStart: '2025-04-14',
+      sessionEnd: '2026-04-13',
+      weeklyOffs: [6],
       nationalClosures: [],
       closures: [],
+      terminals: [
+        {
+          id: 't1',
+          name: 'Terminal 1',
+          startDate: '2025-04-14',
+          endDate: '2025-08-31',
+          reportingType: 'formative',
+        },
+      ],
     });
 
     render(TenantCalendarPage, { props: { routeParams: { schoolId: 'school-1' } } });
@@ -142,30 +154,67 @@ describe('TenantCalendarPage', () => {
       expect(mockGetClosures).toHaveBeenCalledWith('school-1');
       expect(screen.getByTestId('tenant-calendar-closures')).toBeInTheDocument();
       expect(screen.getByTestId('closures-save-draft')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /approve calendar/i })).toBeInTheDocument();
+      expect(screen.getByTestId('closures-back-setup')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /continue to approve/i })).toBeInTheDocument();
     });
   });
 
-  it('saves draft without approving, and approve publishes', async () => {
+  it('can re-edit setup via back then PATCH update', async () => {
     const user = userEvent.setup();
-    mockList.mockResolvedValue({
-      schools: [
+    mockList.mockResolvedValue({ schools: [draftSchool] });
+    mockEnsureDraft.mockResolvedValue({
+      schoolCalendarId: 'cal-1',
+      academicYearLabel: '2082/83',
+      approvalStatus: 'draft',
+      hasLiveApproved: false,
+    });
+    mockGetClosures.mockResolvedValue({
+      schoolCalendarId: 'cal-1',
+      approvalStatus: 'draft',
+      academicYearLabel: '2082/83',
+      bsYear: 2082,
+      sessionStart: '2025-04-14',
+      sessionEnd: '2026-04-13',
+      weeklyOffs: [6],
+      nationalClosures: [],
+      closures: [],
+      terminals: [
         {
-          id: 'school-1',
-          name: 'School X',
-          region: null,
-          tier: null,
-          licensedBandRange: null,
-          exitStatus: null,
-          calendarStatus: 'draft',
-          sectionsTotal: 0,
-          sectionsBehind: 0,
-          teachersTotal: 0,
-          studentsTotal: 0,
-          subjectsTotal: 0,
+          id: 't1',
+          name: 'Terminal 1',
+          startDate: '2025-04-14',
+          endDate: '2025-08-31',
+          reportingType: 'formative',
         },
       ],
     });
+    mockUpdateSetup.mockResolvedValue({
+      schoolCalendarId: 'cal-1',
+      academicYearLabel: '2082/83',
+      approvalStatus: 'draft',
+      hasLiveApproved: false,
+    });
+
+    render(TenantCalendarPage, { props: { routeParams: { schoolId: 'school-1' } } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('closures-back-setup')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('closures-back-setup'));
+    await waitFor(() => {
+      expect(screen.getByText('Draft calendar')).toBeInTheDocument();
+      expect(screen.getByTestId('setup-academic-year')).toHaveValue('2082/83');
+    });
+    await user.click(screen.getByRole('button', { name: /save setup/i }));
+    await waitFor(() => {
+      expect(mockUpdateSetup).toHaveBeenCalled();
+      expect(screen.getByTestId('tenant-calendar-closures')).toBeInTheDocument();
+    });
+  });
+
+  it('saves draft without approving, then continues to approve step', async () => {
+    const user = userEvent.setup();
+    mockList.mockResolvedValue({ schools: [draftSchool] });
     mockEnsureDraft.mockResolvedValue({
       schoolCalendarId: 'cal-1',
       academicYearLabel: '2082/83',
@@ -229,34 +278,23 @@ describe('TenantCalendarPage', () => {
       expect(screen.getByText('Draft saved.')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: /approve calendar/i }));
+    await user.click(screen.getByRole('button', { name: /continue to approve/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('tenant-calendar-approve')).toBeInTheDocument();
+      expect(screen.getByTestId('calendar-wizard-approve')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('calendar-wizard-approve'));
     await waitFor(() => {
       expect(mockApprove).toHaveBeenCalledWith('school-1');
-      expect(
-        screen.getByText(/Calendar approved for School X/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Calendar approved for School X/i)).toBeInTheDocument();
     });
   });
 
   it('loads approved calendar as read-only with Edit action', async () => {
     const user = userEvent.setup();
     mockList.mockResolvedValue({
-      schools: [
-        {
-          id: 'school-1',
-          name: 'School X',
-          region: null,
-          tier: null,
-          licensedBandRange: null,
-          exitStatus: null,
-          calendarStatus: 'approved',
-          sectionsTotal: 0,
-          sectionsBehind: 0,
-          teachersTotal: 0,
-          studentsTotal: 0,
-          subjectsTotal: 0,
-        },
-      ],
+      schools: [{ ...draftSchool, calendarStatus: 'approved' }],
     });
     mockGetClosures
       .mockResolvedValueOnce({
@@ -305,22 +343,7 @@ describe('TenantCalendarPage', () => {
   it('exits back to tenant monitoring', async () => {
     const user = userEvent.setup();
     mockList.mockResolvedValue({
-      schools: [
-        {
-          id: 'school-1',
-          name: 'School X',
-          region: null,
-          tier: null,
-          licensedBandRange: null,
-          exitStatus: null,
-          calendarStatus: 'approved',
-          sectionsTotal: 0,
-          sectionsBehind: 0,
-          teachersTotal: 0,
-          studentsTotal: 0,
-          subjectsTotal: 0,
-        },
-      ],
+      schools: [{ ...draftSchool, calendarStatus: 'approved' }],
     });
     mockGetClosures.mockResolvedValue({
       schoolCalendarId: 'cal-1',

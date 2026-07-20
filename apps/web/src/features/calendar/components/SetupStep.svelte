@@ -1,6 +1,12 @@
 <script lang="ts">
-  import NepaliDatePicker from '../../shared/NepaliDatePicker.svelte';
-  import type { TerminalDraft } from '../calendar-wizard-logic';
+  import NepaliDateRangePicker from '../../shared/NepaliDateRangePicker.svelte';
+  import {
+    nationalMatchMessage,
+    nationalMatchStatus,
+    resolveTargetBsYear,
+    sessionBsYearMismatch,
+    type TerminalDraft,
+  } from '../calendar-wizard-logic';
 
   type Props = {
     academicYearLabel: string;
@@ -10,7 +16,11 @@
     terminals: TerminalDraft[];
     loading: boolean;
     submitLabel?: string;
+    /** Published national calendar BS years (for match chip). */
+    publishedYears?: number[];
     onSubmit: (event: SubmitEvent) => void;
+    /** Fired when academic year label changes (parent refreshes weekly-off preset). */
+    onAcademicYearChange?: (label: string) => void;
   };
 
   let {
@@ -21,8 +31,17 @@
     terminals = $bindable(),
     loading,
     submitLabel = 'Continue to closures',
+    publishedYears = [],
     onSubmit,
+    onAcademicYearChange,
   }: Props = $props();
+
+  const targetBsYear = $derived(resolveTargetBsYear(academicYearLabel));
+  const matchStatus = $derived(
+    nationalMatchStatus({ targetBsYear, publishedYears }),
+  );
+  const matchMessage = $derived(nationalMatchMessage(matchStatus, targetBsYear));
+  const sessionMismatch = $derived(sessionBsYearMismatch(sessionStart, targetBsYear));
 
   const weekDays = [
     { value: 0, label: 'Sun' },
@@ -45,8 +64,8 @@
       ...terminals,
       {
         name: `Terminal ${terminals.length + 1}`,
-        startDate: '',
-        endDate: '',
+        startDate: sessionStart,
+        endDate: sessionEnd,
         reportingType: 'formative',
       },
     ];
@@ -55,6 +74,28 @@
   const removeTerminal = (index: number) => {
     if (terminals.length <= 1) return;
     terminals = terminals.filter((_, i) => i !== index);
+  };
+
+  const handleYearInput = (event: Event) => {
+    const value = (event.currentTarget as HTMLInputElement).value;
+    academicYearLabel = value;
+    onAcademicYearChange?.(value);
+  };
+
+  const setSessionRange = (range: { startDate: string; endDate: string }) => {
+    sessionStart = range.startDate;
+    sessionEnd = range.endDate;
+  };
+
+  const setTerminalRange = (
+    index: number,
+    range: { startDate: string; endDate: string },
+  ) => {
+    terminals = terminals.map((terminal, i) =>
+      i === index
+        ? { ...terminal, startDate: range.startDate, endDate: range.endDate }
+        : terminal,
+    );
   };
 </script>
 
@@ -67,24 +108,45 @@
       id="yearLabel"
       type="text"
       required
-      bind:value={academicYearLabel}
+      value={academicYearLabel}
+      oninput={handleYearInput}
       class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      data-testid="setup-academic-year"
     />
+    {#if matchMessage}
+      <p
+        class={`mt-2 rounded-lg px-3 py-2 text-sm ${
+          matchStatus === 'matched'
+            ? 'border border-emerald-200 bg-emerald-50 text-emerald-900'
+            : 'border border-amber-200 bg-amber-50 text-amber-900'
+        }`}
+        role="status"
+        data-testid="setup-national-match"
+      >
+        {matchMessage}
+      </p>
+    {/if}
+    {#if sessionMismatch}
+      <p
+        class="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900"
+        role="alert"
+        data-testid="setup-session-mismatch"
+      >
+        Session start falls in a different BS year than the academic year label. Align them so
+        national holidays apply correctly.
+      </p>
+    {/if}
   </div>
 
-  <NepaliDatePicker
-    id="sessionStart"
-    label="Session start"
+  <NepaliDateRangePicker
+    id="sessionDates"
+    label="Session dates"
     required
-    value={sessionStart}
-    onChange={(v) => (sessionStart = v)}
-  />
-  <NepaliDatePicker
-    id="sessionEnd"
-    label="Session end"
-    required
-    value={sessionEnd}
-    onChange={(v) => (sessionEnd = v)}
+    startDate={sessionStart}
+    endDate={sessionEnd}
+    startAriaLabel="Session start"
+    endAriaLabel="Session end"
+    onChange={setSessionRange}
   />
 
   <fieldset>
@@ -130,17 +192,14 @@
             </button>
           {/if}
         </div>
-        <NepaliDatePicker
-          label="Terminal start"
+        <NepaliDateRangePicker
+          label={`Terminal ${index + 1} dates`}
           required
-          value={terminal.startDate}
-          onChange={(v) => (terminal.startDate = v)}
-        />
-        <NepaliDatePicker
-          label="Terminal end"
-          required
-          value={terminal.endDate}
-          onChange={(v) => (terminal.endDate = v)}
+          startDate={terminal.startDate}
+          endDate={terminal.endDate}
+          startAriaLabel="Terminal start"
+          endAriaLabel="Terminal end"
+          onChange={(range) => setTerminalRange(index, range)}
         />
         <select
           required
@@ -158,7 +217,7 @@
 
   <button
     type="submit"
-    disabled={loading}
+    disabled={loading || sessionMismatch}
     class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
   >
     {loading ? 'Saving…' : submitLabel}

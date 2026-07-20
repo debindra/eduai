@@ -18,6 +18,7 @@ export class CalendarService {
   ) {}
 
   async setupCalendar(schoolId: string, dto: CalendarSetupDto) {
+    this.assertLabelMatchesSession(dto);
     const existingDraft = await this.repository.findDraftCalendar(schoolId);
     if (existingDraft) {
       throw new BadRequestException('A draft calendar already exists for this school');
@@ -90,6 +91,7 @@ export class CalendarService {
 
   /** Update session / weekly offs / terminals on the current draft only. */
   async updateDraftSetup(schoolId: string, dto: CalendarSetupDto) {
+    this.assertLabelMatchesSession(dto);
     const calendar = await this.requireDraftCalendar(schoolId);
     const updated = await this.repository.updateDraftCalendar(calendar.id, dto);
     await this.repository.deleteTerminalsForCalendar(calendar.id);
@@ -136,9 +138,10 @@ export class CalendarService {
     const approvalStatus = calendar.approval_status as 'draft' | 'approved';
     const closuresReadOnly = approvalStatus === 'approved';
     const bsYear = bsYearForAdDate(calendar.session_start);
-    const [national, schoolClosures] = await Promise.all([
+    const [national, schoolClosures, terminals] = await Promise.all([
       this.nationalCalendar.listPublishedClosuresForBsYear(bsYear),
       this.repository.listSchoolClosures(calendar.id),
+      this.repository.listTerminals(calendar.id),
     ]);
     return {
       schoolCalendarId: calendar.id,
@@ -158,6 +161,16 @@ export class CalendarService {
         readOnly: true as const,
       })),
       closures: await this.mapSchoolClosures(schoolId, schoolClosures, closuresReadOnly),
+      terminals: terminals.map((terminal) => ({
+        id: terminal.id,
+        name: terminal.name,
+        startDate: terminal.start_date,
+        endDate: terminal.end_date,
+        reportingType: terminal.reporting_type as
+          | 'formative'
+          | 'summative'
+          | 'transition',
+      })),
     };
   }
 
@@ -242,9 +255,11 @@ export class CalendarService {
   }
 
   async getTeachingDays(schoolId: string) {
-    const calendar = await this.repository.findApprovedCalendar(schoolId);
+    // Prefer draft when present so approve-step can preview counts before publish.
+    const draft = await this.repository.findDraftCalendar(schoolId);
+    const calendar = draft ?? (await this.repository.findApprovedCalendar(schoolId));
     if (!calendar) {
-      throw new NotFoundException('No approved calendar configured for this school');
+      throw new NotFoundException('No calendar configured for this school');
     }
     const [terminals, teachingDays] = await Promise.all([
       this.repository.listTerminals(calendar.id),
@@ -388,5 +403,30 @@ export class CalendarService {
       throw new NotFoundException('Draft calendar not found for this school');
     }
     return calendar;
+  }
+
+  /**
+   * Academic year label's leading BS year must match session_start's BS year
+   * so national closures / weekly-off presets resolve consistently.
+   */
+  private assertLabelMatchesSession(dto: CalendarSetupDto): void {
+    const match = /^(\d{4})/.exec(dto.academicYearLabel.trim());
+    if (!match) {
+      throw new BadRequestException(
+        'Academic year label must start with a four-digit BS year (e.g. 2082/83)',
+      );
+    }
+    const labelYear = Number(match[1]);
+    let sessionYear: number;
+    try {
+      sessionYear = bsYearForAdDate(dto.sessionStart);
+    } catch {
+      throw new BadRequestException('Invalid session start date');
+    }
+    if (sessionYear !== labelYear) {
+      throw new BadRequestException(
+        `Session start BS year (${sessionYear}) must match academic year label (${labelYear})`,
+      );
+    }
   }
 }

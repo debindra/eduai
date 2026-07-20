@@ -7,7 +7,7 @@ import type { YearlyMapService } from '../yearly-map/yearly-map.service';
 
 describe('PlanningCascadeService', () => {
   let service: PlanningCascadeService;
-  let yearlyMap: { getMap: ReturnType<typeof vi.fn> };
+  let yearlyMap: { ensureMap: ReturnType<typeof vi.fn> };
   let repository: {
     listTeachingDaysInRange: ReturnType<typeof vi.fn>;
     listOverrides: ReturnType<typeof vi.fn>;
@@ -15,7 +15,7 @@ describe('PlanningCascadeService', () => {
   };
 
   beforeEach(() => {
-    yearlyMap = { getMap: vi.fn() };
+    yearlyMap = { ensureMap: vi.fn() };
     repository = {
       listTeachingDaysInRange: vi.fn(),
       listOverrides: vi.fn(),
@@ -28,7 +28,7 @@ describe('PlanningCascadeService', () => {
   });
 
   it('monthly resolves from yearly map slices', async () => {
-    yearlyMap.getMap.mockResolvedValue({
+    yearlyMap.ensureMap.mockResolvedValue({
       schoolCalendarId: 'cal-1',
       slices: [
         { id: 's1', teachingDayIndex: 1, themeOrChapter: 'Animals' },
@@ -43,7 +43,7 @@ describe('PlanningCascadeService', () => {
   });
 
   it('weekly override wins over map slice', async () => {
-    yearlyMap.getMap.mockResolvedValue({
+    yearlyMap.ensureMap.mockResolvedValue({
       schoolCalendarId: 'cal-1',
       slices: [
         { id: 's1', teachingDayIndex: 1, themeOrChapter: 'Animals' },
@@ -66,7 +66,7 @@ describe('PlanningCascadeService', () => {
   });
 
   it('daily resolves from weekly cell', async () => {
-    yearlyMap.getMap.mockResolvedValue({
+    yearlyMap.ensureMap.mockResolvedValue({
       schoolCalendarId: 'cal-1',
       slices: [
         { id: 's1', teachingDayIndex: 1, themeOrChapter: 'Food we eat' },

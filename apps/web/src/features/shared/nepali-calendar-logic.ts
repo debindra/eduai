@@ -107,6 +107,57 @@ export function formatAdSecondary(adIso: string): string {
   return `${Number(d)}/${Number(m)}/${y}`;
 }
 
+/** AD day only in Western/Arabic digits — for month-grid secondary line. */
+export function formatAdDayOnly(adIso: string): string {
+  if (!adIso) return '';
+  const day = adIso.split('-')[2];
+  return day ? String(Number(day)) : '';
+}
+
+const AD_MONTH_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
+
+function parseAdParts(adIso: string): { year: number; month: number } | null {
+  if (!adIso) return null;
+  const [y, m] = adIso.split('-');
+  const year = Number(y);
+  const month = Number(m);
+  if (!year || !month || month < 1 || month > 12) return null;
+  return { year, month };
+}
+
+/**
+ * AD month span covered by a BS month — e.g. "Apr–May 2025" or "Apr 2025".
+ * Cross-year (rare): "Dec 2025–Jan 2026".
+ */
+export function formatAdMonthSpanForBsMonth(bsYear: number, bsMonth: number): string {
+  const length = bsMonthLength(bsYear, bsMonth);
+  const start = parseAdParts(bsToAd(bsYear, bsMonth, 1));
+  const end = parseAdParts(bsToAd(bsYear, bsMonth, length));
+  if (!start || !end) return '';
+  const startLabel = AD_MONTH_SHORT[start.month - 1]!;
+  const endLabel = AD_MONTH_SHORT[end.month - 1]!;
+  if (start.year === end.year && start.month === end.month) {
+    return `${startLabel} ${start.year}`;
+  }
+  if (start.year === end.year) {
+    return `${startLabel}–${endLabel} ${start.year}`;
+  }
+  return `${startLabel} ${start.year}–${endLabel} ${end.year}`;
+}
+
 /** Humanized BS date for list/labels — e.g. "Jestha 15, 2082". */
 export function formatBsPrimary(adIso: string): string {
   if (!adIso) return '';
@@ -140,6 +191,38 @@ export function formatAdDateRangeSecondary(startAdIso: string, endAdIso: string)
   const start = formatAdSecondary(startAdIso);
   if (!endAdIso || endAdIso === startAdIso) return `AD ${start}`;
   return `AD ${start} → ${formatAdSecondary(endAdIso)}`;
+}
+
+/** Lexicographic compare of AD ISO dates (YYYY-MM-DD). */
+export function compareAdIso(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
+/** Inclusive range check for AD ISO dates. */
+export function isAdDateInInclusiveRange(
+  dayAdIso: string,
+  startAdIso: string,
+  endAdIso: string,
+): boolean {
+  if (!dayAdIso || !startAdIso || !endAdIso) return false;
+  const [lo, hi] =
+    compareAdIso(startAdIso, endAdIso) <= 0
+      ? [startAdIso, endAdIso]
+      : [endAdIso, startAdIso];
+  return compareAdIso(dayAdIso, lo) >= 0 && compareAdIso(dayAdIso, hi) <= 0;
+}
+
+/** Ensure start ≤ end for a picked AD range. */
+export function normalizeDateRange(
+  startAdIso: string,
+  endAdIso: string,
+): { startDate: string; endDate: string } {
+  if (!endAdIso) return { startDate: startAdIso, endDate: startAdIso };
+  if (compareAdIso(startAdIso, endAdIso) <= 0) {
+    return { startDate: startAdIso, endDate: endAdIso };
+  }
+  return { startDate: endAdIso, endDate: startAdIso };
 }
 
 export function partsFromAdIso(adIso: string) {

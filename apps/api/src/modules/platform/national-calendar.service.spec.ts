@@ -171,6 +171,91 @@ describe('NationalCalendarService', () => {
     });
   });
 
+  describe('unpublish', () => {
+    it('sets a published calendar back to draft', async () => {
+      const updates: unknown[] = [];
+      let calendarCall = 0;
+
+      from.mockImplementation((table: string) => {
+        if (table === 'national_calendars') {
+          calendarCall += 1;
+          if (calendarCall === 1) {
+            return createThenableResult({
+              data: {
+                id: 'nat-1',
+                bs_year: 2082,
+                status: 'published',
+                weekly_offs: [6],
+              },
+              error: null,
+            });
+          }
+          const builder = createThenableResult({
+            data: {
+              id: 'nat-1',
+              bs_year: 2082,
+              status: 'draft',
+              weekly_offs: [6],
+            },
+            error: null,
+          });
+          const originalUpdate = builder.update;
+          builder.update = vi.fn((payload: unknown) => {
+            updates.push(payload);
+            return originalUpdate();
+          });
+          return builder;
+        }
+        if (table === 'national_closures') {
+          return createThenableResult({
+            data: [
+              {
+                id: 'nc-1',
+                name: 'Dashain',
+                category: 'festival',
+                start_date: '2025-10-02',
+                end_date: '2025-10-12',
+                bs_label: 'Ashwin',
+                movable: true,
+              },
+            ],
+            error: null,
+          });
+        }
+        return createThenableResult({ data: null, error: null });
+      });
+
+      const actual = await service.unpublish('nat-1');
+      expect(actual.status).toBe('draft');
+      expect(actual.closures).toHaveLength(1);
+      expect(updates).toContainEqual({ status: 'draft' });
+    });
+
+    it('is a no-op when already draft', async () => {
+      from.mockImplementation((table: string) => {
+        if (table === 'national_calendars') {
+          return createThenableResult({
+            data: {
+              id: 'nat-1',
+              bs_year: 2082,
+              status: 'draft',
+              weekly_offs: [6],
+            },
+            error: null,
+          });
+        }
+        if (table === 'national_closures') {
+          return createThenableResult({ data: [], error: null });
+        }
+        return createThenableResult({ data: null, error: null });
+      });
+
+      const actual = await service.unpublish('nat-1');
+      expect(actual.status).toBe('draft');
+      expect(from).toHaveBeenCalledTimes(2); // getCalendar + listClosures only
+    });
+  });
+
   describe('listPublishedClosuresForBsYear', () => {
     it('returns empty when no published calendar exists for the year', async () => {
       from.mockImplementation(() =>

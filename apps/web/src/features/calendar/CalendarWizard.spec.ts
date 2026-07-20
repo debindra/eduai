@@ -5,6 +5,7 @@ import CalendarWizard from './CalendarWizard.svelte';
 
 vi.mock('./api', () => ({
   setupCalendar: vi.fn(),
+  updateCalendarSetup: vi.fn(),
   getCalendarStatus: vi.fn(),
   getFestivalTemplate: vi.fn(),
   getCalendarView: vi.fn(),
@@ -21,6 +22,11 @@ vi.mock('../manage/api', () => ({
 
 vi.mock('../shared/NepaliDatePicker.svelte', async () => {
   const { default: Mock } = await import('../shared/NepaliDatePickerMock.svelte');
+  return { default: Mock };
+});
+
+vi.mock('../shared/NepaliDateRangePicker.svelte', async () => {
+  const { default: Mock } = await import('../shared/NepaliDateRangePickerMock.svelte');
   return { default: Mock };
 });
 
@@ -63,6 +69,21 @@ describe('CalendarWizard', () => {
       nationalClosures: [],
       closures: [],
       terminals: [],
+    });
+  });
+
+  it('shows national match status when weekly-off preset comes from national', async () => {
+    mockGetWeeklyOffPreset.mockResolvedValue({
+      bsYear: 2082,
+      weeklyOffs: [6],
+      fromNational: true,
+    });
+    render(CalendarWizard);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('setup-national-match')).toHaveTextContent(
+        /Using published national calendar/i,
+      );
     });
   });
 
@@ -181,11 +202,21 @@ describe('CalendarWizard', () => {
 
     await user.clear(screen.getByLabelText(/academic year label/i));
     await user.type(screen.getByLabelText(/academic year label/i), '2082/83');
-    await user.type(screen.getByLabelText(/session start/i), '2025-04-14');
-    await user.type(screen.getByLabelText(/session end/i), '2026-04-13');
+    // Defaults are Baisakh 1 → Chaitra end; clear before override so values don't concatenate.
+    const sessionStartInput = screen.getByLabelText(/session start/i);
+    const sessionEndInput = screen.getByLabelText(/session end/i);
+    await user.clear(sessionStartInput);
+    await user.type(sessionStartInput, '2025-04-14');
+    await user.clear(sessionEndInput);
+    await user.type(sessionEndInput, '2026-04-13');
+    await user.clear(screen.getByLabelText(/terminal 1 name/i));
     await user.type(screen.getByLabelText(/terminal 1 name/i), 'Terminal 1');
-    await user.type(screen.getByLabelText(/^terminal start$/i), '2025-04-14');
-    await user.type(screen.getByLabelText(/^terminal end$/i), '2025-07-14');
+    const terminalStart = screen.getByLabelText(/^terminal start$/i);
+    const terminalEnd = screen.getByLabelText(/^terminal end$/i);
+    await user.clear(terminalStart);
+    await user.type(terminalStart, '2025-04-14');
+    await user.clear(terminalEnd);
+    await user.type(terminalEnd, '2025-07-14');
     await user.click(screen.getByRole('button', { name: /continue to closures/i }));
 
     await waitFor(() => expect(mockSetupCalendar).toHaveBeenCalledTimes(1));
@@ -227,11 +258,21 @@ describe('CalendarWizard', () => {
 
     await user.clear(screen.getByLabelText(/academic year label/i));
     await user.type(screen.getByLabelText(/academic year label/i), '2082/83');
-    await user.type(screen.getByLabelText(/session start/i), '2025-04-14');
-    await user.type(screen.getByLabelText(/session end/i), '2026-04-13');
+    // Defaults are Baisakh 1 → Chaitra end; clear before override so values don't concatenate.
+    const sessionStartInput = screen.getByLabelText(/session start/i);
+    const sessionEndInput = screen.getByLabelText(/session end/i);
+    await user.clear(sessionStartInput);
+    await user.type(sessionStartInput, '2025-04-14');
+    await user.clear(sessionEndInput);
+    await user.type(sessionEndInput, '2026-04-13');
+    await user.clear(screen.getByLabelText(/terminal 1 name/i));
     await user.type(screen.getByLabelText(/terminal 1 name/i), 'Terminal 1');
-    await user.type(screen.getByLabelText(/^terminal start$/i), '2025-04-14');
-    await user.type(screen.getByLabelText(/^terminal end$/i), '2025-07-14');
+    const terminalStart = screen.getByLabelText(/^terminal start$/i);
+    const terminalEnd = screen.getByLabelText(/^terminal end$/i);
+    await user.clear(terminalStart);
+    await user.type(terminalStart, '2025-04-14');
+    await user.clear(terminalEnd);
+    await user.type(terminalEnd, '2025-07-14');
     await user.click(screen.getByRole('button', { name: /continue to closures/i }));
 
     await waitFor(() => expect(mockGetFestivalTemplate).toHaveBeenCalledTimes(1));

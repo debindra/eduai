@@ -150,6 +150,13 @@ export type PlatformCalendarClosuresResponse = {
     endDate: string;
     category?: 'school_holiday' | 'eca' | 'cca';
   }>;
+  terminals?: Array<{
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    reportingType?: 'formative' | 'summative' | 'transition';
+  }>;
 };
 
 export async function getPlatformSchoolCalendarClosures(
@@ -172,6 +179,19 @@ export async function approvePlatformSchoolCalendar(
   schoolId: string,
 ): Promise<{ schoolCalendarId: string; approvalStatus: 'approved'; approvedAt: string }> {
   return apiFetch(`/platform/schools/${schoolId}/calendar/approve`, { method: 'POST' });
+}
+
+export async function getPlatformSchoolTeachingDays(
+  schoolId: string,
+): Promise<{
+  schoolId: string;
+  terminals: Array<{
+    terminalId: string;
+    terminalName: string;
+    teachingDayCount: number;
+  }>;
+}> {
+  return apiFetch(`/platform/schools/${schoolId}/calendar/teaching-days`);
 }
 
 export async function listSupportSessions(): Promise<{ sessions: SupportSession[] }> {
@@ -232,6 +252,10 @@ export async function patchNationalWeeklyOffs(
 
 export async function publishNationalCalendar(id: string): Promise<NationalCalendar> {
   return apiFetch(`/platform/national-calendars/${id}/publish`, { method: 'POST' });
+}
+
+export async function unpublishNationalCalendar(id: string): Promise<NationalCalendar> {
+  return apiFetch(`/platform/national-calendars/${id}/unpublish`, { method: 'POST' });
 }
 
 export type EcaCcaCatalogItem = {

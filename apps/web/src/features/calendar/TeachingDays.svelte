@@ -9,6 +9,21 @@
     teachingDayCount: number;
   };
 
+  type TeachingDaysPayload = {
+    schoolId: string;
+    terminals: TerminalRow[];
+  };
+
+  type Props = {
+    /**
+     * Optional loader (platform passes school-scoped fetch).
+     * Defaults to the school-admin session path.
+     */
+    loadTeachingDays?: () => Promise<TeachingDaysPayload>;
+  };
+
+  let { loadTeachingDays }: Props = $props();
+
   let loading = $state(true);
   let error = $state<string | null>(null);
   let schoolId = $state<string | null>(null);
@@ -16,7 +31,8 @@
 
   onMount(async () => {
     try {
-      const response = await getTeachingDays();
+      const loader = loadTeachingDays ?? (() => getTeachingDays());
+      const response = await loader();
       schoolId = response.schoolId;
       terminals = response.terminals;
     } catch (err) {
@@ -27,7 +43,7 @@
   });
 </script>
 
-<section class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+<section class="rounded-xl border border-slate-200 bg-slate-50 p-4" data-testid="teaching-days">
   <h2 class="text-lg font-semibold text-slate-900">Teaching days</h2>
   <p class="mt-1 text-sm text-slate-600">
     Derived on read from calendar span minus weekly offs and closures.

@@ -328,6 +328,11 @@ export class PlatformService {
     return result;
   }
 
+  async getSchoolCalendarTeachingDays(schoolId: string) {
+    await this.requireSchool(schoolId);
+    return this.calendarService.getTeachingDays(schoolId);
+  }
+
   private async requireSchool(schoolId: string): Promise<{ id: string; name: string }> {
     const client = this.requireClient();
     const { data: school, error } = await client

@@ -41,6 +41,23 @@ describe('TeachingDays', () => {
     expect(screen.getByText('100 days')).toBeInTheDocument();
   });
 
+  it('uses injected loader instead of school session path', async () => {
+    const loadTeachingDays = vi.fn().mockResolvedValue({
+      schoolId: 'school-platform',
+      terminals: [
+        { terminalId: 't1', terminalName: 'Term A', teachingDayCount: 12 },
+      ],
+    });
+
+    render(TeachingDays, { props: { loadTeachingDays } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Term A')).toBeInTheDocument();
+    });
+    expect(loadTeachingDays).toHaveBeenCalled();
+    expect(mockGetTeachingDays).not.toHaveBeenCalled();
+  });
+
   it('shows error when teaching days cannot be loaded', async () => {
     mockGetTeachingDays.mockRejectedValue(new Error('Network error'));
 

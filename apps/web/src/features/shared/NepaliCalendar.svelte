@@ -2,9 +2,11 @@
   import {
     WEEKDAY_LABELS_SHORT,
     buildMonthGrid,
-    formatAdSecondary,
+    formatAdDayOnly,
+    formatAdMonthSpanForBsMonth,
     formatBsDayDevanagari,
     formatBsHeading,
+    isAdDateInInclusiveRange,
     shiftMonthInYear,
     todayBsParts,
     bsMonthName,
@@ -26,6 +28,9 @@
     bsMonth?: number;
     /** Selected AD ISO date (YYYY-MM-DD) — emitted on day click. */
     value?: string | null;
+    /** Inclusive range highlight (AD ISO). */
+    rangeStart?: string | null;
+    rangeEnd?: string | null;
     /** Overlay markers keyed by AD ISO date. */
     markedDates?: Record<string, DateMarker | string>;
     /** Start in year overview or month view (default: current month). */
@@ -37,6 +42,8 @@
     bsYear: bsYearProp,
     bsMonth: bsMonthProp,
     value = null,
+    rangeStart = null,
+    rangeEnd = null,
     markedDates = {},
     initialView = 'month',
     onSelect,
@@ -57,6 +64,7 @@
 
   const monthGrid = $derived(buildMonthGrid(bsYear, bsMonth));
   const heading = $derived(formatBsHeading(bsYear, bsMonth));
+  const adMonthSpan = $derived(formatAdMonthSpanForBsMonth(bsYear, bsMonth));
 
   const resolveMarker = (raw: DateMarker | string | undefined): DateMarker | null => {
     if (!raw) return null;
@@ -88,6 +96,16 @@
       case 'green':
         return 'text-emerald-700';
     }
+  };
+
+  const dayInRange = (adIso: string): boolean => {
+    if (!rangeStart) return false;
+    if (!rangeEnd) return adIso === rangeStart;
+    return isAdDateInInclusiveRange(adIso, rangeStart, rangeEnd);
+  };
+
+  const dayIsRangeEdge = (adIso: string): boolean => {
+    return adIso === rangeStart || adIso === rangeEnd || adIso === value;
   };
 
   const handlePrev = () => {
@@ -145,7 +163,7 @@
       </button>
       <div class="text-center">
         <div class="text-lg font-semibold text-slate-900">{heading}</div>
-        <div class="text-xs text-slate-500">AD dates shown secondary</div>
+        <div class="text-xs text-slate-500">{adMonthSpan}</div>
       </div>
       <div class="flex gap-1">
         <button
@@ -177,25 +195,33 @@
     <div class="grid grid-cols-7 gap-1">
       {#each monthGrid as cell, idx (idx)}
         {@const marker = resolveMarker(markedDates[cell.adIso])}
+        {@const inRange = dayInRange(cell.adIso)}
+        {@const isEdge = dayIsRangeEdge(cell.adIso)}
         {#if cell.isOutsideMonth}
           <div class="min-h-14 rounded-lg bg-transparent"></div>
         {:else}
           <button
             type="button"
             class={`min-h-14 rounded-lg border px-1 py-1 text-left transition ${
-              value === cell.adIso
+              isEdge
                 ? 'border-emerald-500 bg-emerald-50'
-                : 'border-slate-100 hover:border-slate-300'
+                : inRange
+                  ? 'border-emerald-200 bg-emerald-50/70'
+                  : value === cell.adIso
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-slate-100 hover:border-slate-300'
             } ${marker ? ringClass(marker.tone) : ''}`}
             aria-label={`Select ${cell.adIso}`}
+            aria-pressed={inRange || value === cell.adIso}
             data-tone={marker?.tone}
+            data-in-range={inRange ? 'true' : undefined}
             onclick={() => handleDayClick(cell.adIso)}
           >
             <div class="text-base font-semibold leading-tight text-slate-900">
               {formatBsDayDevanagari(cell.bsDay)}
             </div>
             <div class="text-[10px] leading-tight text-slate-500">
-              {formatAdSecondary(cell.adIso)}
+              {formatAdDayOnly(cell.adIso)}
             </div>
             {#if marker}
               <div class={`mt-0.5 truncate text-[9px] ${labelClass(marker.tone)}`}>

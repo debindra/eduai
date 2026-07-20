@@ -31,6 +31,7 @@ import {
   CalendarSetupResponseDto,
   FestivalTemplateResponseDto,
   PatchFestivalTemplateDto,
+  TeachingDaysResponseDto,
 } from '../calendar/dto/calendar-response.dto';
 import {
   CreatePlatformSchoolDto,
@@ -165,6 +166,19 @@ export class PlatformController {
   ): Promise<ApproveCalendarResponseDto> {
     const user = req.user as RequestUser;
     return this.service.approveSchoolCalendar(user.identityId, schoolId);
+  }
+
+  @Get('schools/:schoolId/calendar/teaching-days')
+  @ApiOperation({
+    summary: 'Teaching-day counts per terminal for a school calendar',
+    description:
+      'Prefer draft when present (approve preview), else approved. Counts only — derived VIEW.',
+  })
+  @ApiResponse({ status: 200, type: TeachingDaysResponseDto })
+  getSchoolCalendarTeachingDays(
+    @Param('schoolId') schoolId: string,
+  ): Promise<TeachingDaysResponseDto> {
+    return this.service.getSchoolCalendarTeachingDays(schoolId);
   }
 
   @Post('support-sessions')
