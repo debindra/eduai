@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import { link } from '@keenmate/svelte-spa-router';
   import active from '@keenmate/svelte-spa-router/active';
   import { push } from '@keenmate/svelte-spa-router/utils';
@@ -13,23 +14,10 @@
     selectAssignmentByKey,
     teacherContext,
   } from '../../lib/shared/stores/teacher-context';
-
-  const links = [
-    { href: '/teacher/calendar', label: 'Calendar' },
-    { href: '/teacher/attendance', label: 'Attendance' },
-    { href: '/teacher/sweep', label: 'Sweep' },
-    { href: '/teacher/weekly', label: 'Weekly' },
-    { href: '/teacher/lesson', label: 'Lesson' },
-    { href: '/teacher/pacing', label: 'Pacing' },
-    { href: '/teacher/reports', label: 'Reports' },
-    { href: '/teacher/subject', label: 'Subject' },
-    { href: '/teacher/oversight', label: 'Oversight' },
-    { href: '/teacher/remedial', label: 'Remedial' },
-    { href: '/teacher/messaging', label: 'Inbox' },
-    { href: '/teacher/manage', label: 'Manage' },
-    { href: '/teacher/certification', label: 'Certification' },
-    { href: '/teacher/community', label: 'Community' },
-  ] as const;
+  import {
+    teacherNavPathAfterAssignmentChange,
+    visibleTeacherNavLinks,
+  } from './teacher-nav-links';
 
   let contextError = $state<string | null>(null);
 
@@ -41,9 +29,17 @@
     }
   });
 
-  const handleSelectionChange = (event: Event) => {
+  const handleSelectionChange = async (event: Event) => {
     const key = (event.currentTarget as HTMLSelectElement).value;
     selectAssignmentByKey(key);
+    const selected = get(teacherContext)?.selected ?? null;
+    const redirectTo = teacherNavPathAfterAssignmentChange(
+      window.location.pathname,
+      selected,
+    );
+    if (redirectTo) {
+      await push(redirectTo);
+    }
   };
 
   const handleSignOut = async () => {
@@ -56,7 +52,7 @@
 <header class="border-b border-slate-200 bg-white">
   <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
     <nav class="flex flex-wrap gap-1" aria-label="Teacher">
-      {#each links as item}
+      {#each visibleTeacherNavLinks($teacherContext?.selected ?? null) as item}
         <a
           use:link
           use:active={{
