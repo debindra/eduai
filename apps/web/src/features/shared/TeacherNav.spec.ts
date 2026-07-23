@@ -8,6 +8,8 @@ import {
   teacherContext,
 } from '../../lib/shared/stores/teacher-context';
 
+const push = vi.fn();
+
 vi.mock('@keenmate/svelte-spa-router', () => ({
   link: () => ({ destroy: () => {} }),
 }));
@@ -17,7 +19,7 @@ vi.mock('@keenmate/svelte-spa-router/active', () => ({
 }));
 
 vi.mock('@keenmate/svelte-spa-router/utils', () => ({
-  push: vi.fn(),
+  push: (...args: unknown[]) => push(...args),
 }));
 
 vi.mock('../../lib/shared/stores/teacher-context', async () => {
@@ -30,10 +32,42 @@ vi.mock('../../lib/shared/stores/teacher-context', async () => {
   };
 });
 
+const classAssignment = {
+  sectionId: 'sec-ukg',
+  sectionName: 'UKG A',
+  grade: 'UKG',
+  bandId: 'band-pp',
+  assessmentMode: 'three_state_narrative',
+  subjectId: null as string | null,
+  subjectName: null as string | null,
+  isClassTeacher: true,
+};
+
+const subjectAssignment = {
+  sectionId: 'sec-g1',
+  sectionName: 'Grade 1 A',
+  grade: 'Grade 1',
+  bandId: 'band-early',
+  assessmentMode: 'four_point_scale',
+  subjectId: 'math',
+  subjectName: 'Mathematics',
+  isClassTeacher: false,
+};
+
+function setContext(selected: typeof classAssignment | typeof subjectAssignment) {
+  teacherContext.set({
+    teacherId: 't1',
+    assignments: [classAssignment, subjectAssignment],
+    selected,
+  });
+}
+
 describe('TeacherNav', () => {
   beforeEach(() => {
     clearSession();
     clearTeacherContext();
+    push.mockClear();
+    window.history.pushState({}, '', '/teacher/calendar');
     setSession({
       accessToken: 't',
       identity: {
@@ -47,70 +81,71 @@ describe('TeacherNav', () => {
     });
   });
 
-  it('links to all teacher Phase 1–3 routes', () => {
+  it('shows class-teacher links and hides Subject for class grain', () => {
+    setContext(classAssignment);
     render(TeacherNav);
+
     expect(screen.getByRole('link', { name: 'Calendar' })).toHaveAttribute(
       'href',
       '/teacher/calendar',
     );
-    expect(screen.getByRole('link', { name: 'Attendance' })).toHaveAttribute(
-      'href',
-      '/teacher/attendance',
-    );
-    expect(screen.getByRole('link', { name: 'Sweep' })).toHaveAttribute('href', '/teacher/sweep');
-    expect(screen.getByRole('link', { name: 'Weekly' })).toHaveAttribute('href', '/teacher/weekly');
-    expect(screen.getByRole('link', { name: 'Lesson' })).toHaveAttribute('href', '/teacher/lesson');
-    expect(screen.getByRole('link', { name: 'Pacing' })).toHaveAttribute('href', '/teacher/pacing');
-    expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute('href', '/teacher/reports');
-    expect(screen.getByRole('link', { name: 'Subject' })).toHaveAttribute('href', '/teacher/subject');
+    expect(screen.getByRole('link', { name: 'Attendance' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Reports' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Oversight' })).toHaveAttribute(
       'href',
       '/teacher/oversight',
     );
-    expect(screen.getByRole('link', { name: 'Remedial' })).toHaveAttribute(
+    expect(screen.queryByRole('link', { name: 'Subject' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Sweep' })).toHaveAttribute('href', '/teacher/sweep');
+    expect(screen.getByRole('link', { name: 'Remedial' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Inbox' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Manage' })).toBeInTheDocument();
+  });
+
+  it('shows Subject and hides class-teacher links for subject grain', () => {
+    setContext(subjectAssignment);
+    render(TeacherNav);
+
+    expect(screen.getByRole('link', { name: 'Subject' })).toHaveAttribute(
       'href',
-      '/teacher/remedial',
+      '/teacher/subject',
     );
-    expect(screen.getByRole('link', { name: 'Inbox' })).toHaveAttribute('href', '/teacher/messaging');
-    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute('href', '/teacher/manage');
+    expect(screen.queryByRole('link', { name: 'Oversight' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Attendance' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Reports' })).not.toBeInTheDocument();
+  });
+
+  it('updates visible links when switching assignment', async () => {
+    setContext(classAssignment);
+    const user = userEvent.setup();
+    render(TeacherNav);
+
+    expect(screen.getByRole('link', { name: 'Oversight' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Subject' })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Section and subject'), 'sec-g1::math');
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'Subject' })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('link', { name: 'Oversight' })).not.toBeInTheDocument();
+  });
+
+  it('redirects to calendar when leaving a grain-gated page', async () => {
+    setContext(classAssignment);
+    window.history.pushState({}, '', '/teacher/oversight');
+    const user = userEvent.setup();
+    render(TeacherNav);
+
+    await user.selectOptions(screen.getByLabelText('Section and subject'), 'sec-g1::math');
+
+    await waitFor(() => {
+      expect(push).toHaveBeenCalledWith('/teacher/calendar');
+    });
   });
 
   it('renders a section/subject switcher from teacher context', async () => {
-    teacherContext.set({
-      teacherId: 't1',
-      assignments: [
-        {
-          sectionId: 'sec-ukg',
-          sectionName: 'UKG A',
-          grade: 'UKG',
-          bandId: 'band-pp',
-          assessmentMode: 'three_state_narrative',
-          subjectId: null,
-          subjectName: null,
-          isClassTeacher: true,
-        },
-        {
-          sectionId: 'sec-g1',
-          sectionName: 'Grade 1 A',
-          grade: 'Grade 1',
-          bandId: 'band-early',
-          assessmentMode: 'four_point_scale',
-          subjectId: 'math',
-          subjectName: 'Mathematics',
-          isClassTeacher: false,
-        },
-      ],
-      selected: {
-        sectionId: 'sec-ukg',
-        sectionName: 'UKG A',
-        grade: 'UKG',
-        bandId: 'band-pp',
-        assessmentMode: 'three_state_narrative',
-        subjectId: null,
-        subjectName: null,
-        isClassTeacher: true,
-      },
-    });
+    setContext(classAssignment);
 
     const user = userEvent.setup();
     render(TeacherNav);
