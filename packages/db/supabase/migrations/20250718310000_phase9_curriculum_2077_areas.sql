@@ -80,27 +80,27 @@ ON CONFLICT (band_id, code) DO NOTHING;
 
 -- Domains D1–D6
 INSERT INTO rollup_domains (id, band_id, code, name_en, name_np, sort_order) VALUES
-  ('rd000001-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D1', 'Physical & Well-being', 'शारीरिक तथा कल्याण', 1),
-  ('rd000001-0000-0000-0000-000000000002', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D2', 'Language & Communication', 'भाषा तथा सञ्चार', 2),
-  ('rd000001-0000-0000-0000-000000000003', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D3', 'Thinking & Early Maths', 'सोच र प्रारम्भिक गणित', 3),
-  ('rd000001-0000-0000-0000-000000000004', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D4', 'Social & Emotional', 'सामाजिक तथा भावनात्मक', 4),
-  ('rd000001-0000-0000-0000-000000000005', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D5', 'Creative & Expressive', 'सृजनात्मक तथा अभिव्यक्तिमूलक', 5),
-  ('rd000001-0000-0000-0000-000000000006', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D6', 'World Around Me', 'मेरो वरिपरिको संसार', 6)
+  ('cd000001-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D1', 'Physical & Well-being', 'शारीरिक तथा कल्याण', 1),
+  ('cd000001-0000-0000-0000-000000000002', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D2', 'Language & Communication', 'भाषा तथा सञ्चार', 2),
+  ('cd000001-0000-0000-0000-000000000003', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D3', 'Thinking & Early Maths', 'सोच र प्रारम्भिक गणित', 3),
+  ('cd000001-0000-0000-0000-000000000004', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D4', 'Social & Emotional', 'सामाजिक तथा भावनात्मक', 4),
+  ('cd000001-0000-0000-0000-000000000005', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D5', 'Creative & Expressive', 'सृजनात्मक तथा अभिव्यक्तिमूलक', 5),
+  ('cd000001-0000-0000-0000-000000000006', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D6', 'World Around Me', 'मेरो वरिपरिको संसार', 6)
 ON CONFLICT (band_id, code) DO NOTHING;
 
 -- Crosswalk (v3.3 §5.2)
 INSERT INTO area_domain_crosswalk (area_id, domain_id) VALUES
-  ('ca000001-0000-0000-0000-000000000001', 'rd000001-0000-0000-0000-000000000001'), -- physical → D1
-  ('ca000001-0000-0000-0000-000000000002', 'rd000001-0000-0000-0000-000000000001'), -- health → D1
-  ('ca000001-0000-0000-0000-000000000003', 'rd000001-0000-0000-0000-000000000002'), -- language → D2
-  ('ca000001-0000-0000-0000-000000000004', 'rd000001-0000-0000-0000-000000000003'), -- intellectual → D3
-  ('ca000001-0000-0000-0000-000000000005', 'rd000001-0000-0000-0000-000000000003'), -- pre_math → D3
-  ('ca000001-0000-0000-0000-000000000006', 'rd000001-0000-0000-0000-000000000004'), -- emotional → D4
-  ('ca000001-0000-0000-0000-000000000007', 'rd000001-0000-0000-0000-000000000004'), -- social_cultural → D4
-  ('ca000001-0000-0000-0000-000000000008', 'rd000001-0000-0000-0000-000000000005'), -- creative → D5
-  ('ca000001-0000-0000-0000-000000000009', 'rd000001-0000-0000-0000-000000000005'), -- visual_arts → D5
-  ('ca000001-0000-0000-0000-00000000000a', 'rd000001-0000-0000-0000-000000000006'), -- env sci → D6
-  ('ca000001-0000-0000-0000-00000000000b', 'rd000001-0000-0000-0000-000000000006')  -- social studies → D6
+  ('ca000001-0000-0000-0000-000000000001', 'cd000001-0000-0000-0000-000000000001'), -- physical → D1
+  ('ca000001-0000-0000-0000-000000000002', 'cd000001-0000-0000-0000-000000000001'), -- health → D1
+  ('ca000001-0000-0000-0000-000000000003', 'cd000001-0000-0000-0000-000000000002'), -- language → D2
+  ('ca000001-0000-0000-0000-000000000004', 'cd000001-0000-0000-0000-000000000003'), -- intellectual → D3
+  ('ca000001-0000-0000-0000-000000000005', 'cd000001-0000-0000-0000-000000000003'), -- pre_math → D3
+  ('ca000001-0000-0000-0000-000000000006', 'cd000001-0000-0000-0000-000000000004'), -- emotional → D4
+  ('ca000001-0000-0000-0000-000000000007', 'cd000001-0000-0000-0000-000000000004'), -- social_cultural → D4
+  ('ca000001-0000-0000-0000-000000000008', 'cd000001-0000-0000-0000-000000000005'), -- creative → D5
+  ('ca000001-0000-0000-0000-000000000009', 'cd000001-0000-0000-0000-000000000005'), -- visual_arts → D5
+  ('ca000001-0000-0000-0000-00000000000a', 'cd000001-0000-0000-0000-000000000006'), -- env sci → D6
+  ('ca000001-0000-0000-0000-00000000000b', 'cd000001-0000-0000-0000-000000000006')  -- social studies → D6
 ON CONFLICT DO NOTHING;
 
 -- Tag placeholder milestone to language area (structural; real bank is trainer-owned)

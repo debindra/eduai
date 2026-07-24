@@ -144,7 +144,7 @@ INSERT INTO assessment_areas (
   id, subject_id, level_id, code, display_label, grouping_shape,
   default_sequence, indicator_count
 ) VALUES (
-  'aa000004-eng1-0000-0000-000000000001',
+  'aa000004-e004-0000-0000-000000000001',
   'd1111111-1111-1111-1111-111111111112',
   4,
   'ENG4-U1',
@@ -158,13 +158,13 @@ INSERT INTO indicators (
   id, assessment_area_id, level_id, code, statement_en, statement_np,
   group_label, sort_order
 ) VALUES
-  ('ind00004-eng1-0000-0000-000000000001', 'aa000004-eng1-0000-0000-000000000001', 4, 'ENG4.U1.1',
+  ('1d000004-e004-0000-0000-000000000001', 'aa000004-e004-0000-0000-000000000001', 4, 'ENG4.U1.1',
    'Placeholder G4 English Unit 1 indicator 1 — replace with annex extraction', NULL, 'L', 1),
-  ('ind00004-eng1-0000-0000-000000000002', 'aa000004-eng1-0000-0000-000000000001', 4, 'ENG4.U1.2',
+  ('1d000004-e004-0000-0000-000000000002', 'aa000004-e004-0000-0000-000000000001', 4, 'ENG4.U1.2',
    'Placeholder G4 English Unit 1 indicator 2 — replace with annex extraction', NULL, 'S', 2),
-  ('ind00004-eng1-0000-0000-000000000003', 'aa000004-eng1-0000-0000-000000000001', 4, 'ENG4.U1.3',
+  ('1d000004-e004-0000-0000-000000000003', 'aa000004-e004-0000-0000-000000000001', 4, 'ENG4.U1.3',
    'Placeholder G4 English Unit 1 indicator 3 — replace with annex extraction', NULL, 'R', 3),
-  ('ind00004-eng1-0000-0000-000000000004', 'aa000004-eng1-0000-0000-000000000001', 4, 'ENG4.U1.4',
+  ('1d000004-e004-0000-0000-000000000004', 'aa000004-e004-0000-0000-000000000001', 4, 'ENG4.U1.4',
    'Placeholder G4 English Unit 1 indicator 4 — replace with annex extraction', NULL, 'W', 4)
 ON CONFLICT (assessment_area_id, code) DO NOTHING;
 
