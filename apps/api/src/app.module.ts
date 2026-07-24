@@ -21,6 +21,8 @@ import { ManageModule } from './modules/manage/manage.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { MethodsToolkitModule } from './modules/methods-toolkit/methods-toolkit.module';
 import { OutcomesModule } from './modules/outcomes/outcomes.module';
+import { RatingsModule } from './modules/ratings/ratings.module';
+import { AssessmentPackModule } from './modules/assessment-pack/assessment-pack.module';
 import { PacingModule } from './modules/pacing/pacing.module';
 import { PlanningCascadeModule } from './modules/planning-cascade/planning-cascade.module';
 import { PlatformModule } from './modules/platform/platform.module';
@@ -54,6 +56,8 @@ import { YearlyMapModule } from './modules/yearly-map/yearly-map.module';
     PacingModule,
     AttendanceModule,
     OutcomesModule,
+    RatingsModule,
+    AssessmentPackModule,
     LessonModule,
     CoachModule,
     ReportsModule,

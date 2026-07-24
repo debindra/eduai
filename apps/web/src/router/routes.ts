@@ -5,6 +5,7 @@ import LoginPage from '../features/auth/LoginPage.svelte';
 import RecoveryPage from '../features/auth/RecoveryPage.svelte';
 import CalendarWizard from '../features/calendar/CalendarWizard.svelte';
 import SweepPage from '../features/outcomes/SweepPage.svelte';
+import IndicatorSweepPage from '../features/ratings/IndicatorSweepPage.svelte';
 import WeeklyPlanPage from '../features/planning/WeeklyPlanPage.svelte';
 import DailyLessonPage from '../features/lessons/DailyLessonPage.svelte';
 import PacingPage from '../features/pacing/PacingPage.svelte';
@@ -89,6 +90,10 @@ export const routes = {
   }),
   '/teacher/sweep': createProtectedRoute({
     component: async () => SweepPage,
+    permissions: routePermissions.teacher,
+  }),
+  '/teacher/indicator-sweep': createProtectedRoute({
+    component: async () => IndicatorSweepPage,
     permissions: routePermissions.teacher,
   }),
   '/teacher/weekly': createProtectedRoute({

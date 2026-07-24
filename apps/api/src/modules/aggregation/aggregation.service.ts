@@ -2,7 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { SupabaseService } from '../../database/supabase.service';
 import {
   aggregateRatings,
+  aggregateSubjectFromAreas,
+  computeAreaAchievement,
   type AggregateResult,
+  type AreaAchievementResult,
   type LetterCutoff,
   type RatingInput,
 } from './aggregate';
@@ -87,6 +90,49 @@ export class AggregationRepository {
     if (error) throw error;
     return data;
   }
+
+  async findArea(areaId: string) {
+    const { data, error } = await this.client()
+      .from('assessment_areas')
+      .select('id, subject_id, level_id, code, indicator_count, display_label')
+      .eq('id', areaId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  async listIndicatorsForArea(areaId: string) {
+    const { data, error } = await this.client()
+      .from('indicators')
+      .select('id, code')
+      .eq('assessment_area_id', areaId)
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  async listConfirmedRatingsForChildArea(childId: string, areaId: string) {
+    const { data, error } = await this.client()
+      .from('ratings')
+      .select('id, rating, state, created_at, indicators!inner(id, code, assessment_area_id)')
+      .eq('child_id', childId)
+      .eq('state', 'confirmed')
+      .eq('indicators.assessment_area_id', areaId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  async listAreasForSubject(subjectId: string, levelId: number) {
+    const { data, error } = await this.client()
+      .from('assessment_areas')
+      .select('id, code, indicator_count, default_sequence')
+      .eq('subject_id', subjectId)
+      .eq('level_id', levelId)
+      .order('default_sequence', { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  }
 }
 
 @Injectable()
@@ -94,8 +140,8 @@ export class AggregationService {
   constructor(private readonly repository: AggregationRepository) {}
 
   /**
-   * Per-child aggregation only — never ranks across children.
-   * Pure arithmetic over confirmed rows; zero AI.
+   * Legacy flat aggregation over student_outcomes (pre–v3.3 path).
+   * Per-child only — never ranks across children.
    */
   async aggregateChild(
     childId: string,
@@ -131,6 +177,98 @@ export class AggregationService {
     return {
       ...result,
       childId,
+      sectionId: child.section_id as string,
+    };
+  }
+
+  /**
+   * I6–I8: area achievement from annex indicator_count.
+   * Incomplete → withheld (never a partial %).
+   */
+  async aggregateArea(
+    childId: string,
+    areaId: string,
+  ): Promise<
+    AreaAchievementResult & { childId: string; areaId: string; areaCode: string }
+  > {
+    const child = await this.repository.findChild(childId);
+    if (!child) throw new NotFoundException('Child not found');
+    const area = await this.repository.findArea(areaId);
+    if (!area) throw new NotFoundException('Assessment area not found');
+
+    const [indicators, ratingRows] = await Promise.all([
+      this.repository.listIndicatorsForArea(areaId),
+      this.repository.listConfirmedRatingsForChildArea(childId, areaId),
+    ]);
+
+    const codes = indicators.map((i) => i.code as string);
+    const latestByCode = new Map<string, { rating: number; state: string }>();
+    for (const row of ratingRows) {
+      const ind = row.indicators as unknown as { code: string };
+      const code = ind?.code;
+      if (!code || latestByCode.has(code)) continue;
+      latestByCode.set(code, {
+        rating: Number(row.rating),
+        state: row.state as string,
+      });
+    }
+
+    const result = computeAreaAchievement(
+      Number(area.indicator_count),
+      codes,
+      [...latestByCode.entries()].map(([indicatorCode, v]) => ({
+        indicatorCode,
+        rating: v.rating,
+        state: v.state,
+      })),
+    );
+
+    return {
+      ...result,
+      childId,
+      areaId,
+      areaCode: area.code as string,
+    };
+  }
+
+  /**
+   * Subject overall from area achievements. Any withheld area → withheld subject.
+   */
+  async aggregateSubjectByAreas(
+    childId: string,
+    subjectId: string,
+    levelId: number,
+  ) {
+    const child = await this.repository.findChild(childId);
+    if (!child) throw new NotFoundException('Child not found');
+    const section = await this.repository.findSectionBand(child.section_id as string);
+    if (!section) throw new NotFoundException('Section not found');
+
+    const [cutoffs, areas] = await Promise.all([
+      this.repository.listLetterCutoffs(section.band_id as string),
+      this.repository.listAreasForSubject(subjectId, levelId),
+    ]);
+
+    if (cutoffs.length === 0) {
+      throw new BadRequestException('Band has no letter grade cut-offs configured');
+    }
+    if (areas.length === 0) {
+      throw new BadRequestException('No assessment areas for subject/level');
+    }
+
+    const areaResults: AreaAchievementResult[] = [];
+    for (const area of areas) {
+      const areaAgg = await this.aggregateArea(childId, area.id as string);
+      const { childId: _c, areaId: _a, areaCode: _ac, ...rest } = areaAgg;
+      areaResults.push(rest);
+    }
+
+    const subject = aggregateSubjectFromAreas(areaResults, cutoffs);
+    return {
+      ...subject,
+      childId,
+      subjectId,
+      levelId,
       sectionId: child.section_id as string,
     };
   }

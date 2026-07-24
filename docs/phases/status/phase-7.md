@@ -17,7 +17,7 @@ overview) in platform and school-admin UIs.
 
 **Next:** Optional deferred tickets (P7-API-PLAT-04 provisioning, band/AI/
 licensing UIs, audit console). National-festival yearly-refresh owner remains
-an open product item (`CLAUDE.md` §7).
+an open product item (`CLAUDE.md` 7).
 
 ---
 
@@ -46,5 +46,5 @@ an open product item (`CLAUDE.md` §7).
 
 ## Blockers
 
-- National festival template yearly-refresh owner (`CLAUDE.md` §7) — data rows only; not hardcoded.
+- National festival template yearly-refresh owner (`CLAUDE.md` 7) — data rows only; not hardcoded.
 - BS↔AD library confirmed as `nepali-datetime` (wrapped by `@eduai/bs-date`).

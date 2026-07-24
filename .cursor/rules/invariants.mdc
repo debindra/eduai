@@ -1,16 +1,17 @@
 ---
-description: Core non-negotiable invariants for EduAI Nepal — always active
+description: Core non-negotiable invariants for EduAI Nepal / BidyaSetu — always active
 alwaysApply: true
 ---
 
-You are working in the EduAI Nepal codebase (WhatsApp-first pre-primary +
-Grades 1–5 education platform for Nepal). Before generating or editing any
-code that touches schema, RBAC, assessment/outcomes, AI prompts, or document
-generation, treat the following as hard constraints, not suggestions:
+You are working in the EduAI Nepal / BidyaSetu codebase (WhatsApp-first
+pre-primary + Grades 1–5 education platform for Nepal). Before generating
+or editing any code that touches schema, RBAC, assessment/outcomes, AI
+prompts, or document generation, treat the following as hard constraints,
+not suggestions:
 
 - **The level is human**: never write code that lets an AI/mapper output
-  directly become a confirmed `student_outcomes` or milestone row. Every
-  write path ends in an explicit teacher confirmation step.
+  directly become a confirmed rating, `student_outcomes`, or milestone row.
+  Every write path ends in an explicit teacher confirmation step.
 - **No rank-order queries**: never write a query, view, or endpoint that
   orders/sorts a rating, percentage, or letter-grade column across more than
   one child or teacher. If a feature seems to need this, stop and flag it —
@@ -34,10 +35,44 @@ generation, treat the following as hard constraints, not suggestions:
   never route these through an LLM call.
 - **Mapper guards** (all four capture paths): no jump to top band from one
   sighting; ambiguous names resolve via roll number, never a guess; a
-  non-observation routes to attendance, never becomes an outcome candidate;
-  only explicit teacher confirmation finalizes a write.
+  non-observation routes to attendance, never becomes an outcome/indicator
+  candidate; only explicit teacher confirmation finalizes a write.
+
+### Assessment engine (BidyaSetu Full System Report v3.3 I1–I9)
+
+- **I1 — Indicator atom**: Grades 1–5 ratings attach to `indicators` only,
+  never to 3 curriculum outcomes or to areas.
+- **I2 — Scale is 1–4**: Guideline 2083 wins over the 2021 English 1–5 scale.
+  No mapping layer. Denominator always `4 × N`.
+- **I3 — group_label**: nullable, subject-configured — never a skill enum.
+- **I4 — Per-level rows**: identical indicator text across grades = separate
+  rows keyed by `level_id`; never deduplicate on statement text.
+- **I5 — Two-stage form**: regular + additional-support, both dated, shared
+  skeleton for all subjects.
+- **I6 — Annex N**: `assessment_areas.indicator_count` from the annex — never
+  hardcode indicator counts or area denominators.
+- **I7 — Append-only ratings**: corrections are new INSERTs; never UPDATE a
+  prior confirmed rating row.
+- **I8 — Withheld partials**: area achievement is computed, never stored.
+  Incomplete area returns `{ withheld, missingIndicators[] }` — no surface
+  (WhatsApp, web, parent report, admin) may render a partial percentage.
+- **I9 — Crosswalk**: `book_chapter → assessment_area`, book-optional.
+
+### Pre-primary (Curriculum 2077)
+
+- System of record: 11 `curriculum_areas`. Parent/principal view: 6
+  `rollup_domains` via `area_domain_crosswalk`. States: `not_yet` /
+  `developing` / `can_do` (+ hidden `not_observed`). Never a numeric score.
+- ELDS is a validation anchor only — not the organising taxonomy.
+
+### Assessment Pack dual-render
+
+One pack generation must produce an interactive web pack **and** a
+self-contained WhatsApp + PDF digest usable without opening the web.
 
 When unsure whether something violates one of these, ask rather than assume —
 these are the properties the whole product's trust model depends on.
 
-Full detail lives in `/docs/specs/` and `/skills/eduai-architecture/SKILL.md`.
+Full detail: `/docs/specs/BidyaSetu_Full_System_Report_v3.3.docx`,
+`/docs/specs/Data_Model_Identity_Addendum_v2.md`, and
+`/skills/eduai-architecture/SKILL.md`.

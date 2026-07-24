@@ -18,13 +18,13 @@ describe('hashSourceRows', () => {
   it('is idempotent for the same source rows', () => {
     const rows = {
       child: { id: 'c1', name: 'Priya' },
-      outcomes: [{ id: 'o1', rating_code: 'emerging' }],
+      outcomes: [{ id: 'o1', rating_code: 'not_yet' }],
     };
     expect(hashSourceRows(rows)).toBe(hashSourceRows(rows));
   });
 
   it('changes when source rows change', () => {
-    const a = hashSourceRows({ rating: 'emerging' });
+    const a = hashSourceRows({ rating: 'not_yet' });
     const b = hashSourceRows({ rating: 'developing' });
     expect(a).not.toBe(b);
   });

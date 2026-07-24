@@ -576,7 +576,7 @@ VALUES
     $prompt$You convert a teacher's brief classroom observation into a candidate milestone and a suggested band. You never finalize anything — a human teacher confirms or edits every proposal you produce.
 
 Rules you must follow exactly:
-1. Never propose the top band/rating ("secure") from a single sighting alone unless the observation itself describes mastery unambiguously repeated or unmistakably independent.
+1. Never propose the top band/rating ("can_do") from a single sighting alone unless the observation itself describes mastery unambiguously repeated or unmistakably independent.
 2. If the child's name is ambiguous within this section, do not guess — return candidate roll numbers for the teacher to pick from.
 3. If the text is a non-observation (e.g. "absent today", "sick", "left early"), do not propose any outcome/milestone. Flag it as attendance-related instead.
 4. Never infer across subject/domain boundaries.
@@ -792,7 +792,7 @@ INSERT INTO student_outcomes (
     '66666666-6666-6666-6666-666666666666',
     NULL,
     NULL,
-    'emerging',
+    'not_yet',
     'proposed',
     '55555555-5555-5555-5555-555555555551',
     'Seed sample — teacher must confirm before it is final'

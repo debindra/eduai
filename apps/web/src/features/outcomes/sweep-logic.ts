@@ -2,7 +2,7 @@ export type SweepRow = {
   childId: string;
   childName: string;
   outcomeId: string;
-  ratingCode: 'emerging' | 'developing';
+  ratingCode: 'not_yet' | 'developing';
 };
 
 export function buildSweepConfirmPayload(rows: SweepRow[]) {
@@ -13,7 +13,7 @@ export function buildSweepConfirmPayload(rows: SweepRow[]) {
   }));
 }
 
-/** Secure is never offered in batch sweep UI — mapper guard. */
-export function allowedSweepRatings(): Array<'emerging' | 'developing'> {
-  return ['emerging', 'developing'];
+/** can_do is never offered in batch sweep UI — mapper guard. */
+export function allowedSweepRatings(): Array<'not_yet' | 'developing'> {
+  return ['not_yet', 'developing'];
 }

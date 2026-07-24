@@ -33,7 +33,7 @@ describe('HandoverService', () => {
           id: 'o1',
           child_id: 'c1',
           outcome_id: 'out1',
-          rating_code: 'emerging',
+          rating_code: 'not_yet',
           confirmed_at: '2025-05-20T00:00:00Z',
           updated_at: '2025-05-20T00:00:00Z',
         },

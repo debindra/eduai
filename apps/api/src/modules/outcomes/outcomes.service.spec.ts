@@ -66,18 +66,18 @@ describe('OutcomesService Propose/Confirm', () => {
       outcome_id: 'o1',
       section_id: 's1',
       subject_id: 'subj1',
-      rating_code: 'emerging',
+      rating_code: 'not_yet',
       state: 'proposed',
       evidence_note: null,
     });
     await service.proposeBatchSweep(
       's1',
       'subj1',
-      [{ childId: 'c1', outcomeId: 'o1', ratingCode: 'emerging' }],
+      [{ childId: 'c1', outcomeId: 'o1', ratingCode: 'not_yet' }],
       't1',
     );
     expect(repository.insertProposed).toHaveBeenCalledWith(
-      expect.objectContaining({ rating_code: 'emerging', subject_id: 'subj1' }),
+      expect.objectContaining({ rating_code: 'not_yet', subject_id: 'subj1' }),
     );
     expect(repository.confirm).not.toHaveBeenCalled();
   });
@@ -95,7 +95,7 @@ describe('OutcomesService Propose/Confirm', () => {
       outcome_id: 'o1',
       section_id: 's1',
       subject_id: 'subj1',
-      rating_code: 'emerging',
+      rating_code: 'not_yet',
       state: 'confirmed',
       evidence_note: null,
     });
@@ -109,7 +109,7 @@ describe('OutcomesService Propose/Confirm', () => {
       service.proposeBatchSweep(
         's1',
         null,
-        [{ childId: 'c1', outcomeId: 'o1', ratingCode: 'secure' }],
+        [{ childId: 'c1', outcomeId: 'o1', ratingCode: 'can_do' }],
         't1',
       ),
     ).rejects.toBeInstanceOf(BadRequestException);

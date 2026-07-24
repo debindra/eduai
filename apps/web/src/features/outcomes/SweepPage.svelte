@@ -42,7 +42,7 @@
         childId: c.childId,
         childName: c.name,
         outcomeId,
-        ratingCode: 'emerging' as const,
+        ratingCode: 'not_yet' as const,
       }));
     } catch (err) {
       if (!loadGate.isCurrent(token)) return;

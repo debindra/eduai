@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateRatings, percentToLetter, type LetterCutoff } from './aggregate';
+import {
+  aggregateRatings,
+  aggregateSubjectFromAreas,
+  computeAreaAchievement,
+  percentToLetter,
+  rollupAreasToDomains,
+  type LetterCutoff,
+} from './aggregate';
 
 const CUTOFFS: LetterCutoff[] = [
   { code: 'E', minPercent: 0, maxPercent: 19.99, sortOrder: 1 },
@@ -21,7 +28,6 @@ describe('aggregateRatings', () => {
       ],
       CUTOFFS,
     );
-    // sum=12, n=4 → 12/(16)*100 = 75 → A
     expect(result.percent).toBe(75);
     expect(result.letterCode).toBe('A');
     expect(result.n).toBe(4);
@@ -63,7 +69,6 @@ describe('percentToLetter', () => {
   });
 });
 
-/** Provisional basic_upper NG–A+ cut-offs (same rows as Phase 4 migration). */
 const BASIC_UPPER_CUTOFFS: LetterCutoff[] = [
   { code: 'NG', minPercent: 0, maxPercent: 19.99, sortOrder: 1 },
   { code: 'E', minPercent: 20, maxPercent: 34.99, sortOrder: 2 },
@@ -85,7 +90,6 @@ describe('aggregateRatings against basic_upper NG–A+ fixtures (P4-TEST-01)', (
       ],
       BASIC_UPPER_CUTOFFS,
     );
-    // sum=12, n=4 → 75 → A (same percent; different letter table than E–A+)
     expect(result.percent).toBe(75);
     expect(result.letterCode).toBe('A');
   });
@@ -98,7 +102,6 @@ describe('aggregateRatings against basic_upper NG–A+ fixtures (P4-TEST-01)', (
       ],
       BASIC_UPPER_CUTOFFS,
     );
-    // sum=2, n=2 → 2/8*100 = 25 → E on NG–A+ table
     expect(result.percent).toBe(25);
     expect(result.letterCode).toBe('E');
     expect(percentToLetter(0, BASIC_UPPER_CUTOFFS)).toBe('NG');
@@ -115,5 +118,119 @@ describe('aggregateRatings against basic_upper NG–A+ fixtures (P4-TEST-01)', (
     );
     expect(result.percent).toBe(100);
     expect(result.letterCode).toBe('A+');
+  });
+});
+
+describe('computeAreaAchievement (I6–I8)', () => {
+  const codes = ['ENG4.U1.1', 'ENG4.U1.2', 'ENG4.U1.3', 'ENG4.U1.4'];
+
+  it('I8: returns withheld with named missing indicators when incomplete', () => {
+    const result = computeAreaAchievement(4, codes, [
+      { indicatorCode: 'ENG4.U1.1', rating: 3, state: 'confirmed' },
+      { indicatorCode: 'ENG4.U1.2', rating: 2, state: 'confirmed' },
+    ]);
+    expect(result.status).toBe('withheld');
+    if (result.status === 'withheld') {
+      expect(result.missingIndicators).toEqual(['ENG4.U1.3', 'ENG4.U1.4']);
+      expect(result.nRated).toBe(2);
+      expect(result.indicatorCount).toBe(4);
+    }
+  });
+
+  it('I6: uses annex N as denominator 4×N, not ratings.length alone', () => {
+    const result = computeAreaAchievement(4, codes, [
+      { indicatorCode: 'ENG4.U1.1', rating: 4, state: 'confirmed' },
+      { indicatorCode: 'ENG4.U1.2', rating: 4, state: 'confirmed' },
+      { indicatorCode: 'ENG4.U1.3', rating: 4, state: 'confirmed' },
+      { indicatorCode: 'ENG4.U1.4', rating: 4, state: 'confirmed' },
+    ]);
+    expect(result.status).toBe('computed');
+    if (result.status === 'computed') {
+      expect(result.denominator).toBe(16);
+      expect(result.percent).toBe(100);
+      expect(result.n).toBe(4);
+    }
+  });
+
+  it('ignores proposed ratings for completeness', () => {
+    const result = computeAreaAchievement(4, codes, [
+      { indicatorCode: 'ENG4.U1.1', rating: 3, state: 'confirmed' },
+      { indicatorCode: 'ENG4.U1.2', rating: 3, state: 'confirmed' },
+      { indicatorCode: 'ENG4.U1.3', rating: 3, state: 'confirmed' },
+      { indicatorCode: 'ENG4.U1.4', rating: 3, state: 'proposed' },
+    ]);
+    expect(result.status).toBe('withheld');
+    if (result.status === 'withheld') {
+      expect(result.missingIndicators).toEqual(['ENG4.U1.4']);
+    }
+  });
+});
+
+describe('aggregateSubjectFromAreas', () => {
+  it('withholds subject when any area is incomplete', () => {
+    const result = aggregateSubjectFromAreas(
+      [
+        {
+          status: 'computed',
+          percent: 75,
+          n: 4,
+          sum: 12,
+          denominator: 16,
+        },
+        {
+          status: 'withheld',
+          missingIndicators: ['X.1'],
+          nRated: 1,
+          indicatorCount: 2,
+        },
+      ],
+      CUTOFFS,
+    );
+    expect(result.status).toBe('withheld');
+    if (result.status === 'withheld') {
+      expect(result.missingIndicators).toContain('X.1');
+    }
+  });
+
+  it('averages completed area percents into letter', () => {
+    const result = aggregateSubjectFromAreas(
+      [
+        {
+          status: 'computed',
+          percent: 100,
+          n: 2,
+          sum: 8,
+          denominator: 8,
+        },
+        {
+          status: 'computed',
+          percent: 50,
+          n: 2,
+          sum: 4,
+          denominator: 8,
+        },
+      ],
+      CUTOFFS,
+    );
+    expect(result.status).toBe('computed');
+    if (result.status === 'computed') {
+      expect(result.percent).toBe(75);
+      expect(result.letterCode).toBe('A');
+    }
+  });
+});
+
+describe('rollupAreasToDomains', () => {
+  it('maps area codes to domains via crosswalk rows only', () => {
+    const map = rollupAreasToDomains(
+      ['physical', 'language'],
+      [
+        { areaCode: 'physical', domainCode: 'D1' },
+        { areaCode: 'language', domainCode: 'D2' },
+      ],
+    );
+    expect(map.get('D1')).toEqual(['physical']);
+    expect(map.get('D2')).toEqual(['language']);
+    expect(map.has('D3')).toBe(false);
   });
 });

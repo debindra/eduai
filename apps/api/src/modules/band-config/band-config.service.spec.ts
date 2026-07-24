@@ -70,7 +70,7 @@ describe('BandConfigService', () => {
             data: [
               {
                 id: 'scale-1',
-                code: 'emerging',
+                code: 'not_yet',
                 label_en: 'Emerging',
                 label_np: null,
                 sort_order: 1,
@@ -126,7 +126,7 @@ describe('BandConfigService', () => {
       gradeScales: [
         {
           id: 'scale-1',
-          code: 'emerging',
+          code: 'not_yet',
           labelEn: 'Emerging',
           labelNp: null,
           sortOrder: 1,

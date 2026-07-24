@@ -28,7 +28,7 @@ describe('P2-TEST-01 Curriculum-2077 compliance cycle', () => {
     {
       id: 'o1',
       outcome_id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-      rating_code: 'emerging',
+      rating_code: 'not_yet',
       state: 'confirmed',
       confirmed_at: '2025-04-20T00:00:00Z',
       evidence_note: 'seen in circle time',

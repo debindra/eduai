@@ -46,7 +46,7 @@ describe('visibleTeacherNavLinks', () => {
     expect(next).not.toContain('Subject');
   });
 
-  it('shows Subject and hides class-teacher links for subject grain', () => {
+  it('shows Subject and Indicators and hides class-teacher links for subject grain', () => {
     const next = labels(
       getMockAssignment({
         isClassTeacher: false,
@@ -55,6 +55,7 @@ describe('visibleTeacherNavLinks', () => {
       }),
     );
     expect(next).toContain('Subject');
+    expect(next).toContain('Indicators');
     expect(next).not.toContain('Attendance');
     expect(next).not.toContain('Reports');
     expect(next).not.toContain('Oversight');

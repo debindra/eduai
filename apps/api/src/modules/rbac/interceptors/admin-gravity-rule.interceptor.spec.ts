@@ -33,8 +33,8 @@ describe('AdminGravityRuleInterceptor', () => {
     } as ExecutionContext;
     const payload = {
       sectionCount: 4,
-      ratings: [{ childId: 'c1', rating: 'secure' }],
-      bandDistributions: { emerging: 2 },
+      ratings: [{ childId: 'c1', rating: 'can_do' }],
+      bandDistributions: { not_yet: 2 },
       childNames: ['Asha', 'Bikash'],
       nested: {
         shape: { planned: 12, done: 8 },
@@ -71,7 +71,7 @@ describe('AdminGravityRuleInterceptor', () => {
     } as ExecutionContext;
     const payload = {
       schools: [{ id: 's1', sectionsTotal: 2 }],
-      bandDistributions: { emerging: 9 },
+      bandDistributions: { not_yet: 9 },
       childNames: ['ShouldStrip'],
     };
     const actual = await lastValueFrom(

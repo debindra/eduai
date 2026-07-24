@@ -36,7 +36,7 @@ describe('applyMapperGuards', () => {
   it('blocks top-band jump from one sighting', () => {
     const result = applyMapperGuards({
       observationText: 'Did it once',
-      ratingCode: 'secure',
+      ratingCode: 'can_do',
     });
     expect(result.ok).toBe(false);
   });

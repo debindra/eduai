@@ -46,7 +46,7 @@ export function resolveObservationAgainstRoster(
       observationText,
       childNameAmbiguous: true,
       rollNumberCandidates: matches.map((m) => m.rollNumber),
-      ratingCode: suggestedRating ?? 'emerging',
+      ratingCode: suggestedRating ?? 'not_yet',
     });
     return {
       routeToAttendance: false,
@@ -69,7 +69,7 @@ export function resolveObservationAgainstRoster(
     };
   }
 
-  const rating = suggestedRating ?? 'emerging';
+  const rating = suggestedRating ?? 'not_yet';
   const guard = applyMapperGuards({
     observationText,
     childNameAmbiguous: false,
@@ -81,7 +81,7 @@ export function resolveObservationAgainstRoster(
       childId: matches[0]!.id,
       rollNumberCandidates: [],
       nameAmbiguous: false,
-      suggestedRating: 'emerging',
+      suggestedRating: 'not_yet',
       blockedReason: guard.errors.join('; '),
     };
   }
