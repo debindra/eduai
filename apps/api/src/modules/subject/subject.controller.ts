@@ -1,5 +1,14 @@
 import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import type { Request } from 'express';
 import { ForbiddenException } from '@nestjs/common';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
@@ -23,7 +32,13 @@ export class SubjectController {
   })
   @ApiOperation({
     summary: 'Subject-teacher view (write subject / read section roster)',
+    description: `Returns subject-specific data for a teacher with write scope on this subject.\n\nInvariant #9: Two-grain RLS from Grade 1 — write scope is (section_id, subject_id); read scope section-wide.\n\nRequires: SectionSubjectWriteGuard (teacher assigned to this section+subject).`,
   })
+  @ApiOkResponse({ description: 'Subject view retrieved successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid section or subject ID' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Write scope denied for this subject' })
+  @ApiNotFoundResponse({ description: 'Section or subject not found' })
   async subjectView(
     @Param('sectionId') sectionId: string,
     @Param('subjectId') subjectId: string,
@@ -45,8 +60,12 @@ export class SubjectController {
   @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
   @ApiOperation({
     summary: 'Class-teacher oversight + report assembly inputs',
-    description: 'Section-wide child summaries with per-child letter grades (never ranked).',
+    description: `Section-wide child summaries with per-child letter grades.\n\nInvariant #2: Never ranks across children — returns individual child summaries only, never ordered by rating.\n\nRequires: RequireSectionReadScope (class teacher for this section).`,
   })
+  @ApiOkResponse({ description: 'Class oversight data retrieved successfully' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
+  @ApiNotFoundResponse({ description: 'Section not found' })
   oversight(@Param('sectionId') sectionId: string) {
     return this.service.getClassTeacherOversight(sectionId);
   }

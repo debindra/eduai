@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health.controller';
+import { SharedModule } from './shared/shared.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AggregationModule } from './modules/aggregation/aggregation.module';
 import { AiOrchestrationModule } from './modules/ai-orchestration/ai-orchestration.module';
@@ -37,6 +38,7 @@ import { YearlyMapModule } from './modules/yearly-map/yearly-map.module';
       isGlobal: true,
       envFilePath: ['.env', '../../.env'],
     }),
+    SharedModule,
     DatabaseModule,
     AuthModule,
     RbacModule,

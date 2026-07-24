@@ -1,5 +1,14 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import type { Request } from 'express';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
@@ -38,8 +47,18 @@ export class PlanningCascadeController {
 
   @Get(':sectionId/monthly')
   @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
-  @ApiOperation({ summary: 'Monthly plan auto-derived from yearly map' })
-  @ApiOkResponse({ type: MonthlyPlanResponseDto })
+  @ApiOperation({
+    summary: 'Monthly plan auto-derived from yearly map',
+    description: `Returns monthly teaching plan by aggregating map_slices for the specified BS month.
+
+Invariant #6: Teaching days are derived — plan reflows automatically when calendar changes.
+
+Requires: SectionReadScope (teacher has read access to this section).`,
+  })
+  @ApiOkResponse({ type: MonthlyPlanResponseDto, description: 'Monthly plan retrieved successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid year/month format' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
   getMonthly(
     @Param('sectionId') sectionId: string,
     @Query('year') year: string,
@@ -50,8 +69,18 @@ export class PlanningCascadeController {
 
   @Get(':sectionId/weekly')
   @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
-  @ApiOperation({ summary: 'Weekly plan with Sunday-adjustable overrides' })
-  @ApiOkResponse({ type: WeeklyPlanResponseDto })
+  @ApiOperation({
+    summary: 'Weekly plan with Sunday-adjustable overrides',
+    description: `Returns weekly plan derived from monthly plan, with teacher's Sunday adjustments overlaid.
+
+Teachers can adjust individual days via POST /adjust — this view reflects those overrides.
+
+Requires: SectionReadScope (teacher has read access to this section).`,
+  })
+  @ApiOkResponse({ type: WeeklyPlanResponseDto, description: 'Weekly plan retrieved successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid weekStart date format' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
   getWeekly(
     @Param('sectionId') sectionId: string,
     @Query('weekStart') weekStart?: string,
@@ -61,8 +90,18 @@ export class PlanningCascadeController {
 
   @Post(':sectionId/weekly/adjust')
   @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
-  @ApiOperation({ summary: 'Teacher Sunday adjust for a day in the week' })
-  @ApiOkResponse({ type: WeeklyPlanResponseDto })
+  @ApiOperation({
+    summary: 'Teacher Sunday adjust for a day in the week',
+    description: `Allows teacher to override auto-generated daily plan for a specific day (typically done on Sunday).
+
+Creates or updates weekly_plan_overrides row for the specified day.
+
+Requires: SectionSubjectWriteGuard (teacher for this section).`,
+  })
+  @ApiOkResponse({ type: WeeklyPlanResponseDto, description: 'Weekly plan adjusted successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid date format or validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
   adjust(
     @Param('sectionId') sectionId: string,
     @Body() dto: AdjustWeeklyDto,
@@ -81,8 +120,18 @@ export class PlanningCascadeController {
 
   @Get(':sectionId/daily')
   @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
-  @ApiOperation({ summary: 'Daily cell pre-filled from weekly plan' })
-  @ApiOkResponse({ type: DailyPlanResponseDto })
+  @ApiOperation({
+    summary: 'Daily cell pre-filled from weekly plan',
+    description: `Returns daily teaching plan pre-filled from weekly plan (with any Sunday adjustments applied).
+
+Used as context for lesson generation and "mark done" tracking.
+
+Requires: SectionReadScope (teacher has read access to this section).`,
+  })
+  @ApiOkResponse({ type: DailyPlanResponseDto, description: 'Daily plan retrieved successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid date format' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
   getDaily(
     @Param('sectionId') sectionId: string,
     @Query('date') date: string,

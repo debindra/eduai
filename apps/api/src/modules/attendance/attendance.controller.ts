@@ -1,5 +1,14 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsIn, IsString, ValidateNested } from 'class-validator';
 import type { Request } from 'express';
@@ -41,7 +50,14 @@ export class AttendanceController {
 
   @Post(':sectionId/one-tap')
   @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
-  @ApiOperation({ summary: 'One-tap attendance with WhatsApp guardian confirmation' })
+  @ApiOperation({
+    summary: 'One-tap attendance with WhatsApp guardian confirmation',
+    description: `Batch attendance marking for the section with automatic WhatsApp confirmation to guardians.\n\nSupports status: present, absent, late, excused. Guardians receive notification via WhatsApp for absences/late arrivals.\n\nRequires: SectionSubjectWriteGuard (teacher for this section).`,
+  })
+  @ApiOkResponse({ description: 'Attendance marked successfully, guardian notifications queued' })
+  @ApiBadRequestResponse({ description: 'Validation failed or invalid day format' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
   oneTap(
     @Param('sectionId') sectionId: string,
     @Body() dto: OneTapAttendanceDto,
@@ -54,7 +70,14 @@ export class AttendanceController {
 
   @Get(':sectionId')
   @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
-  @ApiOperation({ summary: 'List children for attendance day' })
+  @ApiOperation({
+    summary: 'List children for attendance day',
+    description: `Returns all children in section with attendance status for specified day.\n\nRequires: RequireSectionReadScope (teacher has access to this section).`,
+  })
+  @ApiOkResponse({ description: 'Children list with attendance status retrieved successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid day format' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
   list(@Param('sectionId') sectionId: string, @Query('day') day: string) {
     return this.service.listForDay(sectionId, day);
   }

@@ -1,5 +1,15 @@
 import { Controller, Get, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import type { Request } from 'express';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
@@ -39,9 +49,12 @@ export class AdminController {
   @RequireSchoolAdmin({ schoolIdQuery: 'schoolId' })
   @ApiOperation({
     summary: 'Gravity-shaped compliance dashboard',
-    description:
-      'Counts and shapes only — never band/rating distributions, never child names, never teacher league tables. Requires admin role.',
+    description: `Returns aggregate counts and shapes only.\n\nInvariant #3 (Gravity Rule): Admin sees practice-level aggregates only — never band/rating distributions, never individual child names, never teacher league tables.\n\nRequires: RequireRoleGuard (role='admin') AND RequireSchoolAdminGuard (school admin for specified school).`,
   })
+  @ApiOkResponse({ description: 'Dashboard data retrieved successfully (aggregates only)' })
+  @ApiBadRequestResponse({ description: 'Validation failed or invalid date range' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not a school admin' })
   dashboard(@Query() query: DashboardQueryDto, @Req() _req: Request) {
     const end = query.periodEnd ?? new Date().toISOString().slice(0, 10);
     const start =
@@ -55,8 +68,11 @@ export class AdminController {
     summary: 'Cache hit-rate monitoring (P5-API-01)',
     description:
       'Hit/miss counts and rates per feature. The remedial-activity cache ' +
-      '(methods_toolkit) is reported separately. Counts/shapes only.',
+      '(methods_toolkit) is reported separately. Counts/shapes only.\n\nRequires: RequireRoleGuard (role=\'admin\').',
   })
+  @ApiOkResponse({ description: 'Cache metrics retrieved successfully' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not an admin' })
   cacheMetrics() {
     return this.service.getCacheMetrics();
   }
@@ -67,8 +83,12 @@ export class AdminController {
     summary: 'Out-of-segment demand signal (P5-API-02)',
     description:
       'Counts of requests for functionality outside the school licensed band ' +
-      'range, grouped by band and feature. Counts/shapes only (gravity rule).',
+      'range, grouped by band and feature. Counts/shapes only (gravity rule).\n\nRequires: RequireRoleGuard (role=\'admin\') AND RequireSchoolAdminGuard (school admin for specified school).',
   })
+  @ApiOkResponse({ description: 'Out-of-segment usage data retrieved successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not a school admin' })
   outOfSegment(@Query() query: DashboardQueryDto) {
     return this.service.getOutOfSegment(query.schoolId);
   }

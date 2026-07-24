@@ -1,11 +1,29 @@
 import './timezone';
 import 'reflect-metadata';
+import * as Sentry from '@sentry/node';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
+  // Initialize Sentry before app creation (optional - only if DSN provided)
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'development',
+      tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
+      beforeSend(event, hint) {
+        // Don't send errors in development to avoid noise
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[Sentry] Error captured (not sent in dev):', hint.originalException);
+          return null;
+        }
+        return event;
+      },
+    });
+  }
+
   const app = await NestFactory.create(AppModule);
 
   // Allow both localhost and 127.0.0.1 — browsers treat them as distinct origins.

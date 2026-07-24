@@ -1,5 +1,15 @@
 import { Body, Controller, ForbiddenException, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import type { Request } from 'express';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
@@ -23,7 +33,14 @@ export class ReportsController {
 
   @Post(':sectionId/monthly/draft')
   @RequireSectionSubjectScope({ sectionIdParam: 'sectionId' })
-  @ApiOperation({ summary: 'Draft monthly parent report (Sonnet or thin-data fallback)' })
+  @ApiOperation({
+    summary: 'Draft monthly parent report (Sonnet or thin-data fallback)',
+    description: `Generates a PROPOSED monthly report for teacher review using Claude Sonnet.\n\nInvariant #12: No fiction — thin data triggers neutral fallback template, never generated placeholder narratives.\n\nThis is a DRAFT-only endpoint. Call POST /:draftId/approve to send to parents.\n\nRequires: SectionSubjectWriteGuard (teacher for this section).`,
+  })
+  @ApiOkResponse({ description: 'Report draft created successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed or invalid date range' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
   draft(
     @Param('sectionId') sectionId: string,
     @Body() dto: DraftReportDto,
@@ -44,7 +61,15 @@ export class ReportsController {
 
   @Post(':draftId/approve')
   @BlocksSubstituteConfirmation()
-  @ApiOperation({ summary: 'Teacher approve report — never calls AI' })
+  @ApiOperation({
+    summary: 'Teacher approve report — never calls AI',
+    description: `Confirms and sends report draft to parents via WhatsApp.\n\nInvariant #1: The level is human — teacher must explicitly approve before sending.\n\nNever calls AI — sends existing draft only. Blocks substitute teachers from approving.`,
+  })
+  @ApiOkResponse({ description: 'Report approved and sent successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid draft state or draft already approved' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not authorized (substitute or wrong teacher)' })
+  @ApiNotFoundResponse({ description: 'Draft not found' })
   approve(@Param('draftId') draftId: string, @Req() req: Request) {
     const teacherId =
       req.user?.memberships.find((m) => m.teacherId)?.teacherId ?? null;

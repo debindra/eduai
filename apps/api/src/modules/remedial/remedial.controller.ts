@@ -8,7 +8,17 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import type { Request } from 'express';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
@@ -73,7 +83,17 @@ export class RemedialController {
     sectionIdParam: 'sectionId',
     subjectIdBody: 'subjectId',
   })
-  @ApiOperation({ summary: 'Open a remedial plan (state=opened)' })
+  @ApiOperation({
+    summary: 'Open a remedial plan',
+    description: `Creates remedial_plan record with state=opened for a stalled milestone.
+
+Requires: SectionSubjectWriteGuard.
+Triggers: Remedial workflow (activity delivery → reassessment → close/escalate).`,
+  })
+  @ApiOkResponse({ description: 'Remedial plan created successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section/subject' })
   open(
     @Param('sectionId') sectionId: string,
     @Body() dto: OpenRemedialDto,
@@ -96,7 +116,17 @@ export class RemedialController {
       sectionColumn: 'section_id',
     },
   })
-  @ApiOperation({ summary: 'Mark methods-toolkit activity delivered' })
+  @ApiOperation({
+    summary: 'Mark methods-toolkit activity delivered',
+    description: `Transitions remedial plan from opened → activity_delivered.
+
+Blocks substitute teachers from confirming delivery.`,
+  })
+  @ApiOkResponse({ description: 'Activity marked as delivered' })
+  @ApiBadRequestResponse({ description: 'Invalid plan state or validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not authorized (substitute or wrong teacher)' })
+  @ApiNotFoundResponse({ description: 'Remedial plan not found' })
   deliver(@Param('planId') planId: string, @Body() dto: DeliverActivityDto) {
     return this.service.deliverActivity(planId, dto.activityRef);
   }
@@ -111,8 +141,16 @@ export class RemedialController {
   })
   @ApiOperation({
     summary: 'Propose after_support re-assessment (never confirms)',
-    description: 'Writes proposed student_outcomes with attempt=after_support only.',
+    description: `Writes PROPOSED student_outcomes with attempt=after_support — does not confirm.
+
+Requires: Teacher must confirm via closeAfterReassess to persist final state.
+Blocks substitute teachers.`,
   })
+  @ApiOkResponse({ description: 'Reassessment proposal created' })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not authorized (substitute or wrong teacher)' })
+  @ApiNotFoundResponse({ description: 'Remedial plan not found' })
   reassess(
     @Param('planId') planId: string,
     @Body() dto: ReassessDto,
@@ -130,8 +168,17 @@ export class RemedialController {
     },
   })
   @ApiOperation({
-    summary: 'Close (pass) or escalate based on confirmed after_support rating',
+    summary: 'Close (pass) or escalate based on confirmed rating',
+    description: `Confirms after_support outcome and closes plan if improvement shown.
+
+If rating still stalled: escalates to upcharatmak (principal pathway).
+Blocks substitute teachers.`,
   })
+  @ApiOkResponse({ description: 'Remedial plan closed or escalated' })
+  @ApiBadRequestResponse({ description: 'Invalid rating or plan state' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not authorized (substitute or wrong teacher)' })
+  @ApiNotFoundResponse({ description: 'Remedial plan not found' })
   closeAfterReassess(
     @Param('planId') planId: string,
     @Body() dto: CloseAfterReassessDto,
@@ -140,20 +187,43 @@ export class RemedialController {
   }
 
   @Post('plans/:planId/escalate')
-  @ApiOperation({ summary: 'Escalate to upcharatmak + class-teacher notify path' })
+  @ApiOperation({
+    summary: 'Escalate to upcharatmak (principal pathway)',
+    description: `Manual escalation to class teacher + principal notification.
+
+Transitions plan to escalated state.
+Triggers job workflow for remedial escalation.`,
+  })
+  @ApiOkResponse({ description: 'Plan escalated successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid plan state' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiNotFoundResponse({ description: 'Remedial plan not found' })
   escalate(@Param('planId') planId: string) {
     return this.service.escalate(planId);
   }
 
   @Post('plans/:planId/close')
-  @ApiOperation({ summary: 'Close remedial plan' })
+  @ApiOperation({
+    summary: 'Close remedial plan',
+    description: 'Manual closure of remedial plan with optional reason.',
+  })
+  @ApiOkResponse({ description: 'Plan closed successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiNotFoundResponse({ description: 'Remedial plan not found' })
   close(@Param('planId') planId: string, @Body() body: { reason?: string }) {
     return this.service.close(planId, body.reason ?? 'manual_close');
   }
 
   @Get('section/:sectionId/plans')
   @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
-  @ApiOperation({ summary: 'List remedial plans for section (teacher sees names)' })
+  @ApiOperation({
+    summary: 'List remedial plans for section',
+    description: 'Teacher sees child names (section scope). Ordered by state, created date.',
+  })
+  @ApiOkResponse({ description: 'List of remedial plans' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
   list(@Param('sectionId') sectionId: string) {
     return this.service.listForSection(sectionId, true);
   }
@@ -163,17 +233,26 @@ export class RemedialController {
   @RequireRole('admin')
   @RequireSchoolAdmin({ schoolIdQuery: 'schoolId' })
   @ApiOperation({
-    summary: 'Admin open-loop counts (gravity)',
-    description: 'Counts/shapes only — never child names or rating distributions.',
+    summary: 'Admin open-loop counts (gravity rule)',
+    description: `Returns aggregate counts/shapes ONLY — never child names or rating distributions.
+
+Enforces Invariant #3 (gravity rule): Admin sees practice-level aggregates, not individual data.`,
   })
+  @ApiOkResponse({ description: 'Aggregate counts (no child data)' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not a school admin' })
   adminCounts(@Query('schoolId') schoolId: string) {
     return this.service.adminOpenLoopCounts(schoolId);
   }
 
   @Post('run-reminders')
   @ApiOperation({
-    summary: 'Tick: quiet-hours-aware reminders + escalate when exhausted',
+    summary: 'Tick: quiet-hours-aware reminders + auto-escalate',
+    description: `Job workflow endpoint: sends reminders for stalled plans, escalates when max reminders reached.
+
+Respects quiet hours (outside school time). Called by scheduled job.`,
   })
+  @ApiOkResponse({ description: 'Reminders processed successfully' })
   runReminders() {
     return this.service.runReminders();
   }

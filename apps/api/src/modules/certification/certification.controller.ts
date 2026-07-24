@@ -9,7 +9,16 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import type { Request } from 'express';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
@@ -54,8 +63,15 @@ export class CertificationController {
   @Get('me')
   @ApiOperation({
     summary: 'My credential progress (12 weeks + observation)',
-    description: 'Teacher-scoped self view of the WhatsApp credential programme.',
+    description: `Teacher-scoped self view of the WhatsApp credential programme.
+
+Returns weekly quiz completion status and observation result for the authenticated teacher.
+
+Requires: Authenticated user with teacher profile.`,
   })
+  @ApiOkResponse({ description: 'Credential progress retrieved successfully' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'No teacher profile for this account' })
   me(@Req() req: Request) {
     return this.service.getProgress(requireTeacherId(req));
   }
@@ -63,7 +79,16 @@ export class CertificationController {
   @Post('me/week/:week/quiz')
   @ApiOperation({
     summary: 'Submit a weekly quiz (deterministic scoring, no AI)',
+    description: `Teacher submits quiz results for a specific week (1-12).
+
+Invariant #13: Deterministic stays deterministic — scoring is pure arithmetic (correct/total), zero AI calls.
+
+Requires: Authenticated user with teacher profile.`,
   })
+  @ApiOkResponse({ description: 'Quiz submitted and scored successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid week number (must be 1-12) or validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'No teacher profile for this account' })
   submitQuiz(
     @Param('week', ParseIntPipe) week: number,
     @Body() dto: SubmitQuizDto,
@@ -77,8 +102,16 @@ export class CertificationController {
   @RequireRole('admin')
   @ApiOperation({
     summary: 'Record the human-scored observation (assessor/admin only)',
-    description: 'Teachers cannot self-score; requires admin role.',
+    description: `Admin/assessor records observation session result for a teacher.
+
+Teachers cannot self-score. Observation is human-scored in person, not AI-assisted.
+
+Requires: RequireRoleGuard (role='admin').`,
   })
+  @ApiOkResponse({ description: 'Observation score recorded successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed or invalid teacher ID' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not an admin (teachers cannot self-score)' })
   scoreObservation(@Body() dto: ScoreObservationDto, @Req() req: Request) {
     return this.service.scoreObservation(
       dto.teacherId,

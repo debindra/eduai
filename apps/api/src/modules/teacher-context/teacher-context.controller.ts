@@ -1,9 +1,11 @@
 import { Controller, ForbiddenException, Get, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
@@ -24,9 +26,11 @@ export class TeacherContextController {
   @ApiOperation({
     summary: 'Logged-in teacher section/subject/band assignments',
     description:
-      "Returns only the calling teacher's own teacher_sections scope — no cross-teacher data, no distributions.",
+      `Returns only the calling teacher's own teacher_sections scope.\n\nInvariant #3 (Gravity Rule): Returns own assignments only — no cross-teacher data, no distributions.\n\nRequires: RequireRoleGuard (role='teacher').`,
   })
   @ApiOkResponse({ type: TeacherContextResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'No teacher profile for this account' })
   me(@Req() req: Request): Promise<TeacherContextResponseDto> {
     return this.service.getContext(requireTeacherId(req));
   }
