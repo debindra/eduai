@@ -1,4 +1,4 @@
--- Phase 9 Track B: Curriculum 2077 pre-primary taxonomy (BidyaSetu v3.3 §5 / §12)
+-- Phase 9 Track B: Curriculum 2077 pre-primary taxonomy (BidyaSetu v3.3 5 / 12)
 -- 11 curriculum_areas (system of record) → 6 rollup_domains (parent/principal)
 -- Pre-primary scale: not_yet / developing / can_do (+ hidden not_observed)
 
@@ -60,7 +60,7 @@ CREATE TRIGGER rollup_domains_set_updated_at
   BEFORE UPDATE ON rollup_domains FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ---------------------------------------------------------------------------
--- Seed: 11 Curriculum 2077 areas + 6 parent domains + crosswalk (v3.3 §5.2)
+-- Seed: 11 Curriculum 2077 areas + 6 parent domains + crosswalk (v3.3 5.2)
 -- Stable UUIDs for fixtures.
 -- ---------------------------------------------------------------------------
 -- Areas
@@ -88,7 +88,7 @@ INSERT INTO rollup_domains (id, band_id, code, name_en, name_np, sort_order) VAL
   ('cd000001-0000-0000-0000-000000000006', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'D6', 'World Around Me', 'मेरो वरिपरिको संसार', 6)
 ON CONFLICT (band_id, code) DO NOTHING;
 
--- Crosswalk (v3.3 §5.2)
+-- Crosswalk (v3.3 5.2)
 INSERT INTO area_domain_crosswalk (area_id, domain_id) VALUES
   ('ca000001-0000-0000-0000-000000000001', 'cd000001-0000-0000-0000-000000000001'), -- physical → D1
   ('ca000001-0000-0000-0000-000000000002', 'cd000001-0000-0000-0000-000000000001'), -- health → D1

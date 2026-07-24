@@ -164,7 +164,7 @@
 <main class="mx-auto max-w-3xl px-4 py-8">
   <h1 class="text-2xl font-semibold text-slate-900">Indicator sweep (G1–5)</h1>
   <p class="mt-1 text-sm text-slate-600">
-    Rate indicators (not §3 outcomes). Propose first, then confirm. Top rating 4 is blocked in batch sweep.
+    Rate indicators (not 3 outcomes). Propose first, then confirm. Top rating 4 is blocked in batch sweep.
   </p>
 
   {#if loading}

@@ -1,4 +1,4 @@
--- Phase 9 Track C: Guideline 2083 indicator engine (BidyaSetu v3.3 §§6–8, §12)
+-- Phase 9 Track C: Guideline 2083 indicator engine (BidyaSetu v3.3 6–8, 12)
 -- assessment_areas / indicators / append-only ratings / chapter→area crosswalk
 -- Pilot structural seed: Grade 4 English Unit 1 (not the full descriptor bank)
 
@@ -49,7 +49,7 @@ CREATE TABLE indicators (
 
 COMMENT ON TABLE indicators IS
   'Assessable atom (अनुसूची ३). Identical text across grades = separate rows '
-  'keyed by level_id (I4). Ratings attach here — never to §3 outcomes.';
+  'keyed by level_id (I4). Ratings attach here — never to 3 outcomes.';
 
 COMMENT ON COLUMN indicators.group_label IS
   'Nullable subject-configured grouping (I3). Never a skill enum.';

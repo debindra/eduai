@@ -1,5 +1,5 @@
 /**
- * Assessment Pack dual-render (BidyaSetu v3.3 §9 / Assessment Pack Spec v1.1).
+ * Assessment Pack dual-render (BidyaSetu v3.3 9 / Assessment Pack Spec v1.1).
  * One generation → interactive web payload + self-contained WhatsApp/PDF digest.
  * Zero AI in this adapter — content assembly is deterministic over pack rows.
  */

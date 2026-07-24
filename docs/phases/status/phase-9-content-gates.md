@@ -1,7 +1,7 @@
 # Phase 9 Track E — Content & verification queue
 
 **Status:** Queued (not code-blocked forever; do not invent banks in code)  
-**Source:** BidyaSetu Full System Report v3.3 §11, §15–17
+**Source:** BidyaSetu Full System Report v3.3 11, 15–17
 
 | Item | Owner | Blocks | Status |
 |---|---|---|---|
