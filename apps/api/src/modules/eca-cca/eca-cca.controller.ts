@@ -44,7 +44,7 @@ export class EcaCcaController {
 
   @Get()
   @ApiOperation({
-    summary: 'List active catalog + this school's enabled / school-only items',
+    summary: "List active catalog + this school's enabled / school-only items",
     description: `Returns merged bundle: global catalog items (active) + this school's enabled catalog items + this school's custom items.
 
 Requires: RequireRoleGuard (role='admin') AND RequireSchoolAdminGuard (school admin for this school).`,

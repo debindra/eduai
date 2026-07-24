@@ -19,7 +19,6 @@ import {
   ApiOperation,
   ApiQuery,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
 import { RequireSchoolAdmin } from '../auth/decorators/require-school-admin.decorator';

@@ -9,14 +9,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiForbiddenResponse,
-  ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequirePlatformAdmin } from '../auth/decorators/require-platform-admin.decorator';
 import { RequirePlatformAdminGuard } from '../auth/guards/require-platform-admin.guard';

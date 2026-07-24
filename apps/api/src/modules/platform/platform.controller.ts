@@ -14,14 +14,10 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import {
-  ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiForbiddenResponse,
-  ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { RequirePlatformAdmin } from '../auth/decorators/require-platform-admin.decorator';
