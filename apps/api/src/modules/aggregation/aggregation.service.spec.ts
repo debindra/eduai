@@ -9,6 +9,10 @@ describe('AggregationService', () => {
     listLetterCutoffs: ReturnType<typeof vi.fn>;
     listRatingNumericMap: ReturnType<typeof vi.fn>;
     listConfirmedOutcomesForChild: ReturnType<typeof vi.fn>;
+    findArea: ReturnType<typeof vi.fn>;
+    listIndicatorsForArea: ReturnType<typeof vi.fn>;
+    listConfirmedRatingsForChildArea: ReturnType<typeof vi.fn>;
+    listAreasForSubject: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -18,6 +22,10 @@ describe('AggregationService', () => {
       listLetterCutoffs: vi.fn(),
       listRatingNumericMap: vi.fn(),
       listConfirmedOutcomesForChild: vi.fn(),
+      findArea: vi.fn(),
+      listIndicatorsForArea: vi.fn(),
+      listConfirmedRatingsForChildArea: vi.fn(),
+      listAreasForSubject: vi.fn(),
     };
     service = new AggregationService(repository as unknown as AggregationRepository);
   });
@@ -57,5 +65,37 @@ describe('AggregationService', () => {
     expect(result.percent).toBe(75);
     expect(result.letterCode).toBe('A');
     expect(result.childId).toBe('child-1');
+  });
+
+  it('I8: area aggregation returns withheld when indicators missing', async () => {
+    repository.findChild.mockResolvedValue({
+      id: 'child-1',
+      section_id: 'section-1',
+    });
+    repository.findArea.mockResolvedValue({
+      id: 'area-1',
+      code: 'ENG4-U1',
+      indicator_count: 4,
+    });
+    repository.listIndicatorsForArea.mockResolvedValue([
+      { id: 'i1', code: 'ENG4.U1.1' },
+      { id: 'i2', code: 'ENG4.U1.2' },
+      { id: 'i3', code: 'ENG4.U1.3' },
+      { id: 'i4', code: 'ENG4.U1.4' },
+    ]);
+    repository.listConfirmedRatingsForChildArea.mockResolvedValue([
+      {
+        rating: 3,
+        state: 'confirmed',
+        created_at: '2026-01-01',
+        indicators: { code: 'ENG4.U1.1' },
+      },
+    ]);
+
+    const result = await service.aggregateArea('child-1', 'area-1');
+    expect(result.status).toBe('withheld');
+    if (result.status === 'withheld') {
+      expect(result.missingIndicators).toContain('ENG4.U1.2');
+    }
   });
 });

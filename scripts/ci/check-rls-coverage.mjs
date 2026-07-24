@@ -21,6 +21,7 @@ const rlsCoverageSql = path.join(
 const REQUIRED_POLICIES = [
   // Core assessment & tracking
   { table: 'student_outcomes', needle: 'CREATE POLICY' },
+  { table: 'ratings', needle: 'CREATE POLICY' },
   { table: 'attendance_record', needle: 'CREATE POLICY' },
   { table: 'lesson_progress', needle: 'CREATE POLICY' },
   { table: 'remedial_plans', needle: 'CREATE POLICY' },
@@ -37,6 +38,10 @@ const REQUIRED_POLICIES = [
   { table: 'yearly_map', needle: 'CREATE POLICY' },
   { table: 'map_slices', needle: 'CREATE POLICY' },
   { table: 'map_slice_outcomes', needle: 'CREATE POLICY' },
+  { table: 'curriculum_areas', needle: 'CREATE POLICY' },
+  { table: 'rollup_domains', needle: 'CREATE POLICY' },
+  { table: 'assessment_areas', needle: 'CREATE POLICY' },
+  { table: 'indicators', needle: 'CREATE POLICY' },
 
   // AI & messaging
   { table: 'prompts', needle: 'CREATE POLICY' },

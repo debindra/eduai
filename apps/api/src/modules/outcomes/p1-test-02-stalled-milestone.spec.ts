@@ -35,7 +35,7 @@ describe('P1-TEST-02 stalled milestone private prompt', () => {
 
   it('returns private prompt with count only — no child names for admin gravity', async () => {
     repository.listStalled.mockResolvedValue([
-      { id: 'o1', child_id: 'c1', outcome_id: 'out1', updated_at: '2025-01-01', rating_code: 'emerging' },
+      { id: 'o1', child_id: 'c1', outcome_id: 'out1', updated_at: '2025-01-01', rating_code: 'not_yet' },
     ]);
 
     const result = await service.listStalledMilestones('sec-1', 3);

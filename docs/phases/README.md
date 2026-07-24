@@ -4,8 +4,11 @@ This directory contains the implementation plan for all architecture recommendat
 
 ## Overview
 
-**Total Duration:** 8-10 weeks across 3 phases
-**Current Status:** Planning Complete - Ready for Execution
+**Total Duration:** 8-10 weeks across 3 phases (architecture recommendations)
+**Plus:** [Phase 9 — BidyaSetu v3.3 Assessment Realignment](./phase-9-v33-assessment/)
+(Curriculum 2077 11→6, indicator engine, dual-render packs)
+**Current Status:** Architecture recommendations Planning Complete; Phase 9
+Tracks A–D implemented, Track E (content) queued
 **Branch:** `feature/architecture-recommendations-implementation`
 
 ## Phase Structure

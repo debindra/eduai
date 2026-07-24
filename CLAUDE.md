@@ -1,15 +1,21 @@
-# CLAUDE.md — EduAI Nepal (working name)
+# CLAUDE.md — EduAI Nepal / BidyaSetu (working names)
 
 This file is read automatically by Claude Code at the start of every session in
-this repo. It is the compressed, load-bearing summary of three source
-documents kept in `/docs/specs/`:
+this repo. It is the compressed, load-bearing summary of the source documents
+kept in `/docs/specs/`:
 
-- `EduAI_Full_System_Report.docx` — product/system spec, pre-primary
-- `EduAI_Technical_System_Architecture_v3_1.docx` — engineering architecture, Nursery–Grade 5
+- `BidyaSetu_Full_System_Report_v3.3.docx` — **CURRENT** product/system spec
+  (supersedes Full System Report v3.1/v3.2). Brand working name: BidyaSetu.
+- `EduAI_Technical_System_Architecture_v3_1.docx` — engineering architecture
+  (entity list superseded where it conflicts by
+  `Data_Model_Identity_Addendum_v2.md`)
 - `Calendar_Curriculum_Pacing_Spec_v1.docx` — calendar/pacing data model
+- `Curriculum_Spine_Book_Crosswalk_Addendum_v2.md` — book chapter →
+  assessment_area crosswalk + G1–5 indicator engine shapes
+- `Assessment_Pack_Spec_v1.1.md` — dual-render assessment pack rule
 
 **Rule: when a task touches schema, RBAC, assessment, AI prompts, or document
-generation, read the relevant section of those three docs (or
+generation, read the relevant section of those docs (or
 `skills/eduai-architecture/SKILL.md`, which indexes them) before writing code.
 Do not guess at the data model from memory of this file alone — this file is
 a summary, not the spec.**
@@ -21,16 +27,17 @@ a summary, not the spec.**
 A WhatsApp-first AI platform for Nursery–Grade 5 in Nepali private schools,
 built on the publisher's own textbooks, that gives undertrained teachers the
 pedagogical method they were never taught, tracks child development the way
-national curricula legally require (banded milestones at pre-primary, a 1–4
-CDC outcome scale at Grades 1–5), and produces every compliance document as a
-deterministic render from live rows. Three legally distinct assessment
-regimes run on **one engine**, driven entirely by configuration rows, not by
-grade-conditional code branches. Underneath all of it sits one calendar per
-school — every planning horizon (yearly → monthly → weekly → daily), every
-pacing view, and every reporting trigger is calendar-derived; the calendar
-is the coordinate system the curriculum is plotted onto, not a peripheral
-feature (Calendar spec 1). Child is never a user. The child never touches a
-screen.
+national curricula legally require (Curriculum 2077 three-state milestones
+tagged to 11 skill areas → 6 parent domains at pre-primary; Guideline 2083
+1–4 **indicator** ratings at Grades 1–5), and produces every compliance
+document as a deterministic render from live rows. Three legally distinct
+assessment regimes run on **one engine**, driven entirely by configuration
+rows, not by grade-conditional code branches. Underneath all of it sits one
+calendar per school — every planning horizon (yearly → monthly → weekly →
+daily), every pacing view, and every reporting trigger is calendar-derived;
+the calendar is the coordinate system the curriculum is plotted onto, not a
+peripheral feature (Calendar spec 1). Child is never a user. The child never
+touches a screen.
 
 ## 2. Non-negotiable invariants
 
@@ -120,6 +127,31 @@ violates any of these should be rejected regardless of what else it does well.
 16. **Generation parity.** Free-tier and Pro-tier teachers requesting the same
     lesson/remedial activity get pedagogically identical output. Tiers gate
     volume and integrations, never quality.
+
+### Assessment engine invariants (I1–I9) — BidyaSetu v3.3
+
+These bind every Grades 1–5 rating/aggregation path. Provisional I1–I5
+numbering pending verification against superseded Full System Report v3.2.
+
+| ID | Rule |
+|---|---|
+| I1 | The **indicator** (अनुसूची ३) is the assessable atom. Ratings never attach to 3 curriculum outcomes or to areas. |
+| I2 | Engine scale is **1–4** per Guideline 2083 everywhere. The 2021 English curriculum's 1–5 scale is known, overruled — no mapping layer. |
+| I3 | Grouping is a nullable, subject-configured `group_label` — never a skill enum. |
+| I4 | Identical indicator statement text across grades = **separate rows** keyed by `level_id` — never deduplicate on text. |
+| I5 | Universal two-stage form skeleton (regular / additional-support), both stages dated, for all subjects. |
+| I6 | Indicator count N is read from the annex per `assessment_areas` row — never hardcoded. Area denominator = `4 × N`. |
+| I7 | Ratings are **append-only** per stage; a correction is a new INSERT, never an UPDATE of a prior confirmed rating. |
+| I8 | Area achievement is **computed, never stored**. Incomplete area → `{ withheld, missingIndicators[] }` — no surface may render a partial percentage. |
+| I9 | Book crosswalk maps `book_chapter → assessment_area` (book-optional; engine runs without it). |
+
+Pre-primary (separate mechanism): three states `not_yet` / `developing` /
+`can_do` (+ hidden `not_observed`); 11 `curriculum_areas` as system of
+record; 6 `rollup_domains` for parents/principals. ELDS is a validation
+anchor only — not the organising taxonomy.
+
+Assessment Pack dual-render (9): one generation → interactive web pack +
+self-contained WhatsApp/PDF digest usable without opening the web.
 
 ## 3. Tech stack (as specified — don't substitute without discussion)
 
@@ -243,39 +275,49 @@ it reflects backend-enforced scope, it doesn't implement it.
   render over live rows (Section 6.1's table says which documents are
   deterministic vs AI-drafted-then-approved) — don't reach for an LLM call by
   default.
-- Never invent a milestone/outcome bank entry. The 138-milestone pre-primary
-  bank and the Grades 1–5 outcomes bank are content-authoring deliverables
-  owned by trainers/an ECE specialist, not something to synthesize in code.
-- Treat "EduAI Nepal" as a placeholder name throughout code, comments, and
-  generated artifacts — do not let it leak into anything parent- or
-  school-facing without flagging it.
+- Never invent a milestone/indicator/descriptor bank entry. The 138-milestone
+  pre-primary bank and the Grades 4–5 descriptor bank (~3,840 entries) are
+  content-authoring deliverables owned by trainers/an ECE specialist, not
+  something to synthesize in code. Pilot subject for descriptors: Grade 4
+  English first.
+- Treat "EduAI Nepal" / "BidyaSetu" as working names throughout code,
+  comments, and generated artifacts — do not let either leak into anything
+  parent- or school-facing without flagging it until the brand is final.
+- When touching Grades 1–5 ratings: rate **indicators**, never 3 outcomes.
+  Aggregation must honour I6–I8 (`withheld` on incomplete areas).
+- Do not spec G1–3 assessment forms until Basic Level Curriculum 2076 annex
+  equivalent has been read in-session (v3.3 6.9).
 
 ## 7. Known open items (don't silently resolve these — surface them)
 
 - **Parent web portal vs. "no web login for parents":** the confirmed auth
   scope is Admin + Teacher only — guardians have no username/password
-  account. But the System Report (Part VI, 6.3) states parents can view
-  the six-domain picture/portfolio "anytime on the web portal," which
-  implies some form of web access exists. These aren't necessarily
-  contradictory — a plausible reconciliation is a WhatsApp-issued signed
-  magic-link (short-lived token, no password, no separate account) into
-  the `routes/parent/` section of the SPA — but that reconciliation is
+  account. But older System Report text states parents can view the
+  six-domain picture/portfolio "anytime on the web portal," which implies
+  some form of web access exists. These aren't necessarily contradictory —
+  a plausible reconciliation is a WhatsApp-issued signed magic-link
+  (short-lived token, no password, no separate account) into the
+  `routes/parent/` section of the SPA — but that reconciliation is
   **not confirmed**, only proposed here. Don't build parent web access
-  under an assumed mechanism without checking first; the frontend's
-  `(parent)` route group exists in `ARCHITECTURE.md` Part 2, but how a
-  parent actually reaches it is unresolved.
+  under an assumed mechanism without checking first.
 
-From System Report Part X and Architecture 13.2:
-- The 138-milestone pre-primary bank needs trainer/ECE-specialist review.
-- Grades 4–5 outcomes bank is unresolved (Grades 1–3 is resolved).
+From BidyaSetu Full System Report v3.3 15–17 and Architecture 13.2:
+- The 138-milestone pre-primary bank needs trainer/ECE-specialist review;
+  then regenerate freelancer JSON with Curriculum 2077 area tags.
+- Grades 4–5 descriptor bank unresolved; Grade 4 English is the first pilot.
+- Grades 1–3 form structure gated on reading Basic Level Curriculum 2076 annex.
+- I1–I5 numbering must be verified against Full System Report v3.2 (file not
+  in workspace — carry-forward flag).
+- Parent signature line on annex unit forms — confirm at pilot whether schools
+  route forms home per area (possible CONNECT addition).
 - Nepali/code-switched voice transcription is a pilot go/no-go, not a given.
 - Whole-school vs. Grades-4–5-only go-to-market sequencing is an open
-  business decision the architecture supports either way — don't hardcode
-  an assumption about onboarding order.
+  business decision — don't hardcode an assumption about onboarding order.
 - BS↔AD date conversion library for the calendar needs confirming.
-- The national festival template (pre-filled closure set, movable dates like
-  Dashain) needs sourcing and a yearly refresh owner — don't hardcode a
-  single year's dates.
+- The national festival template (movable dates like Dashain) needs sourcing
+  and a yearly refresh owner.
 - The yearly-map generator needs each theme/chapter's teaching-day weighting
-  from the same trainer review that owns the outcome banks — treat this as a
-  content dependency, not something to eyeball in code.
+  from the same trainer review that owns the banks — don't guess weights.
+- Final brand name (BidyaSetu vs BidyaSathi / Saksham / Ankur / Sprout /
+  Beacon) must land before anything external.
+- Phase-0 instruments: willingness-to-pay, Plus-tier, WhatsApp-vs-Viber.

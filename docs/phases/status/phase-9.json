@@ -1,0 +1,12 @@
+{
+  "phase": 9,
+  "name": "BidyaSetu v3.3 Assessment Realignment",
+  "updated": "2026-07-24",
+  "tracks": {
+    "A": { "name": "Docs & invariants", "status": "done" },
+    "B": { "name": "Pre-primary schema", "status": "done" },
+    "C": { "name": "Indicator engine", "status": "done" },
+    "D": { "name": "Dual-render packs", "status": "done" },
+    "E": { "name": "Content gates", "status": "queued" }
+  }
+}

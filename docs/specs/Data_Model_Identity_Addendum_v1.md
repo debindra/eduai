@@ -1,11 +1,12 @@
 # Data Model & Identity Addendum v1
 
-**Status:** supersedes and completes 3.1 ("Entity relationship summary") of
-`EduAI_Technical_System_Architecture_v3_1.docx`. That section ends with a
-dangling "Missing entities" placeholder — this document fills it. The docx
-itself is kept as read-only reference; where the two disagree, this addendum
-wins for the entity list, and the docx remains authoritative for everything
-else (3.2 exclusions, 4 workflows, 5 RBAC narrative, etc.).
+**Status:** SUPERSEDED by
+[`Data_Model_Identity_Addendum_v2.md`](./Data_Model_Identity_Addendum_v2.md)
+for entity list / assessment shapes (BidyaSetu Full System Report v3.3).
+Retained for identity/auth narrative history. Do not extend v1.
+
+Originally: supersedes and completes 3.1 ("Entity relationship summary") of
+`EduAI_Technical_System_Architecture_v3_1.docx`.
 
 **Why it exists:** two architecture generations drifted apart. The older
 `System_Architecture_v1.0` / System Report v3.2 lineage had `users`,

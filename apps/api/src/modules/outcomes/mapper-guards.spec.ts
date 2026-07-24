@@ -12,21 +12,21 @@ describe('mapper guards (shared across capture paths)', () => {
     const result = resolveObservationAgainstRoster(
       'Priya counted to five',
       roster,
-      'secure',
+      'can_do',
     );
-    expect(result.suggestedRating).toBe('emerging');
+    expect(result.suggestedRating).toBe('not_yet');
     expect(result.blockedReason).toMatch(/top band/i);
   });
 
   it('ambiguous names return roll numbers, never a guess', () => {
-    const result = resolveObservationAgainstRoster('Aarav counted', roster, 'emerging');
+    const result = resolveObservationAgainstRoster('Aarav counted', roster, 'not_yet');
     expect(result.childId).toBeNull();
     expect(result.nameAmbiguous).toBe(true);
     expect(result.rollNumberCandidates).toEqual(['1', '2']);
   });
 
   it('non-observation routes to attendance', () => {
-    const result = resolveObservationAgainstRoster('absent today', roster, 'emerging');
+    const result = resolveObservationAgainstRoster('absent today', roster, 'not_yet');
     expect(result.routeToAttendance).toBe(true);
     expect(result.childId).toBeNull();
   });

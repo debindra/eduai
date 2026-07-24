@@ -1,186 +1,109 @@
 ---
 name: eduai-architecture
-description: Use this skill whenever working on the EduAI Nepal codebase and the task touches the data model, RBAC/RLS, the assessment or remedial workflow, AI prompt orchestration, document generation (Annex 2/3/4, portfolio, inspection pack), the academic calendar/pacing tracker, or any product rule about what may or may not appear in a child's record. Also use it before answering questions about "why is the system built this way" for this project, or before adding a new grade band/feature, since the answer is almost always "it's already a documented pattern — extend it, don't invent a new one." Do not use this skill for generic Node/Fastify/Supabase/Svelte questions unrelated to this project's specific domain rules.
+description: Use this skill whenever working on the EduAI Nepal / BidyaSetu codebase and the task touches the data model, RBAC/RLS, the assessment or remedial workflow, AI prompt orchestration, document generation (Annex 2/3/4, portfolio, inspection pack), the academic calendar/pacing tracker, or any product rule about what may or may not appear in a child's record. Also use it before answering questions about "why is the system built this way" for this project, or before adding a new grade band/feature, since the answer is almost always "it's already a documented pattern — extend it, don't invent a new one." Do not use this skill for generic Node/NestJS/Supabase/Svelte questions unrelated to this project's specific domain rules.
 ---
 
-# EduAI Nepal — Architecture Reference
+# EduAI Nepal / BidyaSetu — Architecture Reference
 
-Source of truth: three docs in `/docs/specs/` —
-`EduAI_Full_System_Report.docx` (product/pedagogy/legal grounding),
-`EduAI_Technical_System_Architecture_v3_1.docx` (engineering), and
-`Calendar_Curriculum_Pacing_Spec_v1.docx` (calendar/pacing). This skill is an
-index into them, not a replacement — for anything load-bearing, open the
-actual section cited.
+Source of truth in `/docs/specs/`:
 
-## The two things to internalize first
+- `BidyaSetu_Full_System_Report_v3.3.docx` — **CURRENT** product/system
+  (supersedes v3.1/v3.2). Curriculum 2077 11→6; Guideline 2083 indicator
+  engine; I1–I9; dual-render packs.
+- `EduAI_Technical_System_Architecture_v3_1.docx` — engineering (entity
+  list superseded by `Data_Model_Identity_Addendum_v2.md` where they
+  conflict)
+- `Calendar_Curriculum_Pacing_Spec_v1.docx` — calendar/pacing
+- `Curriculum_Spine_Book_Crosswalk_Addendum_v2.md` — chapter → area
+- `Assessment_Pack_Spec_v1.1.md` — dual-render rule
 
-**1. A band is rows, not code.** Pre-primary (three-state narrative
-milestones), Grades 1–3 (four-level CDC scale), and Grades 4–5 (extension of
-the same scale) run on one engine because `assessment_mode`,
-`aggregation_rule`, prompt templates, feature flags, and document templates
-are all configuration rows keyed by `band_id`, never grade-number branches in
-application code. Before writing any grade-conditional logic, ask: "is this
-actually a new row in `bands`/`grade_scales`/`outcomes`/a feature-flag
-table?" It almost always is (Architecture 2, worked example in 2.4).
+This skill is an index — for anything load-bearing, open the cited section.
 
-**2. A calendar is rows too — time-as-data, the same discipline applied to
-dates.** The calendar (dates: session, terminals, closures) and the
-curriculum (sequence: chapters, themes, outcomes) are deliberately separate
-layers that meet at exactly one join point, the `yearly_map`. Everything
-downstream — a teacher's plan at every horizon, the pacing tracker, "this
-month's active milestones," when a mandated report fires — is calendar-
-derived, not independently computed. `teaching_days` is always a computed
-view, never a stored count, precisely so one calendar edit reflows
-everything at once (Calendar spec 1, 6). Treat this with the same rigor as
-band-as-data: if you're hardcoding a date into pedagogy logic, or content
-into calendar logic, stop.
+## The three things to internalize first
+
+**1. A band is rows, not code.** Pre-primary (three-state milestones),
+Grades 1–3 and 4–5 (1–4 indicator scale, different letter maps) run on one
+engine because `assessment_mode`, `aggregation_rule`, prompts, and
+templates are configuration rows keyed by `band_id`.
+
+**2. A calendar is rows too.** Calendar (dates) and curriculum (sequence)
+meet only at `yearly_map`. `teaching_days` is always derived, never stored.
+
+**3. The assessable atom (G1–5) is the indicator, not the 3 outcome.**
+Ratings attach to `indicators` → area % (or `withheld`) → subject % →
+letter. Pre-primary is a separate mechanism: milestones tagged to 11
+`curriculum_areas`, rolled up to 6 `rollup_domains` for parents. ELDS is a
+validation anchor only — Curriculum 2077 is the organising taxonomy.
 
 ## Quick index by task
 
-**Anything about login, passwords, invites, or account recovery** →
-`ARCHITECTURE.md` Part 1, "Authentication." Admin + Teacher only, username
-(email or mobile) + password via Supabase Auth; phone/WhatsApp OTP is
-recovery/2FA only, never sign-in. No self-registration — invite-based
-provisioning. Guardians have no web account at all (and there's an open,
-unresolved tension with the System Report's stated parent web portal — see
-`CLAUDE.md` 7, don't build parent web access under an assumed mechanism).
-Enforced via `.cursor/rules/80-authentication.mdc`.
+**Adding a new backend feature** → `ARCHITECTURE.md` Part 1 — NestJS
+modular monolith, Propose/Confirm, state machines, Ports & Adapters.
+Inject another module's *service*, never its *repository*.
 
-**Adding or documenting a new API endpoint** → `ARCHITECTURE.md` Part 1,
-"API documentation: Swagger/OpenAPI" — every controller/DTO fully
-decorated (`@ApiTags`/`@ApiOperation`/`@ApiResponse`/`@ApiProperty`),
-Propose/Confirm semantics and guard/scope requirements stated in the
-operation description. This is a module's definition of done, not
-optional — the exported spec is what frontend types are generated from
-(`generated-types.ts` via `openapi-typescript`), closing the type-drift
-gap named in Part 2, rule 7. Enforced via
-`.cursor/rules/70-api-documentation.mdc`.
+**Adding a new frontend feature** → `ARCHITECTURE.md` Part 2 — Svelte 5
+SPA, feature folders mirroring backend. Route checks are UX only.
 
-**Adding a new backend feature / deciding where code goes** →
-`ARCHITECTURE.md` Part 1 — modular layered
-monolith, one NestJS module per bounded context, Controller → Service →
-Repository. Four patterns to apply rather than improvise: Propose/Confirm
-split for AI-originated writes, explicit state machines for lifecycle
-objects (`remedial_plans`, `handover_pack`), config-driven strategy lookups
-instead of band `if` branches, and Ports & Adapters scoped to external
-systems only. The one cross-module rule that matters most: inject another
-module's *service*, never its *repository*.
+**Finishing any feature (testing DoD)** → `ARCHITECTURE.md` Part 3,
+`.cursor/rules/testing.mdc`, `skills/testing-patterns/SKILL.md`.
 
-**Adding a new frontend feature / deciding where UI code goes** →
-`ARCHITECTURE.md` Part 2 — one Svelte 5 SPA (no SSR, no `load`
-functions), role-gated routes (admin/teacher/parent) via
-`@keenmate/svelte-spa-router`, feature folders mirroring backend modules
-1:1. A feature's `api.ts` is the only place that calls its backend
-module's endpoints. Route permission checks are client-side UX only, never
-a security boundary — the frontend reflects backend-enforced access
-control, it never implements it.
+**Schema touching child/teacher** → Identity Addendum v2 + Architecture
+3.2 exclusions + 3.3 RLS. For G1–5 ratings see Crosswalk Addendum v2.
 
-**Finishing any feature / bug fix (testing DoD)** → `ARCHITECTURE.md`
-Part 3, `.cursor/rules/testing.mdc`, and `skills/testing-patterns/SKILL.md`.
-Proportionate Vitest coverage for every touched layer (api and/or web),
-tests actually run before claiming done. Domain-critical paths (mapper
-guards, propose/confirm, gravity, RLS) keep their required automated tests.
+**Who confirms an assessment** → v3.3 5.3 / 6; Propose/Confirm; four
+mapper guards. G1–5 writes confirmed rows only to append-only `ratings`.
 
-**Adding/editing a table that touches a child or teacher** → Architecture
-3.1 (entity list), 3.2 (fields the schema *must not* have — personality,
-trait, risk-category, rank, teacher competence score), 3.3 (RLS grains).
+**Aggregation / Annex %** → I6–I8: annex N, append-only, `withheld` on
+incomplete areas. Pure arithmetic — zero AI. See
+`apps/api/src/modules/aggregation/`.
 
-**Anything about who confirms an assessment, and how** → System Report 4.2
-(four capture paths, conservative mapper rules), Architecture 4.4 (the same
-four guards as CI-testable rules) and 4.1 (two-pass record via `attempt`
-ENUM, not two tables).
+**Assessment pack** → Assessment Pack Spec v1.1 — dual-render mandatory.
 
-**A child isn't improving on a skill** → System Report 4.4 (pre-primary:
-velocity-based stall detection, point-to confound check first, private to
-class teacher, never aggregated into a "behind" score, harm signals skip the
-ladder). Architecture 4.2 (Grades 1–5: the remedial-ladder state machine —
-Opened → Activity delivered → Re-assessed → Escalated → Closed) and 9
-(job-engine workflows that drive the reminders/escalation).
+**Book ↔ assessment** → Crosswalk Addendum v2: `book_chapter →
+assessment_area` (I9), book-optional.
 
-**Who can see what** → System Report Part VIII "the gravity rule" and
-Architecture 5 (role → scope mapping table) and 5.3 (rank-order queries
-are blocked in code + CI lint, not just RLS).
+**Scale 1–5 vs 1–4** → Guideline 2083 wins. Do not build a mapping layer
+(v3.3 8).
 
-**A new document or report** → Architecture 6.1 (table of every document,
-its source, and whether it's deterministic or AI-drafted-then-approved) and
-6.2 (two locked rendering-environment facts: fonts-noto-core, docx
-landscape swap).
+**Who can see what** → Gravity rule; Architecture 5; no rank-order (5.3).
 
-**An AI prompt or model choice** → Architecture 7 (orchestration
-responsibilities, model-tier routing table, caching strategy) and 7.4
-(output constraints every generation path must enforce).
+**G1–3 forms** → Do not spec until Basic Level Curriculum 2076 annex is
+read (v3.3 6.9).
 
-**"When is X due" / "is a class behind"** → Calendar spec 5 (planned vs.
-actual position, pacing gap in teaching days, three states: on track /
-behind / self-correcting) and 6 (calendar data model — `teaching_days` is
-always a derived view, never a stored count, so an edit reflows everything).
-Critical firewall: a terminal boundary is a coverage/reporting event, never
-an exam date — there is no test-date field anywhere in this schema, by
-design. Everything downstream reads this spine rather than recomputing it:
-the assessment pack's "active this month" milestones/outcomes, the catch-up
-pack (what an absent child missed — a query over `lesson_progress` against
-attendance), the weekly view's festival rehearsals, and the diary's closure
-explanations all read `map_slices`/`calendar_closures` directly (Calendar
-spec 7). Don't hand-roll a second "what's due" calculation anywhere.
+## Non-negotiables (see CLAUDE.md + `.cursor/rules/invariants.mdc`)
 
-**A teacher's daily/weekly lesson plan** → System Report 3.1 (the teacher's
-day walkthrough — nothing is planned from a blank page at any horizon) and
-Calendar spec 4 (the derived-plan cascade: yearly → monthly → weekly →
-daily, each horizon a single tap from the one above). The *placement* of
-content in time (yearly-map generation) is deterministic; the *drafting* of
-a specific day's lesson content is generative (Haiku) — see prompt template
-#6 in `/prompts/ai-prompt-templates.md`. Don't conflate the two.
+1. Level is human — AI proposes, teacher confirms.
+2. No rank-order queries.
+3. Gravity rule.
+4. Band-as-data.
+5. Calendar ⊥ curriculum (join only at `yearly_map`).
+6. `teaching_days` derived.
+7. Terminal ≠ exam.
+8. Coverage ≠ learning.
+9. Two-grain RLS.
+10. No personality/trait/risk fields.
+11. Four mapper guards.
+12. No fiction.
+13. Deterministic docs stay deterministic.
+14. Safeguarding fast-path.
+15. No cross-domain contamination.
+16. Generation parity.
+17. I1–I9 assessment engine rules (indicator atom, 1–4, group_label,
+    per-level rows, two-stage form, annex N, append-only, withheld,
+    chapter→area).
+18. Assessment Pack dual-render.
 
-**Cost/caching questions** → Architecture 12. The two structural cost
-advantages of the Grades 1–5 extension: compliance documents are zero-AI-cost
-by architecture, and the remedial-activity cache is expected to have an
-unusually high hit rate because misconceptions repeat across thousands of
-classrooms nationally.
+## Deliberately not done (don't "fix")
 
-## Non-negotiables (see also CLAUDE.md / .cursor/rules/00-invariants.mdc + 40-calendar-pacing.mdc)
+- No exam/test-date concept for Nursery–Grade 5.
+- No teacher leaderboard / cross-teacher outcome comparison.
+- No AI-authored milestone/indicator/descriptor bank content.
+- No partial area percentages on any surface.
+- No re-platform to Express/Bubble — NestJS + Svelte is the engineering SoT.
 
-1. The level is human — AI proposes, teacher confirms, always.
-2. No rank-order queries over any child or teacher, enforced in code + CI.
-3. Gravity rule — data flows to the closest responsible person, no further
-   (applies to pacing/coverage views too, not just outcomes).
-4. Band-as-data — no grade-number branches in pedagogy/assessment/report code.
-5. Calendar and curriculum are separate layers, joined only at `yearly_map`.
-6. `teaching_days` is always derived, never stored.
-7. A terminal boundary is a coverage/reporting event, never an exam — no
-   test-date field exists in this schema, at any band, by design.
-8. Coverage (`lesson_progress`) and learning (`student_outcomes`) are
-   tracked separately and never merged into one number.
-9. Two-grain RLS from Grade 1 — `(section_id, subject_id)` write, section-wide
-   class-teacher read.
-10. No personality/trait/risk-category schema fields, ever, at any band.
-11. Four mapper guards on every capture path, every band.
-12. No fiction — thin data triggers the neutral fallback, never a generated
-    placeholder.
-13. Deterministic documents stay deterministic — no LLM call in the
-    aggregation/Annex/inspection-pack/pacing-gap path.
-14. Safeguarding fast-path bypasses every queue, every band, no cap.
+## Open items to surface, not silently resolve
 
-## Things this project deliberately does NOT do (don't "fix" these)
-
-- No exam or test-date concept anywhere in the calendar or assessment schema
-  for Nursery–Grade 5 — this is a legal/pedagogical constraint, not a gap.
-- No teacher leaderboard, no cross-teacher outcome comparison — the rater is
-  the measured; comparing would corrupt the incentive.
-- No AI-authored milestone/outcome bank content — that's a
-  trainer/ECE-specialist deliverable, tracked as an open item, not something
-  to generate synthetically even for "placeholder" purposes.
-- No localStorage/browser-storage assumptions leaking into the web companion
-  from example/demo code — this is a schools/child-data product; state lives
-  server-side per the RLS-enforced Postgres model.
-
-## Open items to keep surfacing, not silently resolve
-
-Grades 4–5 outcomes bank unresolved (Grades 1–3 is resolved). Nepali/
-code-switched voice transcription is a pilot go/no-go with mandatory
-confirm-back. BS↔AD calendar conversion library not yet confirmed. Go-to-
-market sequencing (whole-school vs. Grades-4–5-only wedge) is an open
-business decision — the architecture supports either, don't hardcode one.
-National festival template (movable dates like Dashain) needs sourcing and a
-yearly refresh owner. The yearly-map generator's curriculum → teaching-day
-weighting needs sourcing from the same trainer review that owns the outcome
-banks — until then, don't guess at chapter/theme weights in code.
+Trainer/ECE review of 138 PP bank; G4 English descriptor pilot; 2076 annex
+read for G1–3; I1–I5 numbering check vs v3.2; parent signature routing;
+WTP / WhatsApp-vs-Viber; final brand name; BS↔AD library; festival template
+owner; yearly-map teaching-day weights.

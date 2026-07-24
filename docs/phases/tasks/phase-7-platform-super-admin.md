@@ -43,9 +43,9 @@ rank-order (#2), `teaching_days` always derived (#6), band-as-data (#4),
 deterministic calendar/docgen (#13).
 
 **Open items surfaced (do not silently resolve):**
-- BS↔AD conversion library choice needs confirming (`CLAUDE.md` §7).
+- BS↔AD conversion library choice needs confirming (`CLAUDE.md` 7).
 - National festival template yearly-refresh owner needs sourcing
-  (`CLAUDE.md` §7) — do not hardcode a single year's movable dates.
+  (`CLAUDE.md` 7) — do not hardcode a single year's movable dates.
 - Parent-portal open item is untouched by this phase.
 
 ---
@@ -63,7 +63,7 @@ deterministic calendar/docgen (#13).
   readable by the owning identity; mutations go through Nest service-role
   + `RequirePlatformAdminGuard` only.
 - **Refs:** `packages/db/supabase/migrations/20250718120000_identity_tenant_auth.sql`,
-  `docs/specs/Data_Model_Identity_Addendum_v1.md` §2 (platform team
+  `docs/specs/Data_Model_Identity_Addendum_v1.md` 2 (platform team
   creates schools), `CLAUDE.md` invariant #3
 
 ### P7-DB-02 — `support_sessions` + consent
@@ -92,7 +92,7 @@ deterministic calendar/docgen (#13).
   application code — movable festivals are **data rows**, and the yearly
   refresh owner remains an open product item. Only one `published`
   calendar per `bs_year`. Deterministic; no LLM involvement.
-- **Refs:** `.cursor/rules/calendar-pacing.mdc`, `CLAUDE.md` §7
+- **Refs:** `.cursor/rules/calendar-pacing.mdc`, `CLAUDE.md` 7
   (national festival template / yearly refresh owner)
 
 ### P7-DB-04 — Extend `teaching_days` VIEW for national closures
@@ -191,11 +191,11 @@ deterministic calendar/docgen (#13).
 - **Depends on:** —
 - **Acceptance:** New `@eduai/bs-date` (or agreed package name) wrapping
   a **vetted** BS↔AD library (choice confirmed before merge — open item
-  in `CLAUDE.md` §7 / Phase 6 P6-CONTENT-03). Pure functions: AD date ↔
+  in `CLAUDE.md` 7 / Phase 6 P6-CONTENT-03). Pure functions: AD date ↔
   BS year/month/day; month length; year bounds. Used by API (national
   calendar labels) and web (NepaliCalendar). Unit-tested across BS/AD
   year boundaries. No network calls at runtime.
-- **Refs:** `CLAUDE.md` §7; `docs/phases/tasks/phase-6-pilot-launch.md`
+- **Refs:** `CLAUDE.md` 7; `docs/phases/tasks/phase-6-pilot-launch.md`
   P6-CONTENT-03 (library finalize may land here or coordinate with
   Phase 6)
 

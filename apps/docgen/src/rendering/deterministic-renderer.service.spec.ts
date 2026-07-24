@@ -29,7 +29,7 @@ describe('DeterministicRendererService', () => {
       {
         id: 'o1',
         outcome_id: 'out-1',
-        rating_code: 'emerging',
+        rating_code: 'not_yet',
         state: 'confirmed',
         confirmed_at: '2025-04-20T00:00:00Z',
         evidence_note: 'seen once',

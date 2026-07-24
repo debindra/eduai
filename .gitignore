@@ -43,3 +43,5 @@ packages/db/supabase/.temp/
 *.swo
 
 *.local
+
+apps/web/screenshots/*

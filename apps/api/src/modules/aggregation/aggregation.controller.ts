@@ -20,9 +20,42 @@ import { AggregationService } from './aggregation.service';
 export class AggregationController {
   constructor(private readonly service: AggregationService) {}
 
+  @Get('area/:areaId/child/:childId')
+  @ApiOperation({
+    summary: 'Per-area achievement (I6–I8)',
+    description:
+      'Computed from annex indicator_count. Incomplete areas return withheld + missing indicator codes — never a partial percentage.',
+  })
+  @ApiOkResponse({ description: 'Area achievement or withheld' })
+  aggregateArea(
+    @Param('childId') childId: string,
+    @Param('areaId') areaId: string,
+  ) {
+    return this.service.aggregateArea(childId, areaId);
+  }
+
+  @Get('subject/:subjectId/child/:childId')
+  @ApiOperation({
+    summary: 'Subject overall from assessment areas (I8)',
+    description:
+      'Aggregates area achievements. Any withheld area withholds the subject result.',
+  })
+  @ApiOkResponse({ description: 'Subject aggregation or withheld' })
+  aggregateSubject(
+    @Param('childId') childId: string,
+    @Param('subjectId') subjectId: string,
+    @Query('levelId') levelId = '4',
+  ) {
+    return this.service.aggregateSubjectByAreas(
+      childId,
+      subjectId,
+      Number(levelId),
+    );
+  }
+
   @Get('child/:childId')
   @ApiOperation({
-    summary: 'Per-child letter grade (deterministic)',
+    summary: 'Per-child letter grade (deterministic, legacy outcomes path)',
     description: `Calculates letter grade using formula: Σ ÷ (4 × n) × 100 → letter from grade_scales cut-offs.\n\nInvariant #13: Deterministic stays deterministic — pure arithmetic, zero AI calls.\n\nInvariant #2: Never ranks across children — this aggregates a single child only.`,
   })
   @ApiOkResponse({ description: 'Child aggregation calculated successfully' })

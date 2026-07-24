@@ -225,7 +225,7 @@ export class OutcomesService {
     teacherId: string | null,
   ) {
     const children = await this.repository.listChildren(sectionId);
-    const resolved = resolveObservationAgainstRoster(observationText, children, 'emerging');
+    const resolved = resolveObservationAgainstRoster(observationText, children, 'not_yet');
 
     if (resolved.routeToAttendance) {
       return {
@@ -252,7 +252,7 @@ export class OutcomesService {
       },
       mapper: {
         observationText,
-        ratingCode: resolved.suggestedRating ?? 'emerging',
+        ratingCode: resolved.suggestedRating ?? 'not_yet',
         childNameAmbiguous: false,
       },
     });
@@ -263,7 +263,7 @@ export class OutcomesService {
       section_id: sectionId,
       subject_id: subjectId,
       band_code: null,
-      rating_code: resolved.suggestedRating ?? 'emerging',
+      rating_code: resolved.suggestedRating ?? 'not_yet',
       recorded_by: teacherId,
       evidence_note: observationText,
     });

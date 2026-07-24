@@ -16,6 +16,7 @@ export const TEACHER_NAV_LINKS: readonly TeacherNavLink[] = [
   { href: '/teacher/calendar', label: 'Calendar' },
   { href: '/teacher/attendance', label: 'Attendance', grain: 'class_teacher' },
   { href: '/teacher/sweep', label: 'Sweep' },
+  { href: '/teacher/indicator-sweep', label: 'Indicators', grain: 'subject' },
   { href: '/teacher/weekly', label: 'Weekly' },
   { href: '/teacher/lesson', label: 'Lesson' },
   { href: '/teacher/pacing', label: 'Pacing' },
