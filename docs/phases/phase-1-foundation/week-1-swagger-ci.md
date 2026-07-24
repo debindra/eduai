@@ -81,7 +81,7 @@ pnpm check:rank-order
 - `guardians`, `sections`, `lesson_progress`
 - `yearly_map`, `map_slices`, `map_slice_outcomes`
 - `prompts`, `parent_report_drafts`, `coach_messages`
-- `assessment_proposals`, `handover_pack`, `remedial_plans`
+- `student_outcomes`, `handover_pack`, `remedial_plans`
 - `children` (read-only)
 
 **Testing:**

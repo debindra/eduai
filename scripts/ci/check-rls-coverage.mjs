@@ -44,7 +44,7 @@ const REQUIRED_POLICIES = [
 
   // Reports & handover
   { table: 'parent_report_drafts', needle: 'CREATE POLICY' },
-  { table: 'assessment_proposals', needle: 'CREATE POLICY' },
+  // Propose/Confirm lives on student_outcomes.state — not a separate assessment_proposals table
   { table: 'handover_pack', needle: 'CREATE POLICY' },
 ];
 
