@@ -160,7 +160,6 @@ export class AxiomLoggerService {
     const event = {
       _time: new Date().toISOString(),
       type: 'safeguarding_signal',
-      severity: 'critical',
       ...data,
     };
 
