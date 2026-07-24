@@ -1,0 +1,167 @@
+{
+  "phase": "Phase 2: Core Features",
+  "startDate": null,
+  "endDate": null,
+  "status": "not_started",
+  "progress": {
+    "completed": 0,
+    "total": 12,
+    "percentage": 0
+  },
+  "weeks": [
+    {
+      "week": 3,
+      "status": "not_started",
+      "tasks": [
+        {
+          "id": "3.1",
+          "title": "Choose Job Orchestration Platform",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 2,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "decision": "Inngest vs. Trigger.dev"
+        },
+        {
+          "id": "3.2",
+          "title": "Implement Terminal-End Report Generation Workflow",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 5,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/jobs/src/workflows/terminal-report-generation.ts"]
+        },
+        {
+          "id": "3.3",
+          "title": "Implement Remedial Escalation Workflow",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 4,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/jobs/src/workflows/remedial-escalation.ts"]
+        },
+        {
+          "id": "3.4",
+          "title": "Implement Handover Pack Assembly Workflow",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 5,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/jobs/src/workflows/handover-pack-assembly.ts"]
+        }
+      ]
+    },
+    {
+      "week": 4,
+      "status": "not_started",
+      "tasks": [
+        {
+          "id": "4.1",
+          "title": "Design WhatsApp Cloud API Integration (Stub)",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/api/src/modules/messaging/adapters/whatsapp-cloud-api.adapter.ts"]
+        },
+        {
+          "id": "4.2",
+          "title": "E2E Test: Teacher Sweep → Propose → Confirm",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 4,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/web/test/e2e/teacher-sweep-propose-confirm.spec.ts"]
+        },
+        {
+          "id": "4.3",
+          "title": "E2E Test: Admin Aggregate (No Child Names)",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/web/test/e2e/admin-aggregate-no-names.spec.ts"]
+        },
+        {
+          "id": "4.4",
+          "title": "E2E Test: Calendar Edit → Teaching Days Reflow",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 4,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/web/test/e2e/calendar-reflow-pacing.spec.ts"]
+        }
+      ]
+    },
+    {
+      "week": 5,
+      "status": "not_started",
+      "tasks": [
+        {
+          "id": "5.1",
+          "title": "Add Coverage Thresholds to Vitest Config",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 2,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": [
+            "apps/api/vitest.config.ts",
+            "apps/web/vitest.config.ts",
+            ".github/workflows/ci.yml"
+          ]
+        },
+        {
+          "id": "5.2",
+          "title": "RLS Policy Effectiveness Tests",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 6,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["packages/db/supabase/tests/rls_enforcement.sql"]
+        },
+        {
+          "id": "5.3",
+          "title": "Mapper Guards Comprehensive Test Audit",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 6,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/api/src/modules/outcomes/mapper-guards.spec.ts"]
+        },
+        {
+          "id": "5.4",
+          "title": "Teaching Days Schema Audit",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 2,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["scripts/ci/check-teaching-days-schema.mjs"]
+        }
+      ]
+    }
+  ]
+}

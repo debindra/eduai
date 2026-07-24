@@ -1,0 +1,184 @@
+{
+  "phase": "Phase 3: Deployment & Polish",
+  "startDate": null,
+  "endDate": null,
+  "status": "not_started",
+  "progress": {
+    "completed": 0,
+    "total": 13,
+    "percentage": 0
+  },
+  "weeks": [
+    {
+      "week": 6,
+      "status": "not_started",
+      "tasks": [
+        {
+          "id": "6.1",
+          "title": "Create Dockerfiles for All Apps",
+          "status": "not_started",
+          "priority": "MEDIUM",
+          "estimatedHours": 4,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": [
+            "apps/api/Dockerfile",
+            "apps/docgen/Dockerfile",
+            "apps/jobs/Dockerfile",
+            "apps/web/Dockerfile"
+          ]
+        },
+        {
+          "id": "6.2",
+          "title": "Create Fly.io Deployment Configs",
+          "status": "not_started",
+          "priority": "MEDIUM",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": [
+            "apps/api/fly.toml",
+            "apps/docgen/fly.toml",
+            "apps/jobs/fly.toml",
+            "apps/web/fly.toml"
+          ]
+        },
+        {
+          "id": "6.3",
+          "title": "Create Environment Variable Templates",
+          "status": "not_started",
+          "priority": "MEDIUM",
+          "estimatedHours": 2,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": [".env.example"]
+        },
+        {
+          "id": "6.4",
+          "title": "Document Deployment Process",
+          "status": "not_started",
+          "priority": "MEDIUM",
+          "estimatedHours": 4,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["docs/Deployment.md"]
+        }
+      ]
+    },
+    {
+      "week": 7,
+      "status": "not_started",
+      "tasks": [
+        {
+          "id": "7.1",
+          "title": "Document Content Dependencies",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["docs/Content_Dependencies.md"]
+        },
+        {
+          "id": "7.2",
+          "title": "Implement Safeguarding Fast-Path (CRITICAL)",
+          "status": "not_started",
+          "priority": "CRITICAL",
+          "estimatedHours": 6,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": [
+            "apps/api/src/modules/outcomes/safeguarding-detector.service.ts",
+            "apps/api/src/modules/outcomes/safeguarding-detector.spec.ts"
+          ]
+        },
+        {
+          "id": "7.3",
+          "title": "BS ↔ AD Date Conversion Verification",
+          "status": "not_started",
+          "priority": "MEDIUM",
+          "estimatedHours": 2,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["packages/bs-date/test/convert.spec.ts"]
+        },
+        {
+          "id": "7.4",
+          "title": "Devanagari Rendering Verification",
+          "status": "not_started",
+          "priority": "MEDIUM",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/docgen/test/nepali-rendering.spec.ts"]
+        }
+      ]
+    },
+    {
+      "week": 8,
+      "status": "not_started",
+      "tasks": [
+        {
+          "id": "8.1",
+          "title": "RLS Policy Comprehensive Audit",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 4,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null
+        },
+        {
+          "id": "8.2",
+          "title": "No Cross-Domain Contamination Verification",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/api/src/modules/outcomes/outcomes.spec.ts"]
+        },
+        {
+          "id": "8.3",
+          "title": "Audit Log Completeness",
+          "status": "not_started",
+          "priority": "MEDIUM",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/api/src/modules/platform/audit.service.ts"]
+        },
+        {
+          "id": "8.4",
+          "title": "Performance Testing",
+          "status": "not_started",
+          "priority": "MEDIUM",
+          "estimatedHours": 4,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null
+        },
+        {
+          "id": "8.5",
+          "title": "Smoke Tests on Staging",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 4,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null
+        }
+      ]
+    }
+  ]
+}
