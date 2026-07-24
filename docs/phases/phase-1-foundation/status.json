@@ -1,0 +1,123 @@
+{
+  "phase": "Phase 1: Foundation",
+  "startDate": null,
+  "endDate": null,
+  "status": "not_started",
+  "progress": {
+    "completed": 0,
+    "total": 8,
+    "percentage": 0
+  },
+  "weeks": [
+    {
+      "week": 1,
+      "status": "not_started",
+      "tasks": [
+        {
+          "id": "1.1",
+          "title": "Complete Swagger/OpenAPI Decoration",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 6,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": [
+            "apps/api/src/modules/outcomes/outcomes.controller.ts",
+            "apps/api/src/modules/remedial/remedial.controller.ts",
+            "apps/api/src/modules/messaging/messaging.controller.ts",
+            "apps/api/src/modules/pacing/pacing.controller.ts",
+            "apps/api/src/modules/handover/handover.controller.ts",
+            "apps/api/src/modules/reports/reports.controller.ts"
+          ]
+        },
+        {
+          "id": "1.2",
+          "title": "Enhance Rank-Order Query Check",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["scripts/ci/check-rank-order.mjs"]
+        },
+        {
+          "id": "1.3",
+          "title": "Expand RLS Coverage Check",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 2,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["scripts/ci/check-rls-coverage.mjs"]
+        },
+        {
+          "id": "1.4",
+          "title": "Create API Types Verification CI Check",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 2,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["scripts/ci/verify-api-types.mjs", ".github/workflows/ci.yml", "package.json"]
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "status": "not_started",
+      "tasks": [
+        {
+          "id": "2.1",
+          "title": "Create StoragePort Interface",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": [
+            "apps/api/src/shared/ports/storage.port.ts",
+            "apps/api/src/shared/adapters/console-storage.adapter.ts"
+          ]
+        },
+        {
+          "id": "2.2",
+          "title": "Set Up Sentry Error Tracking",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/api/src/main.ts", "apps/web/src/main.ts", "package.json"]
+        },
+        {
+          "id": "2.3",
+          "title": "Set Up Axiom Structured Logging",
+          "status": "not_started",
+          "priority": "HIGH",
+          "estimatedHours": 4,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["apps/api/src/shared/services/logger.service.ts", "package.json"]
+        },
+        {
+          "id": "2.4",
+          "title": "Document Adapter Implementation Guide",
+          "status": "not_started",
+          "priority": "MEDIUM",
+          "estimatedHours": 3,
+          "actualHours": null,
+          "assignee": null,
+          "completedDate": null,
+          "files": ["docs/Architecture_Adapter_Implementation.md"]
+        }
+      ]
+    }
+  ]
+}

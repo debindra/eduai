@@ -1,6 +1,7 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -35,6 +36,7 @@ export class AuthController {
       'Username may be a real email or mobile number. Mobile-only accounts use an internal synthetic email mapping — never stored in identities.email.',
   })
   @ApiOkResponse({ type: AuthSessionResponseDto })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials or inactive account' })
   async login(@Body() dto: LoginDto): Promise<AuthSessionResponseDto> {
     return this.authService.login(dto.identifier, dto.password);
@@ -47,10 +49,12 @@ export class AuthController {
   @ApiOperation({
     summary: 'Provision an invited Admin or Teacher identity',
     description:
-      'No self-registration. Email path uses Supabase inviteUserByEmail; mobile path stores a hashed invite token and sends the raw token via WhatsApp/SMS stub.',
+      'No self-registration. Email path uses Supabase inviteUserByEmail; mobile path stores a hashed invite token and sends the raw token via WhatsApp/SMS stub.\n\nRequires: RequireRoleGuard (role=\'admin\') AND RequireSchoolAdminGuard (school admin for the school).',
   })
   @ApiOkResponse({ type: InviteResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid invite payload' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not a school admin' })
   async invite(@Body() dto: InviteDto): Promise<InviteResponseDto> {
     return this.authService.invite(dto);
   }
@@ -62,6 +66,8 @@ export class AuthController {
       'Sets password via Supabase Admin API using the synthetic email mapping. Email invites use the Supabase email link instead.',
   })
   @ApiOkResponse({ type: MessageResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid or expired invite token' })
+  @ApiUnauthorizedResponse({ description: 'Invite token validation failed' })
   async acceptInvite(@Body() dto: AcceptInviteDto): Promise<MessageResponseDto> {
     return this.authService.acceptInvite(dto);
   }
@@ -73,6 +79,7 @@ export class AuthController {
       'Phone/WhatsApp OTP for recovery only — never a login mechanism. WhatsApp primary, SMS fallback.',
   })
   @ApiOkResponse({ type: MessageResponseDto })
+  @ApiBadRequestResponse({ description: 'Validation failed or identifier not found' })
   async requestRecoveryOtp(@Body() dto: RequestRecoveryOtpDto): Promise<MessageResponseDto> {
     return this.authService.requestRecoveryOtp(dto.identifier);
   }
@@ -84,6 +91,7 @@ export class AuthController {
       'On success calls Supabase Admin API updateUserById — bypasses Supabase email reset flow.',
   })
   @ApiOkResponse({ type: MessageResponseDto })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
   @ApiUnauthorizedResponse({ description: 'Invalid or expired OTP' })
   async verifyRecoveryOtpAndSetPassword(
     @Body() dto: VerifyRecoveryOtpDto,

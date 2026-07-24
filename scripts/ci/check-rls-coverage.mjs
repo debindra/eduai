@@ -19,9 +19,33 @@ const rlsCoverageSql = path.join(
 );
 
 const REQUIRED_POLICIES = [
+  // Core assessment & tracking
   { table: 'student_outcomes', needle: 'CREATE POLICY' },
   { table: 'attendance_record', needle: 'CREATE POLICY' },
+  { table: 'lesson_progress', needle: 'CREATE POLICY' },
+  { table: 'remedial_plans', needle: 'CREATE POLICY' },
+
+  // RBAC & access control
   { table: 'teacher_sections', needle: 'CREATE POLICY' },
+  { table: 'sections', needle: 'CREATE POLICY' },
+
+  // Family & child data
+  { table: 'children', needle: 'CREATE POLICY' }, // Special case: read-only via RLS
+  { table: 'guardians', needle: 'CREATE POLICY' },
+
+  // Curriculum & planning
+  { table: 'yearly_map', needle: 'CREATE POLICY' },
+  { table: 'map_slices', needle: 'CREATE POLICY' },
+  { table: 'map_slice_outcomes', needle: 'CREATE POLICY' },
+
+  // AI & messaging
+  { table: 'prompts', needle: 'CREATE POLICY' },
+  { table: 'coach_messages', needle: 'CREATE POLICY' },
+
+  // Reports & handover
+  { table: 'parent_report_drafts', needle: 'CREATE POLICY' },
+  // Propose/Confirm lives on student_outcomes.state — not a separate assessment_proposals table
+  { table: 'handover_pack', needle: 'CREATE POLICY' },
 ];
 
 async function readMigrationSql() {

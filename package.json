@@ -11,6 +11,7 @@
     "check:rank-order": "node scripts/ci/check-rank-order.mjs",
     "test:rank-order-check": "node scripts/ci/test-rank-order-check.mjs",
     "check:rls-coverage": "node scripts/ci/check-rls-coverage.mjs",
+    "verify:api-types": "node scripts/ci/verify-api-types.mjs",
     "db:start": "pnpm --filter @eduai/db db:start",
     "db:stop": "pnpm --filter @eduai/db db:stop",
     "db:reset": "pnpm --filter @eduai/db db:reset",

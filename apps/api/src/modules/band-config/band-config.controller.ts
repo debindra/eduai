@@ -11,8 +11,7 @@ export class BandConfigController {
   @Get()
   @ApiOperation({
     summary: 'List band configuration',
-    description:
-      'Returns all bands with grade_scales and subjects. Band-as-data — no grade-number branching; read assessment_mode / aggregation_rule off each band row.',
+    description: `Returns all bands with grade_scales and subjects.\n\nInvariant #4: Band-as-data — no grade-number branching in code. Read assessment_mode / aggregation_rule off each band row.\n\nPublic endpoint — used for band selection during school setup and feature discovery.`,
   })
   @ApiOkResponse({ type: BandsListResponseDto })
   async listBands(): Promise<BandsListResponseDto> {

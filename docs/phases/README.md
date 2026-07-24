@@ -1,38 +1,97 @@
-# Phase tasks & status
+# EduAI Nepal - Architecture Recommendations Implementation Phases
 
-Living detail for the checklist in [`PHASE_TASKS.md`](../../PHASE_TASKS.md).
-Narrative roadmap: [`PROJECT_PLAN.md`](../../PROJECT_PLAN.md).
+This directory contains the implementation plan for all architecture recommendations from `docs/Architecture_Recommendations.md`.
 
-| Path | Role |
-|---|---|
-| [`tasks/`](tasks/) | Spec — what to build (ticket IDs, acceptance criteria, refs) |
-| [`status/`](status/) | Progress — `todo` / `in_progress` / `done` / `blocked` per ID |
-| [`status/SUMMARY.md`](status/SUMMARY.md) | One-page board across all phases |
+## Overview
 
-## Sync rules
+**Total Duration:** 8-10 weeks across 3 phases
+**Current Status:** Planning Complete - Ready for Execution
+**Branch:** `feature/architecture-recommendations-implementation`
 
-1. **New tickets** land in root `PHASE_TASKS.md` first (compact checkbox).
-2. Expand into `tasks/phase-N-*.md` with a stable ID (`P0-DB-01`, …).
-3. **Status only changes** in `status/phase-N.md` (and `SUMMARY.md` counts).
-4. Do not duplicate architecture specs here — link to `ARCHITECTURE.md`,
-   `docs/specs/`, and `.cursor/rules/`.
+## Phase Structure
 
-## Phases
+### [Phase 1: Foundation](./phase-1-foundation/) (Weeks 1-2)
+**Goal:** Establish architectural foundations and critical infrastructure
 
-| Phase | Tasks | Status |
-|---|---|---|
-| 0 — Foundations | [phase-0-foundations.md](tasks/phase-0-foundations.md) | [phase-0.md](status/phase-0.md) |
-| 1 — Band-as-data + pre-primary | [phase-1-band-as-data.md](tasks/phase-1-band-as-data.md) | [phase-1.md](status/phase-1.md) |
-| 2 — Compliance + school/parent | [phase-2-compliance.md](tasks/phase-2-compliance.md) | [phase-2.md](status/phase-2.md) |
-| 3 — Grades 1–3 | [phase-3-grades-1-3.md](tasks/phase-3-grades-1-3.md) | [phase-3.md](status/phase-3.md) |
-| 4 — Grades 4–5 (content-gated) | [phase-4-grades-4-5.md](tasks/phase-4-grades-4-5.md) | [phase-4.md](status/phase-4.md) |
-| 5 — Cost / career | [phase-5-cost-career.md](tasks/phase-5-cost-career.md) | [phase-5.md](status/phase-5.md) |
-| 6 — Pilot / launch | [phase-6-pilot-launch.md](tasks/phase-6-pilot-launch.md) | [phase-6.md](status/phase-6.md) |
-| 7 — Platform / Super Admin + Nepali calendar | [phase-7-platform-super-admin.md](tasks/phase-7-platform-super-admin.md) | [phase-7.md](status/phase-7.md) |
-| 8 — ECA / CCA catalog + calendar | [phase-8-eca-cca.md](tasks/phase-8-eca-cca.md) | [phase-8.md](status/phase-8.md) |
+**Key Deliverables:**
+- Complete Swagger/OpenAPI documentation
+- Enhanced CI checks (rank-order, RLS, API types)
+- Observability setup (Sentry, Axiom)
+- StoragePort interface definition
 
-## Status values
+**Priority:** HIGH
+**Estimated Effort:** 22-30 hours
 
-`todo` | `in_progress` | `done` | `blocked`
+### [Phase 2: Core Features](./phase-2-core-features/) (Weeks 3-5)
+**Goal:** Implement critical feature workflows and integrations
 
-When marking `done`, record **Evidence** (migration path, PR, or file).
+**Key Deliverables:**
+- Job orchestration platform setup
+- 3 critical E2E test flows
+- Coverage thresholds (80%+)
+- RLS enforcement tests
+- Mapper guards audit
+
+**Priority:** HIGH
+**Estimated Effort:** 42-54 hours
+
+### [Phase 3: Deployment & Polish](./phase-3-deployment/) (Weeks 6-8)
+**Goal:** Prepare for production deployment and resolve content blockers
+
+**Key Deliverables:**
+- Dockerfiles for all 4 apps
+- Fly.io deployment configs
+- Safeguarding fast-path (CRITICAL)
+- Security audit
+- Performance testing
+
+**Priority:** MEDIUM-HIGH
+**Estimated Effort:** 36-48 hours
+
+## Progress Tracking
+
+See [PROGRESS.md](./PROGRESS.md) for overall status and completion percentage.
+
+Each phase has its own `status.json` file for granular task tracking.
+
+## Current State
+
+**Codebase Health:** 85% architecturally complete
+- ✅ 30 backend modules, 20 frontend features
+- ✅ 137 test files, ~70% coverage
+- ✅ All architectural patterns implemented
+- ✅ Ports & Adapters pattern complete
+- ⚠️ Production adapters deferred
+- ⚠️ Comprehensive testing gaps
+
+## Success Criteria
+
+### Phase 1 Complete ✓
+- [ ] All 28 controllers have @ApiResponse decorators
+- [ ] Rank-order check detects window functions
+- [ ] RLS coverage check includes 16 tables
+- [ ] API types CI check prevents drift
+- [ ] Sentry and Axiom integrated
+- [ ] StoragePort interface defined
+
+### Phase 2 Complete ✓
+- [ ] Job orchestration platform chosen
+- [ ] 3 workflow stubs implemented
+- [ ] 3 critical E2E flows passing
+- [ ] Coverage thresholds enforced (80%+)
+- [ ] RLS enforcement tests passing
+- [ ] Mapper guards audit complete (16 tests)
+
+### Phase 3 Complete ✓
+- [ ] Dockerfiles for all 4 apps
+- [ ] Fly.io configs complete
+- [ ] Deployment documentation written
+- [ ] Safeguarding fast-path implemented
+- [ ] Security audit passed
+- [ ] Staging smoke tests passing
+
+---
+
+**Last Updated:** 2026-07-24
+**Status:** Planning Complete
+**Next Action:** Begin Phase 1, Week 1

@@ -1,5 +1,15 @@
 import { Body, Controller, ForbiddenException, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
 import type { Request } from 'express';
@@ -52,7 +62,19 @@ export class OutcomesController {
 
   @Post(':sectionId/propose/batch-sweep')
   @RequireSectionSubjectScope({ sectionIdParam: 'sectionId', subjectIdBody: 'subjectId' })
-  @ApiOperation({ summary: 'Batch sweep propose (never confirms)' })
+  @ApiOperation({
+    summary: 'Batch sweep propose (never confirms)',
+    description: `Returns proposed outcomes only — NEVER writes confirmed state to DB.
+
+Requires: SectionSubjectWriteGuard (teacher_sections row for this section
+matching either target subject or is_class_teacher = true).
+
+This is a PROPOSE-only endpoint. Call POST /:proposalId/confirm to persist.`,
+  })
+  @ApiOkResponse({ description: 'Proposals created successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section/subject' })
   batchSweep(
     @Param('sectionId') sectionId: string,
     @Body() dto: BatchSweepDto,
@@ -68,7 +90,14 @@ export class OutcomesController {
 
   @Post(':sectionId/propose/carry-forward')
   @RequireSectionSubjectScope({ sectionIdParam: 'sectionId', subjectIdBody: 'subjectId' })
-  @ApiOperation({ summary: 'Carry-forward propose' })
+  @ApiOperation({
+    summary: 'Carry-forward propose',
+    description: 'Returns proposed outcome based on prior rating — NEVER writes to DB. Call confirm to persist.',
+  })
+  @ApiOkResponse({ description: 'Proposal created successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section/subject' })
   carryForward(
     @Param('sectionId') sectionId: string,
     @Body()
@@ -87,7 +116,22 @@ export class OutcomesController {
 
   @Post(':sectionId/propose/observation')
   @RequireSectionSubjectScope({ sectionIdParam: 'sectionId', subjectIdBody: 'subjectId' })
-  @ApiOperation({ summary: 'Voice/text mapper propose' })
+  @ApiOperation({
+    summary: 'Voice/text mapper propose',
+    description: `Maps free-text/voice observation to outcome proposal — NEVER writes to DB.
+
+Applies all four mapper guards:
+1. No instant top rating
+2. Ambiguous name → returns roll number candidates
+3. Non-observation (e.g., absence) → routes to attendance
+4. Explicit confirmation required
+
+Call confirm to persist after teacher review.`,
+  })
+  @ApiOkResponse({ description: 'Proposal created successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed or mapper guard rejection' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section/subject' })
   observation(
     @Param('sectionId') sectionId: string,
     @Body() dto: ObservationDto,
@@ -105,7 +149,14 @@ export class OutcomesController {
 
   @Post(':sectionId/propose/assessment-activity')
   @RequireSectionSubjectScope({ sectionIdParam: 'sectionId', subjectIdBody: 'subjectId' })
-  @ApiOperation({ summary: 'Assessment activity propose' })
+  @ApiOperation({
+    summary: 'Assessment activity propose',
+    description: 'Returns proposed outcome from structured assessment — NEVER writes to DB. Call confirm to persist.',
+  })
+  @ApiOkResponse({ description: 'Proposal created successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section/subject' })
   assessment(
     @Param('sectionId') sectionId: string,
     @Body()
@@ -131,7 +182,21 @@ export class OutcomesController {
       sectionColumn: 'section_id',
     },
   })
-  @ApiOperation({ summary: 'Confirm proposed outcome — only write path for confirmed' })
+  @ApiOperation({
+    summary: 'Confirm proposed outcome',
+    description: `Persists AI-proposed outcome after teacher confirmation.
+
+Requires: Teacher who created the proposal OR class teacher for the section.
+Blocks substitute teachers from confirming (BlocksSubstituteConfirmation).
+
+This is the ONLY method that writes confirmed state to student_outcomes.
+Never call AI directly — use propose endpoints first.`,
+  })
+  @ApiOkResponse({ description: 'Outcome confirmed and persisted successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid proposal state or validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Not authorized to confirm this proposal (substitute or wrong teacher)' })
+  @ApiNotFoundResponse({ description: 'Proposal not found' })
   async confirm(
     @Param('proposalId') proposalId: string,
     @Body() dto: ConfirmDto,
@@ -146,6 +211,10 @@ export class OutcomesController {
 
   @Get(':sectionId/proposed')
   @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
+  @ApiOperation({ summary: 'List all proposed (unconfirmed) outcomes for section' })
+  @ApiOkResponse({ description: 'List of proposed outcomes' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
   listProposed(@Param('sectionId') sectionId: string) {
     return this.service.listProposed(sectionId);
   }
@@ -166,7 +235,16 @@ export class OutcomesController {
 
   @Get(':sectionId/stalled')
   @RequireSectionReadScope({ sectionIdParam: 'sectionId' })
-  @ApiOperation({ summary: 'Private inclusive-assistant stall prompt (not admin flag)' })
+  @ApiOperation({
+    summary: 'List stalled milestones for inclusive support',
+    description: `Returns milestones with no progress in specified weeks (default 3).
+
+Private teacher tool for remedial planning — NOT an admin flag.
+Results used to trigger remedial workflows.`,
+  })
+  @ApiOkResponse({ description: 'List of stalled milestones' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions for this section' })
   stalled(
     @Param('sectionId') sectionId: string,
     @Query('weeks') weeks?: string,
